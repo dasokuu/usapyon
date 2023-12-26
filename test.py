@@ -138,7 +138,15 @@ async def on_ready():
 async def user_default_style(ctx, style_id: int = None):
     server_id = str(ctx.guild.id)
 
-    # スタイルIDが指定されている場合は設定を更新
+    # Ensure server settings are initialized
+    if server_id not in speaker_settings:
+        speaker_settings[server_id] = {"user_default": USER_DEFAULT_STYLE_ID}
+
+    # Use get to safely access 'user_default'
+    current_default = speaker_settings[server_id].get(
+        "user_default", USER_DEFAULT_STYLE_ID
+    )
+
     if style_id is not None:
         valid_style_ids = [
             style["id"] for speaker in speakers for style in speaker["styles"]
@@ -153,15 +161,11 @@ async def user_default_style(ctx, style_id: int = None):
         else:
             await ctx.send(f"スタイルID {style_id} は無効です。")
     else:
-        # 現在のユーザーのデフォルトスタイルを表示
-        user_default_style_id = speaker_settings.get("defaults", {}).get(
-            speaker_settings[server_id]["user_default"], USER_DEFAULT_STYLE_ID
-        )
+        # Display current default style
         user_speaker, user_default_style_name = get_style_details(
-            user_default_style_id, "デフォルト"
+            current_default, "デフォルト"
         )
-
-        response = f"**{ctx.author.display_name}さんのデフォルトスタイル:** {user_speaker} {user_default_style_name} (ID: {user_default_style_id})"
+        response = f"**{ctx.author.display_name}さんのデフォルトスタイル:** {user_speaker} {user_default_style_name} (ID: {current_default})"
         await ctx.send(response)
 
 
@@ -253,7 +257,9 @@ async def on_message(message):
         speaker_settings[server_id] = {"user_default": USER_DEFAULT_STYLE_ID}
 
     # Use get to safely access 'user_default' key
-    user_default_style_id = speaker_settings[server_id].get("user_default", USER_DEFAULT_STYLE_ID)
+    user_default_style_id = speaker_settings[server_id].get(
+        "user_default", USER_DEFAULT_STYLE_ID
+    )
 
     style_id = speaker_settings.get(str(message.author.id), user_default_style_id)
 
