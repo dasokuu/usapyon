@@ -7,8 +7,9 @@ import io
 import os
 import requests
 
-# グローバルデフォルトのスタイルID
-GLOBAL_DEFAULT_STYLE_ID = 8
+# ユーザーのデフォルトスタイルID
+USER_DEFAULT_STYLE_ID = 3
+NOTIFY_STYLE_ID = 8
 
 
 def fetch_speakers():
@@ -135,7 +136,7 @@ async def on_ready():
 
 @bot.command(name="userdefaultstyle", help="ユーザーのデフォルトスタイルを表示または設定します。")
 async def user_default_style(ctx, style_id: int = None):
-    user_id = str(ctx.author.id)
+    server_id = str(ctx.guild.id)
 
     # スタイルIDが指定されている場合は設定を更新
     if style_id is not None:
@@ -144,17 +145,17 @@ async def user_default_style(ctx, style_id: int = None):
         ]
         if style_id in valid_style_ids:
             speaker_name, style_name = get_style_details(style_id)
-            speaker_settings["defaults"][user_id] = style_id
+            speaker_settings[server_id]["user_default"] = style_id
             save_user_settings()
             await ctx.send(
-                f"{ctx.author.mention}さんの新しいデフォルトスタイルを「{speaker_name} {style_name}」(ID: {style_id})に設定しました。"
+                f"ユーザーのデフォルトスタイルを「{speaker_name} {style_name}」(ID: {style_id})に設定しました。"
             )
         else:
             await ctx.send(f"スタイルID {style_id} は無効です。")
     else:
         # 現在のユーザーのデフォルトスタイルを表示
         user_default_style_id = speaker_settings.get("defaults", {}).get(
-            user_id, GLOBAL_DEFAULT_STYLE_ID
+            speaker_settings[server_id]["user_default"], USER_DEFAULT_STYLE_ID
         )
         user_speaker, user_default_style_name = get_style_details(
             user_default_style_id, "デフォルト"
@@ -177,10 +178,10 @@ async def notify_style(ctx, style_id: int = None):
             speaker_name, style_name = get_style_details(style_id)
             if server_id not in speaker_settings:
                 speaker_settings[server_id] = {}
-            speaker_settings[server_id]["default"] = style_id
+            speaker_settings[server_id]["notify_style"] = style_id
             save_user_settings()
             await ctx.send(
-                f"このサーバーのスタイルIDを {style_id} 「{speaker_name} {style_name}」(ID: {style_id})に設定しました。"
+                f"入退出通知スタイルを {style_id} 「{speaker_name} {style_name}」(ID: {style_id})に設定しました。"
             )
             return
         else:
@@ -188,12 +189,12 @@ async def notify_style(ctx, style_id: int = None):
             return
 
     # 現在のサーバースタイル設定を表示
-    server_style_id = speaker_settings.get(server_id, {}).get(
-        "default", GLOBAL_DEFAULT_STYLE_ID
+    notify_style_id = speaker_settings.get(server_id, {}).get(
+        "default", NOTIFY_STYLE_ID
     )
-    server_speaker, server_default_name = get_style_details(server_style_id, "デフォルト")
+    notify_speaker, notify_default_name = get_style_details(notify_style_id, "デフォルト")
 
-    response = f"**{ctx.guild.name}のサーバースタイル:** {server_speaker} {server_default_name} (ID: {server_style_id})\n"
+    response = f"**{ctx.guild.name}の通知スタイル:** {notify_speaker} {notify_default_name} (ID: {notify_style_id})\n"
     await ctx.send(response)
 
 
@@ -219,7 +220,7 @@ async def my_style(ctx, style_id: int = None):
             return
 
     # 現在のスタイル設定を表示
-    user_style_id = speaker_settings.get(user_id, GLOBAL_DEFAULT_STYLE_ID)
+    user_style_id = speaker_settings.get(user_id, USER_DEFAULT_STYLE_ID)
     user_speaker, user_style_name = get_style_details(user_style_id, "デフォルト")
 
     response = f"**{ctx.author.display_name}さんのスタイル:** {user_speaker} {user_style_name} (ID: {user_style_id})"
@@ -247,12 +248,9 @@ async def on_message(message):
         return
 
     server_id = str(message.guild.id)
-    default_style_id = 3  # グローバルデフォルトのスタイルID
+    user_default_style_id = speaker_settings[server_id]["user_default"]
 
-    if server_id in speaker_settings and "default" in speaker_settings[server_id]:
-        default_style_id = speaker_settings[server_id]["default"]
-
-    style_id = speaker_settings.get(str(message.author.id), default_style_id)
+    style_id = speaker_settings.get(str(message.author.id), user_default_style_id)
 
     await speech_queue.put((voice_client, message.content, style_id))
 
