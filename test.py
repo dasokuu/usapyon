@@ -26,7 +26,8 @@ async def synthesis(speaker, query_data, max_retry):
     synth_payload = {"speaker": speaker}
     async with aiohttp.ClientSession() as session:
         for _ in range(max_retry):
-            async with session.post("http://localhost:50021/synthesis", params=synth_payload, data=query_data) as response:
+            headers = {'Content-Type': 'application/json'}
+            async with session.post("http://localhost:50021/synthesis", headers=headers, params=synth_payload, data=json.dumps(query_data)) as response:
                 if response.status == 200:
                     return await response.read()
                 await asyncio.sleep(1)
