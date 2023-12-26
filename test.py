@@ -460,9 +460,9 @@ async def join(ctx):
         channel = ctx.author.voice.channel
         voice_client = await channel.connect()
 
-        # ボットが準備完了するのを待ちます。
-        while not voice_client.is_ready():
-            await asyncio.sleep(0.1)
+        # ボットが準備完了するのを待ちます。実際には`is_ready()`メソッドが存在しないため、
+        # 単に少し待つことでボットが安定するのを期待します。
+        await asyncio.sleep(1)  # 1秒待つ
 
         # 接続メッセージの読み上げ
         welcome_message = "読み上げを開始します。"
