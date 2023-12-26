@@ -185,7 +185,7 @@ async def server_style(ctx, style_id: int = None):
     server_default_id = user_speaker_settings.get(server_id, {}).get("default", None)
     server_speaker, server_default_name = get_style_details(server_default_id, "未設定")
 
-    response = f"**{ctx.guild.name}サーバーのデフォルトスタイル:** {server_speaker} {server_default_name} (ID: {server_default_id})\n"
+    response = f"**{ctx.guild.name}のデフォルトスタイル:** {server_speaker} {server_default_name} (ID: {server_default_id})\n"
     await ctx.send(response)
 
 
