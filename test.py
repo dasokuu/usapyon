@@ -349,17 +349,20 @@ async def text_to_speech(voice_client, text, speaker=3):
     # 既に音声を再生中であれば、待機します。
     while voice_client.is_playing():
         await asyncio.sleep(0.5)
-
+        
     # 音声合成のクエリデータを取得し、音声を再生します。
     query_data = await audio_query(text, speaker)
     if query_data:
         voice_data = await synthesis(speaker, query_data)
         if voice_data:
-            audio_source = discord.FFmpegPCMAudio(io.BytesIO(voice_data), pipe=True)
-            voice_client.play(audio_source)
-            while voice_client.is_playing():
-                await asyncio.sleep(1)
-            audio_source.cleanup()
+            try:
+                audio_source = discord.FFmpegPCMAudio(io.BytesIO(voice_data), pipe=True)
+                voice_client.play(audio_source)
+                while voice_client.is_playing():
+                    await asyncio.sleep(1)
+            finally:
+                # エラーが発生してもリソースを確実に解放します。
+                audio_source.cleanup()
 
 
 async def process_speech_queue():
@@ -367,9 +370,11 @@ async def process_speech_queue():
         try:
             voice_client, text, style_id = await speech_queue.get()
             await text_to_speech(voice_client, text, style_id)
-        except ValueError as e:
-            print(f"Queue unpacking error: {e}")
-        speech_queue.task_done()
+        except Exception as e:
+            # エラーログを出力
+            print(f"Error processing speech queue: {e}")
+        finally:
+            speech_queue.task_done()
 
 
 intents = discord.Intents.default()
