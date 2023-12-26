@@ -95,16 +95,22 @@ async def synthesis(speaker, query_data):
             return None
 
 
-async def text_to_speech(voice_client, text, speaker):
-    await bot.change_presence(activity=discord.Game(name=f"読み上げ中 | {speaker}のスタイルで"))
+async def text_to_speech(voice_client, text, speaker_id):
+    # スピーカー名とスタイル名を取得
+    speaker_name, style_name = get_style_details(speaker_id)
+    
+    # ステータスメッセージにスピーカー名とスタイル名を含める
+    reading_status = f"読み上げ中 | {speaker_name}"
+    await bot.change_presence(activity=discord.Game(name=reading_status))
+
     # 既に音声を再生中であれば、待機します。
     while voice_client.is_playing():
         await asyncio.sleep(0.5)
 
     # 音声合成のクエリデータを取得し、音声を再生します。
-    query_data = await audio_query(text, speaker)
+    query_data = await audio_query(text, speaker_id)
     if query_data:
-        voice_data = await synthesis(speaker, query_data)
+        voice_data = await synthesis(speaker_id, query_data)
         if voice_data:
             try:
                 audio_source = discord.FFmpegPCMAudio(io.BytesIO(voice_data), pipe=True)
@@ -113,8 +119,11 @@ async def text_to_speech(voice_client, text, speaker):
                     await asyncio.sleep(1)
             finally:
                 # エラーが発生してもリソースを確実に解放します。
-                audio_source.cleanup()  # ステータスを更新: 待機中
+                audio_source.cleanup()
+                
+    # ステータスを待機中に更新
     await bot.change_presence(activity=discord.Game(name="待機中 | !helpでヘルプ"))
+
 
 
 async def process_speech_queue():
