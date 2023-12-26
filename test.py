@@ -390,45 +390,39 @@ async def on_ready():
     bot.loop.create_task(process_speech_queue())
 
 
-@bot.command(name="setspk", help="使用するスピーカースタイルIDを設定します。")
+@bot.command(name="set_speaker", help="使用するスピーカーを設定します。")
 async def set_speaker(ctx, style_id: int):
+    # ユーザーが指定したスタイルIDがspeakers_infoのどれかのスタイルのIDと一致するか確認します。
     valid_style_ids = [
         style["id"] for speaker in speakers_info for style in speaker["styles"]
     ]
     if style_id in valid_style_ids:
-        user_speaker_settings[str(ctx.author.id)] = style_id
-        await ctx.send(f"{ctx.author.mention}さんのスピーカーをスタイルID {style_id} に設定しました。")
+        # ユーザーのスタイル設定を更新します。
+        user_speaker_settings[ctx.author.id] = style_id
+        await ctx.send(f"スピーカーをスタイルID {style_id} に設定しました。")
     else:
         await ctx.send(f"スタイルID {style_id} は無効です。")
-    save_user_settings()
+    save_user_settings()  # 設定を保存
 
-@bot.command(name="setdef", help="デフォルトのスピーカースタイルIDを変更します。")
-async def set_default(ctx, style_id: int):
-    valid_style_ids = [
-        style["id"] for speaker in speakers_info for style in speaker["styles"]
-    ]
-    if style_id in valid_style_ids:
-        user_speaker_settings["default"] = style_id
-        await ctx.send(f"デフォルトのスピーカースタイルIDを {style_id} に設定しました。")
-    else:
-        await ctx.send(f"スタイルID {style_id} は無効です。")
-    save_user_settings()
 
-# on_message 内でデフォルト設定を使用するように変更
 @bot.event
 async def on_message(message):
-    if message.author == bot.user or message.content.startswith('!'):
+    # ボット自身のメッセージは無視
+    if message.author == bot.user:
         return
-    
+
+    # コマンド処理を妨げないようにする
     await bot.process_commands(message)
-    
+
+    # ボイスチャンネルに接続されていない、またはメッセージがコマンドの場合は無視
     voice_client = message.guild.voice_client
-    if not voice_client or not voice_client.channel or not message.author.voice or message.author.voice.channel != voice_client.channel:
+    if not voice_client or not voice_client.channel or not message.author.voice or message.author.voice.channel != voice_client.channel or message.content.startswith('!'):
         return
-    
-    default_style_id = user_speaker_settings.get("default", 3)  # 新しいデフォルト設定
-    style_id = user_speaker_settings.get(str(message.author.id), default_style_id)
-    
+
+    # ユーザーごとに設定されたスピーカーを取得します。
+    style_id = user_speaker_settings.get(str(message.author.id), 8)  # デフォルトはID 8
+
+    # キューにボイスクライアント、メッセージ、スタイルIDを追加します。
     await speech_queue.put((voice_client, message.content, style_id))
 
 
