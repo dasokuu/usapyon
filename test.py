@@ -342,7 +342,6 @@ async def text_to_speech(voice_client, text, speaker=3):
             audio_source.cleanup()
 
 
-
 async def process_speech_queue():
     while True:
         voice_client, text = await speech_queue.get()
@@ -403,6 +402,12 @@ async def on_voice_state_update(member, before, after):
             # キューにボイスクライアントとメッセージを追加します。
             await speech_queue.put((member.guild.voice_client, message))
 
+    # ボイスチャンネルに誰もいなくなったら自動的に切断します。
+    if after.channel is None and member.guild.voice_client:
+        # ボイスチャンネルにまだ誰かいるか確認します。
+        if not any(not user.bot for user in before.channel.members):
+            await member.guild.voice_client.disconnect()
+
 
 @bot.command(name="join", help="ボットをボイスチャンネルに接続し、読み上げを開始します。")
 async def join(ctx):
@@ -425,11 +430,15 @@ async def speakers(ctx):
     message_lines = []
     for speaker in speakers_info:
         name = speaker["name"]
-        styles = ", ".join(
-            [f"{style['name']} (ID: {style['id']})" for style in speaker["styles"]]
+        styles = "\n".join(
+            [f"  - {style['name']} (ID: {style['id']})" for style in speaker["styles"]]
         )
-        message_lines.append(f"**{name}** {styles}")
-    await ctx.send("\n".join(message_lines))
+        message_lines.append(f"**{name}**\n{styles}")
+    # メッセージが長すぎる場合は分割して送信することを考慮します。
+    message = "\n\n".join(message_lines)
+    while len(message) > 0:
+        await ctx.send(message[:2000])
+        message = message[2000:]
 
 
 if __name__ == "__main__":
