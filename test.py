@@ -348,9 +348,11 @@ async def text_to_speech(voice_client, text, speaker=3):
 
 async def process_speech_queue():
     while True:
-        voice_client, text = await speech_queue.get()
-        await text_to_speech(voice_client, text)
+        # キューから取得するアイテムの数を3つに修正します。
+        voice_client, text, speaker_id = await speech_queue.get()
+        await text_to_speech(voice_client, text, speaker_id)
         speech_queue.task_done()
+
 
 
 intents = discord.Intents.default()
