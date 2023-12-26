@@ -7,8 +7,8 @@ import re
 import io
 import os
 
-async def audio_query(text, speaker, max_retry):
-    query_payload = {"text": text, "speaker": speaker}
+async def audio_query(text, style_id, max_retry):
+    query_payload = {"text": text, "style_id": style_id}
     async with aiohttp.ClientSession() as session:
         for _ in range(max_retry):
             async with session.post(f"http://localhost:50021/audio_query", params=query_payload) as response:
@@ -18,8 +18,8 @@ async def audio_query(text, speaker, max_retry):
                 await asyncio.sleep(1)
         raise ConnectionError("リトライ回数が上限に到達しました。 audio_query")
 
-async def synthesis(speaker, query_data, max_retry):
-    synth_payload = {"speaker": speaker}
+async def synthesis(style_id, query_data, max_retry):
+    synth_payload = {"style_id": style_id}
     async with aiohttp.ClientSession() as session:
         for _ in range(max_retry):
             async with session.post("http://localhost:50021/synthesis", params=synth_payload, data=json.dumps(query_data)) as response:
@@ -28,14 +28,14 @@ async def synthesis(speaker, query_data, max_retry):
                 await asyncio.sleep(1)
         raise ConnectionError("音声エラー：リトライ回数が上限に到達しました。 synthesis")
 
-async def text_to_speech(ctx, texts, speaker=8, max_retry=20):
+async def text_to_speech(ctx, texts, style_id=8, max_retry=20):
     if not texts:
         await ctx.send("メッセージを指定してください。")
         return
     texts = re.split("(?<=！|。|？)", texts)
     for text in texts:
-        query_data = await audio_query(text, speaker, max_retry)
-        voice_data = await synthesis(speaker, query_data, max_retry)
+        query_data = await audio_query(text, style_id, max_retry)
+        voice_data = await synthesis(style_id, query_data, max_retry)
         audio_source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(io.BytesIO(voice_data), pipe=True))
         if ctx.voice_client.is_playing():
             ctx.voice_client.stop()
