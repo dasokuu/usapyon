@@ -1,7 +1,6 @@
 import discord
 from discord.ext import commands
 import json
-import asyncio
 import aiohttp
 import re
 import io
@@ -61,6 +60,19 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 async def on_ready():
     print(f'{bot.user.name} がDiscordに接続しました!')
 
+@bot.event
+async def on_message(message):
+    # ボット自身のメッセージには反応しないようにします。
+    if message.author == bot.user:
+        return
+    
+    # メッセージがボットの現在のボイスチャンネルと同じチャンネルであることを確認します。
+    if message.guild.voice_client and message.guild.voice_client.channel == message.author.voice.channel:
+        await text_to_speech(message.channel, message.content)
+    
+    # 他のコマンドも正しく動作するようにします。
+    await bot.process_commands(message)
+    
 @bot.command(name='join', help='ボットをボイスチャンネルに接続します。')
 async def join(ctx):
     if ctx.author.voice and ctx.author.voice.channel:
