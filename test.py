@@ -136,8 +136,8 @@ async def on_ready():
 GLOBAL_DEFAULT_STYLE_ID = 8
 
 
-@bot.command(name="setdefaultuserstyle", help="あなたのデフォルトスタイルIDを設定します。")
-async def set_default_user_style(ctx, style_id: int):
+@bot.command(name="_defaultuserstyle", help="ユーザーのデフォルトスタイルIDを設定します。")
+async def default_user_style(ctx, style_id: int):
     user_id = str(ctx.author.id)
 
     # 指定されたスタイルIDが有効かどうかをチェック
@@ -160,7 +160,7 @@ async def set_default_user_style(ctx, style_id: int):
     )
 
 
-@bot.command(name="style", help="現在のスタイルを表示または設定します。")
+@bot.command(name="style", help="あなたの現在のスタイルを表示または設定します。")
 async def style(ctx, style_id: int = None):
     user_id = str(ctx.author.id)
 
@@ -179,9 +179,7 @@ async def style(ctx, style_id: int = None):
             return
 
     # 現在のスタイル設定を表示
-    user_style_id = user_speaker_settings.get(
-        user_id, GLOBAL_DEFAULT_STYLE_ID
-    )
+    user_style_id = user_speaker_settings.get(user_id, GLOBAL_DEFAULT_STYLE_ID)
     user_speaker, user_style_name = get_style_details(user_style_id, "デフォルト")
 
     response = f"**{ctx.author.display_name}さんのスタイル:** {user_speaker} {user_style_name} (ID: {user_style_id})"
