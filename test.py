@@ -1,11 +1,3 @@
-import asyncio
-import discord
-from discord.ext import commands
-import json
-import aiohttp
-import io
-import os
-
 # 利用可能なスピーカー情報を格納
 speakers_info = [
     {
@@ -287,6 +279,17 @@ speakers_info = [
         "version": "0.14.5",
     },
 ]
+
+
+import asyncio
+import discord
+from discord.ext import commands
+import json
+import aiohttp
+import io
+import os
+
+
 
 
 # 非同期キューを作成します。
