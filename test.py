@@ -295,8 +295,20 @@ speech_queue = asyncio.Queue()
 
 headers = {"Content-Type": "application/json"}
 
-# ユーザーごとのスピーカー設定を保持する辞書
-user_speaker_settings = {}
+# 設定を保存する関数
+def save_user_settings():
+    with open('user_settings.json', 'w') as f:
+        json.dump(user_speaker_settings, f)
+
+# 設定を読み込む関数
+def load_user_settings():
+    if os.path.exists('user_settings.json'):
+        with open('user_settings.json', 'r') as f:
+            return json.load(f)
+    return {}
+
+# ユーザー設定を読み込みます
+user_speaker_settings = load_user_settings()
 
 async def audio_query(text, speaker):
     # 音声合成用のクエリを作成します。
@@ -348,9 +360,11 @@ async def text_to_speech(voice_client, text, speaker=3):
 
 async def process_speech_queue():
     while True:
-        # キューから取得するアイテムの数を3つに修正します。
-        voice_client, text, style_id = await speech_queue.get()
-        await text_to_speech(voice_client, text, style_id)
+        try:
+            voice_client, text, style_id = await speech_queue.get()
+            await text_to_speech(voice_client, text, style_id)
+        except ValueError as e:
+            print(f"Queue unpacking error: {e}")
         speech_queue.task_done()
 
 
@@ -380,17 +394,19 @@ async def set_speaker(ctx, style_id: int):
         await ctx.send(f"スピーカーをスタイルID {style_id} に設定しました。")
     else:
         await ctx.send(f"スタイルID {style_id} は無効です。")
+    save_user_settings()  # 設定を保存
 
 
 @bot.event
 async def on_message(message):
-    if message.author == bot.user:
+    if message.author == bot.user or message.content.startswith('!'):
+        # コマンドを読み上げないようにする
         return
 
     voice_client = message.guild.voice_client
     if voice_client and voice_client.channel and message.author.voice and message.author.voice.channel == voice_client.channel:
         # ユーザーごとに設定されたスピーカーを取得します。
-        style_id = user_speaker_settings.get(message.author.id, 3)  # デフォルトはID 3
+        style_id = user_speaker_settings.get(message.author.id, 8)  # デフォルトはID 8
         # キューにボイスクライアントとメッセージを追加します。
         await speech_queue.put((voice_client, message.content, style_id))
 
