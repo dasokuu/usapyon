@@ -172,8 +172,8 @@ async def style(ctx, style_id: int = None):
     await ctx.send(response)
 
 
-@bot.command(name="setdefault", help="このサーバーのデフォルトのスタイルIDを変更します。")
-async def set_default(ctx, style_id: int):
+@bot.command(name="defaultstyle", help="このサーバーのデフォルトのスタイルIDを変更します。")
+async def set_default_style(ctx, style_id: int):
     server_id = str(ctx.guild.id)
     valid_style_ids = [
         style["id"] for speaker in speakers for style in speaker["styles"]
@@ -275,23 +275,6 @@ async def list_styles(ctx):
         )
         message_lines.append(f"**{name}** {styles}")
     await ctx.send("\n".join(message_lines))
-
-
-@bot.command(name="info", help="サーバーとボットの情報を表示します。")
-async def info(ctx):
-    server = ctx.guild
-    num_members = server.member_count
-    num_channels = len(server.channels)
-    server_owner = server.owner.display_name if server.owner else "不明"
-
-    response = f"**サーバー名:** {server.name}\n"
-    response += f"**オーナー:** {server_owner}\n"
-    response += f"**メンバー数:** {num_members}\n"
-    response += f"**チャンネル数:** {num_channels}\n\n"
-
-    response += f"**ボット名:** {bot.user.name}\n"
-    response += f"**接続サーバー数:** {len(bot.guilds)}"
-    await ctx.send(response)
 
 
 if __name__ == "__main__":
