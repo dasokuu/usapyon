@@ -154,8 +154,8 @@ async def style(ctx, style_id: int = None):
             return
 
     # 現在のスタイル設定を表示
-    user_style_id = user_speaker_settings.get(user_id, None)
-    user_speaker, user_style_name = get_style_details(user_style_id, "未設定")
+    user_style_id = user_speaker_settings.get(user_id, 3)  # 3はデフォルトのスタイルID
+    user_speaker, user_style_name = get_style_details(user_style_id, "デフォルト")
 
     response = f"**{ctx.author.display_name}さんのスタイル:** {user_speaker} {user_style_name} (ID: {user_style_id})"
     await ctx.send(response)
@@ -182,11 +182,12 @@ async def server_style(ctx, style_id: int = None):
             return
 
     # 現在のデフォルトスタイル設定を表示
-    server_default_id = user_speaker_settings.get(server_id, {}).get("default", None)
-    server_speaker, server_default_name = get_style_details(server_default_id, "未設定")
+    server_default_id = user_speaker_settings.get(server_id, {}).get("default", 3)  # 3はデフォルトのスタイルID
+    server_speaker, server_default_name = get_style_details(server_default_id, "デフォルト")
 
     response = f"**{ctx.guild.name}のデフォルトスタイル:** {server_speaker} {server_default_name} (ID: {server_default_id})\n"
     await ctx.send(response)
+
 
 
 @bot.event
