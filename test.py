@@ -515,7 +515,7 @@ async def check_style(ctx):
     server_default = user_speaker_settings.get(server_id, {}).get("default", "未設定")
     user_style = user_speaker_settings.get(user_id, "未設定")
     
-    response = f"**{ctx.guild.name}サーバーのデフォルトスタイルID:** {server_default}\n"
+    response = f"**{ctx.guild.name}のデフォルトスタイルID:** {server_default}\n"
     response += f"**{ctx.author.display_name}さんのスタイルID:** {user_style}"
     await ctx.send(response)
 
