@@ -128,10 +128,18 @@ async def speakers(ctx):
     message_lines = []
     for speaker in speakers_info:
         name = speaker["name"]
-        speaker_id = speaker["speaker_uuid"]  # スピーカーIDを取得
+        speaker_id = speaker["speaker_uuid"]
         styles = ', '.join([f"{style['name']} (ID: {style['id']})" for style in speaker["styles"]])
-        message_lines.append(f'{name} (ID: {speaker_id}): スタイル: {styles}')
-    await ctx.send("\n".join(message_lines))
+        line = f'{name} (ID: {speaker_id}): スタイル: {styles}'
+        if len('\n'.join(message_lines + [line])) > 2000:  # 2000文字制限を超える場合
+            await ctx.send("\n".join(message_lines))  # 現在のメッセージを送信
+            message_lines = []  # メッセージリストをリセット
+        message_lines.append(line)  # 新しい行を追加
     
+    # 残ったメッセージがあれば送信
+    if message_lines:
+        await ctx.send("\n".join(message_lines))
+
+
 if __name__ == "__main__":
     bot.run(os.getenv('DISCORD_BOT_TOKEN'))
