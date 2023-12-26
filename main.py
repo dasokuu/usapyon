@@ -334,7 +334,7 @@ async def my_style(ctx, style_id: int = None):
 async def join(ctx):
     if ctx.author.voice and ctx.author.voice.channel:
         channel = ctx.author.voice.channel
-        voice_client = await channel.connect()
+        voice_client = await channel.connect(self_deaf=True)
         # 接続メッセージの読み上げ
         welcome_message = "読み上げを開始します。"
 
