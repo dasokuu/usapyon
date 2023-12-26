@@ -18,6 +18,16 @@ MAX_MESSAGE_LENGTH = 200  # 適切な最大長を定義
 current_voice_client = None
 
 
+speech_queue = asyncio.Queue()
+headers = {"Content-Type": "application/json"}
+intents = discord.Intents.default()
+intents.messages = True
+intents.guilds = True
+intents.voice_states = True
+intents.message_content = True
+bot = commands.Bot(command_prefix="!", intents=intents)
+
+
 def fetch_speakers():
     """スピーカー情報を取得します。"""
     url = "http://127.0.0.1:50021/speakers"
@@ -28,11 +38,6 @@ def fetch_speakers():
     except requests.RequestException as e:
         print(f"データの取得に失敗しました: {e}")
         return None
-
-
-speakers = fetch_speakers()
-speech_queue = asyncio.Queue()
-headers = {"Content-Type": "application/json"}
 
 
 def get_style_details(style_id, default_name="デフォルト"):
@@ -57,9 +62,6 @@ def load_style_settings():
             return json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         return {}
-
-
-speaker_settings = load_style_settings()
 
 
 async def audio_query(text, speaker):
@@ -111,8 +113,7 @@ async def text_to_speech(voice_client, text, speaker):
                     await asyncio.sleep(1)
             finally:
                 # エラーが発生してもリソースを確実に解放します。
-                audio_source.cleanup()\
-    # ステータスを更新: 待機中
+                audio_source.cleanup()  # ステータスを更新: 待機中
     await bot.change_presence(activity=discord.Game(name="待機中 | !helpでヘルプ"))
 
 
@@ -130,20 +131,81 @@ async def process_speech_queue():
             current_voice_client = None
 
 
-intents = discord.Intents.default()
-intents.messages = True
-intents.guilds = True
-intents.voice_states = True
-intents.message_content = True
-bot = commands.Bot(command_prefix="!", intents=intents)
-
-
 @bot.event
 async def on_ready():
     print(f"Logged in as {bot.user.name}")
     await bot.change_presence(activity=discord.Game(name="待機中 | !helpでヘルプ"))
     # バックグラウンドタスクとしてキュー処理関数を開始します。
     bot.loop.create_task(process_speech_queue())
+
+
+@bot.event
+async def on_message(message):
+    # ボット自身のメッセージは無視
+    if message.author == bot.user:
+        return
+
+    # コマンド処理を妨げないようにする
+    await bot.process_commands(message)
+
+    # ボイスチャンネルに接続されていない、またはメッセージがコマンドの場合は無視
+    voice_client = message.guild.voice_client
+    if (
+        not voice_client
+        or not voice_client.channel
+        or not message.author.voice
+        or message.author.voice.channel != voice_client.channel
+        or message.content.startswith("!")
+    ):
+        return
+
+    if len(message.content) > MAX_MESSAGE_LENGTH:
+        # テキストチャンネルに警告を送信
+        await message.channel.send(
+            f"申し訳ありません、メッセージが長すぎて読み上げられません！（最大 {MAX_MESSAGE_LENGTH} 文字）"
+        )
+        return  # このメッセージのTTS処理をスキップ
+
+    server_id = str(message.guild.id)
+    # Initialize default settings for the server if none exist
+    if server_id not in speaker_settings:
+        speaker_settings[server_id] = {"user_default": USER_DEFAULT_STYLE_ID}
+
+    # Use get to safely access 'user_default' key
+    user_default_style_id = speaker_settings[server_id].get(
+        "user_default", USER_DEFAULT_STYLE_ID
+    )
+
+    style_id = speaker_settings.get(str(message.author.id), user_default_style_id)
+
+    await speech_queue.put((voice_client, message.content, style_id))
+
+
+@bot.event
+async def on_voice_state_update(member, before, after):
+    # ボット自身の状態変更は無視します。
+    if member == bot.user:
+        return
+
+    # ボイスチャンネルに接続したとき
+    if before.channel is None and after.channel is not None:
+        message = f"{member.display_name}さんが{after.channel.name}に入室しました。"
+        if member.guild.voice_client:
+            # キューにボイスクライアントとメッセージを追加します。
+            await speech_queue.put((member.guild.voice_client, message))
+
+    # ボイスチャンネルから切断したとき
+    elif before.channel is not None and after.channel is None:
+        message = f"{member.display_name}さんが{before.channel.name}から退出しました。"
+        if member.guild.voice_client:
+            # キューにボイスクライアントとメッセージを追加します。
+            await speech_queue.put((member.guild.voice_client, message))
+
+    # ボイスチャンネルに誰もいなくなったら自動的に切断します。
+    if after.channel is None and member.guild.voice_client:
+        # ボイスチャンネルにまだ誰かいるか確認します。
+        if not any(not user.bot for user in before.channel.members):
+            await member.guild.voice_client.disconnect()
 
 
 @bot.command(name="_userdefaultstyle", help="ユーザーのデフォルトスタイルを表示または設定します。")
@@ -243,75 +305,6 @@ async def my_style(ctx, style_id: int = None):
     await ctx.send(response)
 
 
-@bot.event
-async def on_message(message):
-    # ボット自身のメッセージは無視
-    if message.author == bot.user:
-        return
-
-    # コマンド処理を妨げないようにする
-    await bot.process_commands(message)
-
-    # ボイスチャンネルに接続されていない、またはメッセージがコマンドの場合は無視
-    voice_client = message.guild.voice_client
-    if (
-        not voice_client
-        or not voice_client.channel
-        or not message.author.voice
-        or message.author.voice.channel != voice_client.channel
-        or message.content.startswith("!")
-    ):
-        return
-
-    if len(message.content) > MAX_MESSAGE_LENGTH:
-        # テキストチャンネルに警告を送信
-        await message.channel.send(
-            f"申し訳ありません、メッセージが長すぎて読み上げられません！（最大 {MAX_MESSAGE_LENGTH} 文字）"
-        )
-        return  # このメッセージのTTS処理をスキップ
-
-    server_id = str(message.guild.id)
-    # Initialize default settings for the server if none exist
-    if server_id not in speaker_settings:
-        speaker_settings[server_id] = {"user_default": USER_DEFAULT_STYLE_ID}
-
-    # Use get to safely access 'user_default' key
-    user_default_style_id = speaker_settings[server_id].get(
-        "user_default", USER_DEFAULT_STYLE_ID
-    )
-
-    style_id = speaker_settings.get(str(message.author.id), user_default_style_id)
-
-    await speech_queue.put((voice_client, message.content, style_id))
-
-
-@bot.event
-async def on_voice_state_update(member, before, after):
-    # ボット自身の状態変更は無視します。
-    if member == bot.user:
-        return
-
-    # ボイスチャンネルに接続したとき
-    if before.channel is None and after.channel is not None:
-        message = f"{member.display_name}さんが{after.channel.name}に入室しました。"
-        if member.guild.voice_client:
-            # キューにボイスクライアントとメッセージを追加します。
-            await speech_queue.put((member.guild.voice_client, message))
-
-    # ボイスチャンネルから切断したとき
-    elif before.channel is not None and after.channel is None:
-        message = f"{member.display_name}さんが{before.channel.name}から退出しました。"
-        if member.guild.voice_client:
-            # キューにボイスクライアントとメッセージを追加します。
-            await speech_queue.put((member.guild.voice_client, message))
-
-    # ボイスチャンネルに誰もいなくなったら自動的に切断します。
-    if after.channel is None and member.guild.voice_client:
-        # ボイスチャンネルにまだ誰かいるか確認します。
-        if not any(not user.bot for user in before.channel.members):
-            await member.guild.voice_client.disconnect()
-
-
 @bot.command(name="join", help="ボットをボイスチャンネルに接続し、読み上げを開始します。")
 async def join(ctx):
     if ctx.author.voice and ctx.author.voice.channel:
@@ -358,6 +351,10 @@ async def show_styles(ctx):
         )
         message_lines.append(f"**{name}** {styles}")
     await ctx.send("\n".join(message_lines))
+
+
+speakers = fetch_speakers()
+speaker_settings = load_style_settings()
 
 
 if __name__ == "__main__":
