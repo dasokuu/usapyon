@@ -78,12 +78,13 @@ async def on_message(message):
     if message.author == bot.user:
         return
 
-    # ボットがボイスチャンネルに接続しているか確認します。
     voice_client = message.guild.voice_client
     if voice_client and voice_client.channel and message.author.voice and message.author.voice.channel == voice_client.channel:
-        await text_to_speech(voice_client, message.content)
+        # キューにボイスクライアントとメッセージを追加します。
+        await speech_queue.put((voice_client, message.content))
     
     await bot.process_commands(message)
+
 
 @bot.event
 async def on_voice_state_update(member, before, after):
@@ -95,13 +96,15 @@ async def on_voice_state_update(member, before, after):
     if before.channel is None and after.channel is not None:
         message = f'{member.display_name}さんが{after.channel.name}に入室しました。'
         if member.guild.voice_client:
-            await text_to_speech(member.guild.voice_client, message)
+            # キューにボイスクライアントとメッセージを追加します。
+            await speech_queue.put((member.guild.voice_client, message))
 
     # ボイスチャンネルから切断したとき
     elif before.channel is not None and after.channel is None:
         message = f'{member.display_name}さんが{before.channel.name}から退出しました。'
         if member.guild.voice_client:
-            await text_to_speech(member.guild.voice_client, message)
+            # キューにボイスクライアントとメッセージを追加します。
+            await speech_queue.put((member.guild.voice_client, message))
 
 @bot.command(name='join', help='ボットをボイスチャンネルに接続します。')
 async def join(ctx):
@@ -125,8 +128,10 @@ async def speakers(ctx):
     message_lines = []
     for speaker in speakers_info:
         name = speaker["name"]
-        styles = ', '.join([style["name"] for style in speaker["styles"]])
-        message_lines.append(f'{name}: スタイル: {styles}')
+        speaker_id = speaker["speaker_uuid"]  # スピーカーIDを取得
+        styles = ', '.join([f"{style['name']} (ID: {style['id']})" for style in speaker["styles"]])
+        message_lines.append(f'{name} (ID: {speaker_id}): スタイル: {styles}')
     await ctx.send("\n".join(message_lines))
+    
 if __name__ == "__main__":
     bot.run(os.getenv('DISCORD_BOT_TOKEN'))
