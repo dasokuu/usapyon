@@ -13,6 +13,8 @@ NOTIFY_STYLE_ID = 8
 
 MAX_MESSAGE_LENGTH = 200  # 適切な最大長を定義
 
+# グローバル変数を追加して、現在再生中の音声を追跡します。
+current_voice_client = None
 
 
 def fetch_speakers():
@@ -111,15 +113,17 @@ async def text_to_speech(voice_client, text, speaker=8):
 
 
 async def process_speech_queue():
+    global current_voice_client
     while True:
         try:
             voice_client, text, style_id = await speech_queue.get()
+            current_voice_client = voice_client
             await text_to_speech(voice_client, text, style_id)
         except Exception as e:
-            # エラーログを出力
             print(f"Error processing speech queue: {e}")
         finally:
             speech_queue.task_done()
+            current_voice_client = None
 
 
 intents = discord.Intents.default()
@@ -253,10 +257,12 @@ async def on_message(message):
         or message.content.startswith("!")
     ):
         return
-    
+
     if len(message.content) > MAX_MESSAGE_LENGTH:
-    # テキストチャンネルに警告を送信
-        await message.channel.send(f"申し訳ありません、メッセージが長すぎて読み上げられません！（最大 {MAX_MESSAGE_LENGTH} 文字）")
+        # テキストチャンネルに警告を送信
+        await message.channel.send(
+            f"申し訳ありません、メッセージが長すぎて読み上げられません！（最大 {MAX_MESSAGE_LENGTH} 文字）"
+        )
         return  # このメッセージのTTS処理をスキップ
 
     server_id = str(message.guild.id)
@@ -315,6 +321,16 @@ async def join(ctx):
 async def leave(ctx):
     if ctx.voice_client:
         await ctx.voice_client.disconnect()
+
+
+@bot.command(name="skip", help="現在再生中の音声をスキップします。")
+async def skip(ctx):
+    global current_voice_client
+    if current_voice_client and current_voice_client.is_playing():
+        current_voice_client.stop()
+        await ctx.send("現在の読み上げをスキップしました。")
+    else:
+        await ctx.send("再生中の音声はありません。")
 
 
 @bot.command(name="showstyles", help="利用可能なスタイルIDの一覧を表示します。")
