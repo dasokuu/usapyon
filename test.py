@@ -297,19 +297,20 @@ headers = {"Content-Type": "application/json"}
 
 
 def save_user_settings():
-    with open('user_settings.json', 'w') as f:
+    with open("user_settings.json", "w") as f:
         json.dump(user_speaker_settings, f)
+
 
 def load_user_settings():
     try:
-        with open('user_settings.json', 'r') as f:
+        with open("user_settings.json", "r") as f:
             return json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         return {}
 
+
 user_speaker_settings = load_user_settings()
 print("Loaded speaker settings:", user_speaker_settings)
-
 
 
 async def audio_query(text, speaker):
@@ -347,7 +348,7 @@ async def text_to_speech(voice_client, text, speaker=8):
     # 既に音声を再生中であれば、待機します。
     while voice_client.is_playing():
         await asyncio.sleep(0.5)
-        
+
     # 音声合成のクエリデータを取得し、音声を再生します。
     query_data = await audio_query(text, speaker)
     if query_data:
@@ -402,14 +403,18 @@ async def set_style(ctx, style_id: int):
         await ctx.send(f"スタイルID {style_id} は無効です。")
     save_user_settings()
 
-@bot.command(name="default", help="デフォルトのスタイルIDを変更します。")
+
+@bot.command(name="default", help="このサーバーのデフォルトのスタイルIDを変更します。")
 async def set_default(ctx, style_id: int):
+    server_id = str(ctx.guild.id)
     valid_style_ids = [
         style["id"] for speaker in styles_info for style in speaker["styles"]
     ]
     if style_id in valid_style_ids:
-        user_speaker_settings["default"] = style_id
-        await ctx.send(f"デフォルトのスタイルIDを {style_id} に設定しました。")
+        if server_id not in user_speaker_settings:
+            user_speaker_settings[server_id] = {}
+        user_speaker_settings[server_id]["default"] = style_id
+        await ctx.send(f"このサーバーのデフォルトのスタイルIDを {style_id} に設定しました。")
     else:
         await ctx.send(f"スタイルID {style_id} は無効です。")
     save_user_settings()
@@ -426,14 +431,27 @@ async def on_message(message):
 
     # ボイスチャンネルに接続されていない、またはメッセージがコマンドの場合は無視
     voice_client = message.guild.voice_client
-    if not voice_client or not voice_client.channel or not message.author.voice or message.author.voice.channel != voice_client.channel or message.content.startswith('!'):
+    if (
+        not voice_client
+        or not voice_client.channel
+        or not message.author.voice
+        or message.author.voice.channel != voice_client.channel
+        or message.content.startswith("!")
+    ):
         return
 
-    default_style_id = user_speaker_settings.get("default", 3)  # 新しいデフォルト設定
-    style_id = user_speaker_settings.get(str(message.author.id), default_style_id)
-    
-    await speech_queue.put((voice_client, message.content, style_id))
+    server_id = str(message.guild.id)
+    default_style_id = 3  # グローバルデフォルトのスタイルID
 
+    if (
+        server_id in user_speaker_settings
+        and "default" in user_speaker_settings[server_id]
+    ):
+        default_style_id = user_speaker_settings[server_id]["default"]
+
+    style_id = user_speaker_settings.get(str(message.author.id), default_style_id)
+
+    await speech_queue.put((voice_client, message.content, style_id))
 
 
 @bot.event
