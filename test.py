@@ -141,7 +141,7 @@ async def on_ready():
     bot.loop.create_task(process_speech_queue())
 
 
-@bot.command(name="userdefaultstyle", help="ユーザーのデフォルトスタイルを表示または設定します。")
+@bot.command(name="_userdefaultstyle", help="ユーザーのデフォルトスタイルを表示または設定します。")
 async def user_default_style(ctx, style_id: int = None):
     server_id = str(ctx.guild.id)
 
@@ -176,7 +176,7 @@ async def user_default_style(ctx, style_id: int = None):
         await ctx.send(response)
 
 
-@bot.command(name="notifystyle", help="入退室通知のスタイルを表示または設定します。")
+@bot.command(name="_notifystyle", help="入退室通知のスタイルを表示または設定します。")
 async def notify_style(ctx, style_id: int = None):
     server_id = str(ctx.guild.id)
 
