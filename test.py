@@ -38,22 +38,22 @@ def get_style_details(style_id, default_name="デフォルト"):
     return (default_name, default_name)
 
 
-def save_user_settings():
-    """ユーザー設定を保存します。"""
-    with open("user_settings.json", "w") as f:
+def save_style_settings():
+    """スタイル設定を保存します。"""
+    with open("style_settings.json", "w") as f:
         json.dump(speaker_settings, f)
 
 
-def load_user_settings():
-    """ユーザー設定をロードします。"""
+def load_style_settings():
+    """スタイル設定をロードします。"""
     try:
-        with open("user_settings.json", "r") as f:
+        with open("style_settings.json", "r") as f:
             return json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         return {}
 
 
-speaker_settings = load_user_settings()
+speaker_settings = load_style_settings()
 
 
 async def audio_query(text, speaker):
@@ -154,7 +154,7 @@ async def user_default_style(ctx, style_id: int = None):
         if style_id in valid_style_ids:
             speaker_name, style_name = get_style_details(style_id)
             speaker_settings[server_id]["user_default"] = style_id
-            save_user_settings()
+            save_style_settings()
             await ctx.send(
                 f"ユーザーのデフォルトスタイルを「{speaker_name} {style_name}」(ID: {style_id})に設定しました。"
             )
@@ -165,7 +165,7 @@ async def user_default_style(ctx, style_id: int = None):
         user_speaker, user_default_style_name = get_style_details(
             current_default, "デフォルト"
         )
-        response = f"ユーザーのデフォルトスタイル:** {user_speaker} {user_default_style_name} (ID: {current_default})"
+        response = f"**ユーザーのデフォルトスタイル:** {user_speaker} {user_default_style_name} (ID: {current_default})"
         await ctx.send(response)
 
 
@@ -183,7 +183,7 @@ async def notify_style(ctx, style_id: int = None):
             if server_id not in speaker_settings:
                 speaker_settings[server_id] = {}
             speaker_settings[server_id]["notify_style"] = style_id
-            save_user_settings()
+            save_style_settings()
             await ctx.send(
                 f"入退出通知スタイルを {style_id} 「{speaker_name} {style_name}」(ID: {style_id})に設定しました。"
             )
@@ -214,7 +214,7 @@ async def my_style(ctx, style_id: int = None):
         if style_id in valid_style_ids:
             speaker_name, style_name = get_style_details(style_id)
             speaker_settings[user_id] = style_id
-            save_user_settings()
+            save_style_settings()
             await ctx.send(
                 f"{ctx.author.mention}さんのスタイルを「{speaker_name} {style_name}」(ID: {style_id})に設定しました。"
             )
