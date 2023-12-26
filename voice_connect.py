@@ -1,5 +1,7 @@
 import discord
 from discord.ext import commands
+import os
+
 
 # Discordクライアントの設定
 intents = discord.Intents.default()
