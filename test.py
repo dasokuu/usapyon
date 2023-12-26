@@ -128,8 +128,8 @@ async def speakers(ctx):
     message_lines = []
     for speaker in speakers_info:
         name = speaker["name"]
-        styles = ', '.join([f"**{style['name']}** (ID: {style['id']})" for style in speaker["styles"]])
-        message_lines.append(f'{name} スタイル: {styles}')
+        styles = ', '.join([f"{style['name']} (ID: {style['id']})" for style in speaker["styles"]])
+        message_lines.append(f'**{name}** スタイル: {styles}')
     await ctx.send("\n".join(message_lines))
     
 if __name__ == "__main__":
