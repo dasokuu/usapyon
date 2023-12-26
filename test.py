@@ -14,6 +14,7 @@ async def audio_query(text, speaker, max_retry):
             async with session.post("http://localhost:50021/audio_query", params=query_payload) as response:
                 if response.status == 200:
                     query_data = await response.json()
+                    print(query_data)
                     return query_data
                 elif response.status == 422:
                     error_detail = await response.text()
