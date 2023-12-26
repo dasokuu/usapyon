@@ -211,13 +211,13 @@ async def on_voice_state_update(member, before, after):
     # ボイスチャンネルに接続したとき
     if before.channel != voice_client.channel and after.channel == voice_client.channel:
         message = f"{member.display_name}さんが{after.channel.name}に入室しました。"
-        notify_style_id = speaker_settings.get(str(member.guild.id), {}).get("notify", YOUR_DEFAULT_STYLE_ID)
+        notify_style_id = speaker_settings.get(str(member.guild.id), {}).get("notify", NOTIFY_STYLE_ID)
         await speech_queue.put((voice_client, message, notify_style_id))
 
     # ボイスチャンネルから切断したとき
     elif before.channel == voice_client.channel and after.channel != voice_client.channel:
         message = f"{member.display_name}さんが{before.channel.name}から退出しました。"
-        notify_style_id = speaker_settings.get(str(member.guild.id), {}).get("notify", YOUR_DEFAULT_STYLE_ID)
+        notify_style_id = speaker_settings.get(str(member.guild.id), {}).get("notify", NOTIFY_STYLE_ID)
         await speech_queue.put((voice_client, message, notify_style_id))
 
     # ボイスチャンネルに誰もいなくなったら自動的に切断します。
