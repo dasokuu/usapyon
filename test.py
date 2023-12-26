@@ -98,9 +98,9 @@ async def synthesis(speaker, query_data):
 async def text_to_speech(voice_client, text, speaker_id):
     # スピーカー名とスタイル名を取得
     speaker_name, style_name = get_style_details(speaker_id)
-    
+
     # ステータスメッセージにスピーカー名とスタイル名を含める
-    reading_status = f"読み上げ中 | {speaker_name}"
+    reading_status = f"読み上げ中 | VOICEVOX:{speaker_name}"
     await bot.change_presence(activity=discord.Game(name=reading_status))
 
     # 既に音声を再生中であれば、待機します。
@@ -120,10 +120,9 @@ async def text_to_speech(voice_client, text, speaker_id):
             finally:
                 # エラーが発生してもリソースを確実に解放します。
                 audio_source.cleanup()
-                
+
     # ステータスを待機中に更新
     await bot.change_presence(activity=discord.Game(name="待機中 | !helpでヘルプ"))
-
 
 
 async def process_speech_queue():
