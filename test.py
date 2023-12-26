@@ -85,29 +85,34 @@ async def on_message(message):
     
     await bot.process_commands(message)
 
+@bot.event
+async def on_voice_state_update(member, before, after):
+    # ボット自身の状態変更は無視します。
+    if member == bot.user:
+        return
 
-@bot.command(name='join', help='ボットをボイスチャンネルに接続し、入室メッセージを読み上げます。')
+    # ボイスチャンネルに接続したとき
+    if before.channel is None and after.channel is not None:
+        message = f'{member.display_name}さんが{after.channel.name}に入室しました。'
+        if member.guild.voice_client:
+            await text_to_speech(member.guild.voice_client, message)
+
+    # ボイスチャンネルから切断したとき
+    elif before.channel is not None and after.channel is None:
+        message = f'{member.display_name}さんが{before.channel.name}から退出しました。'
+        if member.guild.voice_client:
+            await text_to_speech(member.guild.voice_client, message)
+
+@bot.command(name='join', help='ボットをボイスチャンネルに接続します。')
 async def join(ctx):
     if ctx.author.voice and ctx.author.voice.channel:
         channel = ctx.author.voice.channel
-        voice_client = await channel.connect()
-        # 接続メッセージの読み上げ
-        welcome_message = f'{ctx.author.display_name}さんが入室しました。'
-        await text_to_speech(voice_client, welcome_message)
-    else:
-        await ctx.send('先にボイスチャンネルに参加してください。')
+        await channel.connect()
 
-
-@bot.command(name='leave', help='ボットをボイスチャンネルから切断し、退出メッセージを読み上げます。')
+@bot.command(name='leave', help='ボットをボイスチャンネルから切断します。')
 async def leave(ctx):
     if ctx.voice_client:
-        # 切断メッセージの読み上げ
-        goodbye_message = f'{ctx.author.display_name}さんが退出しました。'
-        await text_to_speech(ctx.voice_client, goodbye_message)
         await ctx.voice_client.disconnect()
-    else:
-        await ctx.send('ボットはボイスチャンネルに接続されていません。')
-
 
 @bot.command(name='speak', help='Reads the specified text aloud.')
 async def speak(ctx, *, message=None):
@@ -123,7 +128,5 @@ async def speakers(ctx):
         styles = ', '.join([style["name"] for style in speaker["styles"]])
         message_lines.append(f'{name}: スタイル: {styles}')
     await ctx.send("\n".join(message_lines))
-
-
 if __name__ == "__main__":
     bot.run(os.getenv('DISCORD_BOT_TOKEN'))
