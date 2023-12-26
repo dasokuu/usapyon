@@ -143,12 +143,9 @@ async def default_user_style(ctx, style_id: int = None):
             style["id"] for speaker in speakers for style in speaker["styles"]
         ]
         if style_id in valid_style_ids:
-            if "defaults" not in user_speaker_settings:
-                user_speaker_settings["defaults"] = {}
+            speaker_name, style_name = get_style_details(style_id)
             user_speaker_settings["defaults"][user_id] = style_id
             save_user_settings()
-
-            speaker_name, style_name = get_style_details(style_id)
             await ctx.send(
                 f"{ctx.author.mention}さんの新しいデフォルトスタイルを「{speaker_name} {style_name}」(ID: {style_id})に設定しました。"
             )
@@ -173,8 +170,11 @@ async def my_style(ctx, style_id: int = None):
 
     # スタイルIDが指定されている場合は設定を更新
     if style_id is not None:
-        speaker_name, style_name = get_style_details(style_id)
-        if speaker_name != "不明" and style_name != "不明":
+        valid_style_ids = [
+            style["id"] for speaker in speakers for style in speaker["styles"]
+        ]
+        if style_id in valid_style_ids:
+            speaker_name, style_name = get_style_details(style_id)
             user_speaker_settings[user_id] = style_id
             save_user_settings()
             await ctx.send(
@@ -203,11 +203,14 @@ async def server_style(ctx, style_id: int = None):
             style["id"] for speaker in speakers for style in speaker["styles"]
         ]
         if style_id in valid_style_ids:
+            speaker_name, style_name = get_style_details(style_id)
             if server_id not in user_speaker_settings:
                 user_speaker_settings[server_id] = {}
             user_speaker_settings[server_id]["default"] = style_id
             save_user_settings()
-            await ctx.send(f"このサーバーのスタイルIDを {style_id} に設定しました。")
+            await ctx.send(
+                f"このサーバーのスタイルIDを {style_id} 「{speaker_name} {style_name}」(ID: {style_id})に設定しました。"
+            )
             return
         else:
             await ctx.send(f"スタイルID {style_id} は無効です。")
