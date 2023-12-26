@@ -298,19 +298,17 @@ headers = {"Content-Type": "application/json"}
 
 # 設定を保存する関数
 def save_user_settings():
-    with open("user_settings.json", "w") as f:
+    with open('user_settings.json', 'w') as f:
         json.dump(user_speaker_settings, f)
-
 
 # 設定を読み込む関数
 def load_user_settings():
-    if os.path.exists("user_settings.json"):
-        with open("user_settings.json", "r") as f:
+    try:
+        with open('user_settings.json', 'r') as f:
             return json.load(f)
-    return {}
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}  # ファイルがないか、内容が空の場合は空の辞書を返す
 
-
-# ユーザー設定を読み込みます
 user_speaker_settings = load_user_settings()
 
 
@@ -461,6 +459,11 @@ async def join(ctx):
     if ctx.author.voice and ctx.author.voice.channel:
         channel = ctx.author.voice.channel
         voice_client = await channel.connect()
+
+        # ボットが準備完了するのを待ちます。
+        while not voice_client.is_ready():
+            await asyncio.sleep(0.1)
+
         # 接続メッセージの読み上げ
         welcome_message = "読み上げを開始します。"
         await text_to_speech(voice_client, welcome_message)
