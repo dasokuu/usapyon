@@ -132,6 +132,34 @@ async def on_ready():
     bot.loop.create_task(process_speech_queue())
 
 
+# グローバルデフォルトのスタイルID
+GLOBAL_DEFAULT_STYLE_ID = 8
+
+
+@bot.command(name="setdefaultuserstyle", help="あなたのデフォルトスタイルIDを設定します。")
+async def set_default_user_style(ctx, style_id: int):
+    user_id = str(ctx.author.id)
+
+    # 指定されたスタイルIDが有効かどうかをチェック
+    valid_style_ids = [
+        style["id"] for speaker in speakers for style in speaker["styles"]
+    ]
+    if style_id not in valid_style_ids:
+        await ctx.send(f"スタイルID {style_id} は無効です。")
+        return
+
+    # ユーザーのデフォルトスタイルを設定
+    if "defaults" not in user_speaker_settings:
+        user_speaker_settings["defaults"] = {}
+    user_speaker_settings["defaults"][user_id] = style_id
+    save_user_settings()
+
+    speaker_name, style_name = get_style_details(style_id)
+    await ctx.send(
+        f"{ctx.author.mention}さんの新しいデフォルトスタイルを「{speaker_name} {style_name}」(ID: {style_id})に設定しました。"
+    )
+
+
 @bot.command(name="style", help="現在のスタイルを表示または設定します。")
 async def style(ctx, style_id: int = None):
     user_id = str(ctx.author.id)
@@ -151,7 +179,9 @@ async def style(ctx, style_id: int = None):
             return
 
     # 現在のスタイル設定を表示
-    user_style_id = user_speaker_settings.get(user_id, 8)  # 8はデフォルトのスタイルID
+    user_style_id = user_speaker_settings.get(
+        user_id, GLOBAL_DEFAULT_STYLE_ID
+    )
     user_speaker, user_style_name = get_style_details(user_style_id, "デフォルト")
 
     response = f"**{ctx.author.display_name}さんのスタイル:** {user_speaker} {user_style_name} (ID: {user_style_id})"
@@ -180,8 +210,8 @@ async def server_style(ctx, style_id: int = None):
 
     # 現在のデフォルトスタイル設定を表示
     server_default_id = user_speaker_settings.get(server_id, {}).get(
-        "default", 8
-    )  # 3はデフォルトのスタイルID
+        "default", GLOBAL_DEFAULT_STYLE_ID
+    )
     server_speaker, server_default_name = get_style_details(server_default_id, "デフォルト")
 
     response = f"**{ctx.guild.name}のデフォルトスタイル:** {server_speaker} {server_default_name} (ID: {server_default_id})\n"
