@@ -135,17 +135,41 @@ async def on_ready():
     bot.loop.create_task(process_speech_queue())
 
 
-@bot.command(name="setstyle", help="使用するスタイルIDを設定します。")
-async def set_style(ctx, style_id: int):
-    speaker_name, style_name = get_style_details(style_id)
-    if speaker_name != "不明" and style_name != "不明":
-        user_speaker_settings[str(ctx.author.id)] = style_id
-        await ctx.send(
-            f"{ctx.author.mention}さんのスタイルを「{speaker_name} {style_name}」(ID: {style_id})に設定しました。"
-        )
-    else:
-        await ctx.send(f"スタイルID {style_id} は無効です。")
-    save_user_settings()
+@bot.command(name="style", help="現在のスタイルを表示または設定します。")
+async def style(ctx, style_id: int = None):
+    server_id = str(ctx.guild.id)
+    user_id = str(ctx.author.id)
+
+    # スタイルIDが指定されている場合は設定を更新
+    if style_id is not None:
+        speaker_name, style_name = get_style_details(style_id)
+        if speaker_name != "不明" and style_name != "不明":
+            user_speaker_settings[user_id] = style_id
+            save_user_settings()
+            await ctx.send(
+                f"{ctx.author.mention}さんのスタイルを「{speaker_name} {style_name}」(ID: {style_id})に設定しました。"
+            )
+            return
+        else:
+            await ctx.send(f"スタイルID {style_id} は無効です。")
+            return
+
+    # 現在のスタイル設定を表示
+    user_style_id = user_speaker_settings.get(user_id, "未設定")
+    server_default_id = user_speaker_settings.get(server_id, {}).get("default", "未設定")
+
+    user_speaker, user_style_name = (
+        get_style_details(user_style_id) if user_style_id != "未設定" else ("未設定", "")
+    )
+    server_speaker, server_default_name = (
+        get_style_details(server_default_id)
+        if server_default_id != "未設定"
+        else ("未設定", "")
+    )
+
+    response = f"**{ctx.guild.name}サーバーのデフォルトスタイル:** {server_speaker} {server_default_name} (ID: {server_default_id})\n"
+    response += f"**{ctx.author.display_name}さんのスタイル:** {user_speaker} {user_style_name} (ID: {user_style_id})"
+    await ctx.send(response)
 
 
 @bot.command(name="setdefault", help="このサーバーのデフォルトのスタイルIDを変更します。")
@@ -241,8 +265,8 @@ async def leave(ctx):
         await ctx.voice_client.disconnect()
 
 
-@bot.command(name="styles", help="利用可能なスタイルIDの一覧を表示します。")
-async def styles(ctx):
+@bot.command(name="liststyles", help="利用可能なスタイルIDの一覧を表示します。")
+async def list_styles(ctx):
     message_lines = []
     for speaker in speakers:
         name = speaker["name"]
@@ -253,29 +277,8 @@ async def styles(ctx):
     await ctx.send("\n".join(message_lines))
 
 
-@bot.command(name="checkstyle", help="現在のスタイル設定を確認します。")
-async def check_style(ctx):
-    server_id = str(ctx.guild.id)
-    user_id = str(ctx.author.id)
-    server_default_id = user_speaker_settings.get(server_id, {}).get("default", "未設定")
-    user_style_id = user_speaker_settings.get(user_id, "未設定")
-
-    server_speaker, server_default_name = (
-        get_style_details(server_default_id)
-        if server_default_id != "未設定"
-        else ("未設定", "")
-    )
-    user_speaker, user_style_name = (
-        get_style_details(user_style_id) if user_style_id != "未設定" else ("未設定", "")
-    )
-
-    response = f"**{ctx.guild.name}サーバーのデフォルトスタイル:** {server_speaker} {server_default_name} (ID: {server_default_id})\n"
-    response += f"**{ctx.author.display_name}さんのスタイル:** {user_speaker} {user_style_name} (ID: {user_style_id})"
-    await ctx.send(response)
-
-
-@bot.command(name="checkserver", help="このサーバーの情報を表示します。")
-async def check_server(ctx):
+@bot.command(name="info", help="サーバーとボットの情報を表示します。")
+async def info(ctx):
     server = ctx.guild
     num_members = server.member_count
     num_channels = len(server.channels)
@@ -284,14 +287,10 @@ async def check_server(ctx):
     response = f"**サーバー名:** {server.name}\n"
     response += f"**オーナー:** {server_owner}\n"
     response += f"**メンバー数:** {num_members}\n"
-    response += f"**チャンネル数:** {num_channels}"
-    await ctx.send(response)
+    response += f"**チャンネル数:** {num_channels}\n\n"
 
-
-@bot.command(name="checkbot", help="ボットの状態を確認します。")
-async def check_bot(ctx):
-    response = f"**ボット名:** {bot.user.name}\n"
-    response += f"**接続サーバー数:** {len(bot.guilds)}\n"
+    response += f"**ボット名:** {bot.user.name}\n"
+    response += f"**接続サーバー数:** {len(bot.guilds)}"
     await ctx.send(response)
 
 
