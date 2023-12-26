@@ -420,7 +420,7 @@ async def on_message(message):
         return
 
     # ユーザーごとに設定されたスピーカーを取得します。
-    style_id = user_speaker_settings.get(message.author.id, 8)  # デフォルトはID 8
+    style_id = user_speaker_settings.get(str(message.author.id), 8)  # デフォルトはID 8
     print(style_id)
 
     # キューにボイスクライアント、メッセージ、スタイルIDを追加します。
