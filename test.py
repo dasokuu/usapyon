@@ -290,8 +290,6 @@ import io
 import os
 
 
-
-
 # 非同期キューを作成します。
 speech_queue = asyncio.Queue()
 
@@ -330,18 +328,19 @@ async def synthesis(speaker, query_data):
 
 
 async def text_to_speech(voice_client, text, speaker=3):
+    # 既に音声を再生中であれば、待機します。
+    while voice_client.is_playing():
+        await asyncio.sleep(0.5)
+        
+    # 音声合成のクエリデータを取得し、音声を再生します。
     query_data = await audio_query(text, speaker)
     if query_data:
         voice_data = await synthesis(speaker, query_data)
         if voice_data:
             audio_source = discord.FFmpegPCMAudio(io.BytesIO(voice_data), pipe=True)
             voice_client.play(audio_source)
-
-            # FFmpegプロセスが終了するのを待ちます。
             while voice_client.is_playing():
                 await asyncio.sleep(1)
-
-            # リソースをクリーンアップします。
             audio_source.cleanup()
 
 
