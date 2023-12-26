@@ -7,8 +7,8 @@ import re
 import io
 import os
 
-async def audio_query(text, style_id, max_retry):
-    query_payload = {"text": text, "style_id": style_id}
+async def audio_query(text, speaker, max_retry):
+    query_payload = {"text": text, "speaker": speaker}
     async with aiohttp.ClientSession() as session:
         for _ in range(max_retry):
             async with session.post("http://localhost:50021/audio_query", params=query_payload) as response:
