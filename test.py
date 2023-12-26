@@ -34,20 +34,20 @@ async def synthesis(speaker, query_data):
                 return await response.read()
             return None
 
-async def text_to_speech(ctx, texts, speaker=8):
+async def text_to_speech(voice_client, texts, speaker=8):
     if not texts:
-        await ctx.send("読み上げるメッセージを指定してください。")
-        return
+        return  # 何もしない
+
     texts = re.split("(?<=！|。|？)", texts)
     for text in texts:
-        query_data = await audio_query(text, speaker)
+        query_data = await audio_query(text, speaker, 1)
         if query_data:
-            voice_data = await synthesis(speaker, query_data)
+            voice_data = await synthesis(speaker, query_data, 1)
             if voice_data:
                 audio_source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(io.BytesIO(voice_data), pipe=True))
-                if ctx.voice_client.is_playing():
-                    ctx.voice_client.stop()
-                ctx.voice_client.play(audio_source)
+                if voice_client.is_playing():
+                    voice_client.stop()
+                voice_client.play(audio_source)
 
 intents = discord.Intents.default()
 intents.messages = True
@@ -62,17 +62,17 @@ async def on_ready():
 
 @bot.event
 async def on_message(message):
-    # ボット自身のメッセージには反応しないようにします。
     if message.author == bot.user:
         return
+
+    # ボットがボイスチャンネルに接続しているか確認します。
+    voice_client = message.guild.voice_client
+    if voice_client and voice_client.channel and message.author.voice and message.author.voice.channel == voice_client.channel:
+        await text_to_speech(voice_client, message.content)
     
-    # メッセージがボットの現在のボイスチャンネルと同じチャンネルであることを確認します。
-    if message.guild.voice_client and message.guild.voice_client.channel == message.author.voice.channel:
-        await text_to_speech(message.channel, message.content)
-    
-    # 他のコマンドも正しく動作するようにします。
     await bot.process_commands(message)
-    
+
+
 @bot.command(name='join', help='ボットをボイスチャンネルに接続します。')
 async def join(ctx):
     if ctx.author.voice and ctx.author.voice.channel:
