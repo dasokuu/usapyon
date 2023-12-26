@@ -197,8 +197,16 @@ async def on_message(message):
 
 @bot.event
 async def on_voice_state_update(member, before, after):
-    # ボット自身の状態変更は無視します。
+    # ボット自身の状態変更かどうか確認します。
     if member == bot.user:
+        # ボイスチャンネルから切断されたかどうかを確認
+        if before.channel is not None and after.channel is None:
+            server_id = str(member.guild.id)
+            if server_id in speaker_settings and "text_channel" in speaker_settings[server_id]:
+                # テキストチャンネルIDの設定をクリア
+                del speaker_settings[server_id]["text_channel"]
+                save_style_settings()  # 変更を保存
+                print(f"テキストチャンネルの設定をクリアしました: サーバーID {server_id}")
         return
 
     # ボイスチャンネルに接続したとき
@@ -347,7 +355,13 @@ async def join(ctx):
 @bot.command(name="leave", help="ボットをボイスチャンネルから切断します。")
 async def leave(ctx):
     if ctx.voice_client:
+        server_id = str(ctx.guild.id)
+        # テキストチャンネルIDの設定をクリア
+        if "text_channel" in speaker_settings.get(server_id, {}):
+            del speaker_settings[server_id]["text_channel"]
+            save_style_settings()  # 変更を保存
         await ctx.voice_client.disconnect()
+        await ctx.send("ボイスチャンネルから切断しました。")
 
 
 @bot.command(name="skip", help="現在再生中の音声をスキップします。")
