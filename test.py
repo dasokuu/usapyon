@@ -430,15 +430,11 @@ async def speakers(ctx):
     message_lines = []
     for speaker in speakers_info:
         name = speaker["name"]
-        styles = "\n".join(
-            [f"  - {style['name']} (ID: {style['id']})" for style in speaker["styles"]]
+        styles = ", ".join(
+            [f"{style['name']} (ID: {style['id']})" for style in speaker["styles"]]
         )
-        message_lines.append(f"**{name}**\n{styles}")
-    # メッセージが長すぎる場合は分割して送信することを考慮します。
-    message = "\n\n".join(message_lines)
-    while len(message) > 0:
-        await ctx.send(message[:2000])
-        message = message[2000:]
+        message_lines.append(f"**{name}** {styles}")
+    await ctx.send("\n".join(message_lines))
 
 
 if __name__ == "__main__":
