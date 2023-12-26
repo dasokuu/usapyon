@@ -26,4 +26,4 @@ async def join(ctx):
         await ctx.send("先にボイスチャンネルに参加してください。")
 
 if __name__ == "__main__":
-    bot.run('YOUR_DISCORD_BOT_TOKEN')
+    bot.run(os.environ['DISCORD_BOT_TOKEN'])
