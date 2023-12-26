@@ -61,9 +61,17 @@ async def on_ready():
 
 @bot.command(name='join', help='このコマンドはボットをボイスチャンネルに接続します。')
 async def join(ctx):
-    if ctx.author.voice:
+    if ctx.author.voice:  # コマンドの実行者がボイスチャンネルにいるか確認
         channel = ctx.message.author.voice.channel
-        await channel.connect()
+        try:
+            await channel.connect()
+        except discord.errors.Forbidden:
+            await ctx.send("ボットにボイスチャンネルへの接続権限がありません。")
+        except Exception as e:
+            await ctx.send(f"エラーが発生しました: {e}")
+    else:
+        await ctx.send("ボイスチャンネルに参加してからコマンドを実行してください。")
+
 
 @bot.command(name='leave', help='このコマンドはボットをボイスチャンネルから切断します。')
 async def leave(ctx):
