@@ -153,7 +153,7 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 @bot.event
 async def on_ready():
     print(f"Logged in as {bot.user.name}")
-    await bot.change_presence(activity=discord.Game(name="読み上げ中 | !helpでヘルプ"))
+    await bot.change_presence(activity=discord.Game(name="待機中 | !helpでヘルプ"))
     # バックグラウンドタスクとしてキュー処理関数を開始します。
     bot.loop.create_task(process_speech_queue())
 
