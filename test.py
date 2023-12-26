@@ -42,21 +42,21 @@ async def synthesis(speaker, query_data):
             return None
 
 async def text_to_speech(voice_client, text, speaker=3):
+    # スピーカーIDを動的に変更できるように修正します。
     query_data = await audio_query(text, speaker)
     if query_data:
         voice_data = await synthesis(speaker, query_data)
         if voice_data:
             audio_source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(io.BytesIO(voice_data), pipe=True))
             if voice_client.is_playing():
-                voice_client.stop()
+                await asyncio.sleep(0.5)  # 現在の読み上げが終わるのを待ちます。
             voice_client.play(audio_source)
 
 async def process_speech_queue():
     while True:
-        # キューから次のアイテム（ボイスクライアントとテキスト）を待ちます。
-        voice_client, text = await speech_queue.get()
-        await text_to_speech(voice_client, text)
-        speech_queue.task_done()  # タスク完了をマークします。
+        voice_client, text, style_id = await speech_queue.get()
+        await text_to_speech(voice_client, text, style_id)
+        speech_queue.task_done()
 
 
 
@@ -106,22 +106,26 @@ async def on_voice_state_update(member, before, after):
             # キューにボイスクライアントとメッセージを追加します。
             await speech_queue.put((member.guild.voice_client, message))
 
-@bot.command(name='join', help='ボットをボイスチャンネルに接続します。')
+@bot.command(name='join', help='ボットをボイスチャンネルに接続し、読み上げを開始します。')
 async def join(ctx):
     if ctx.author.voice and ctx.author.voice.channel:
         channel = ctx.author.voice.channel
-        await channel.connect()
+        voice_client = await channel.connect()
+        # 接続メッセージの読み上げ
+        welcome_message = '読み上げを開始します。'
+        await text_to_speech(voice_client, welcome_message)
 
 @bot.command(name='leave', help='ボットをボイスチャンネルから切断します。')
 async def leave(ctx):
     if ctx.voice_client:
         await ctx.voice_client.disconnect()
 
-@bot.command(name='speak', help='Reads the specified text aloud.')
-async def speak(ctx, *, message=None):
+# スタイルIDを指定して読み上げる機能を追加
+@bot.command(name='speak', help='指定されたテキストを指定されたスタイルで読み上げます。')
+async def speak(ctx, style_id: int, *, message=None):
     if message:
-        # キューにボイスクライアントとメッセージを追加します。
-        await speech_queue.put((ctx.voice_client, message))
+        # キューにボイスクライアント、メッセージ、スタイルIDを追加します。
+        await speech_queue.put((ctx.voice_client, message, style_id))
 
 @bot.command(name='speakers', help='利用可能なスピーカーとスタイルの一覧を表示します。')
 async def speakers(ctx):
