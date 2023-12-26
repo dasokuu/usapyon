@@ -1,3 +1,4 @@
+import asyncio
 import discord
 from discord.ext import commands
 import json
@@ -6,6 +7,8 @@ import re
 import io
 import os
 
+# 非同期キューを作成します。
+speech_queue = asyncio.Queue()
 
 headers = {'Content-Type': 'application/json'}
 
@@ -34,20 +37,23 @@ async def synthesis(speaker, query_data):
                 return await response.read()
             return None
 
-async def text_to_speech(voice_client, texts, speaker=8):
-    if not texts:
-        return  # 何もしない
+async def text_to_speech(voice_client, text, speaker=8):
+    query_data = await audio_query(text, speaker)
+    if query_data:
+        voice_data = await synthesis(speaker, query_data)
+        if voice_data:
+            audio_source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(io.BytesIO(voice_data), pipe=True))
+            if voice_client.is_playing():
+                voice_client.stop()
+            voice_client.play(audio_source)
 
-    texts = re.split("(?<=！|。|？)", texts)
-    for text in texts:
-        query_data = await audio_query(text, speaker)  # 修正: max_retry引数を削除
-        if query_data:
-            voice_data = await synthesis(speaker, query_data)  # 修正: max_retry引数を削除
-            if voice_data:
-                audio_source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(io.BytesIO(voice_data), pipe=True))
-                if voice_client.is_playing():
-                    voice_client.stop()
-                voice_client.play(audio_source)
+async def process_speech_queue():
+    while True:
+        # キューから次のアイテム（ボイスクライアントとテキスト）を待ちます。
+        voice_client, text = await speech_queue.get()
+        await text_to_speech(voice_client, text)
+        speech_queue.task_done()  # タスク完了をマークします。
+
 
 
 intents = discord.Intents.default()
@@ -59,7 +65,9 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 
 @bot.event
 async def on_ready():
-    print(f'{bot.user.name} がDiscordに接続しました!')
+    print(f'{bot.user.name} has connected to Discord!')
+    # バックグラウンドタスクとしてキュー処理関数を開始します。
+    bot.loop.create_task(process_speech_queue())
 
 @bot.event
 async def on_message(message):
@@ -85,9 +93,11 @@ async def leave(ctx):
     if ctx.voice_client:
         await ctx.voice_client.disconnect()
 
-@bot.command(name='speak', help='指定されたテキストを読み上げます。')
+@bot.command(name='speak', help='Reads the specified text aloud.')
 async def speak(ctx, *, message=None):
-    await text_to_speech(ctx, message)
+    if message:
+        # キューにボイスクライアントとメッセージを追加します。
+        await speech_queue.put((ctx.voice_client, message))
 
 if __name__ == "__main__":
     bot.run(os.getenv('DISCORD_BOT_TOKEN'))
