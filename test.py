@@ -31,13 +31,13 @@ speech_queue = asyncio.Queue()
 headers = {"Content-Type": "application/json"}
 
 
-def get_style_details(style_id):
-    """指定されたスタイルIDに対応するスピーカー名とスタイル名を返します。見つからない場合は ('不明', '不明') を返します。"""
+def get_style_details(style_id, default_name="デフォルト"):
+    """指定されたスタイルIDに対応するスピーカー名とスタイル名を返します。見つからない場合はデフォルトの名前を返します。"""
     for speaker in speakers:
         for style in speaker["styles"]:
             if style["id"] == style_id:
                 return (speaker["name"], style["name"])
-    return ("不明", "不明")
+    return (default_name, default_name)  # デフォルトの名前を返す
 
 
 def save_user_settings():
@@ -130,7 +130,7 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 @bot.event
 async def on_ready():
-    print(f"{bot.user.name} has connected to Discord!")
+    print(f"ボット {bot.user.name} が Discord に接続しました！")
     # バックグラウンドタスクとしてキュー処理関数を開始します。
     bot.loop.create_task(process_speech_queue())
 
@@ -154,17 +154,15 @@ async def style(ctx, style_id: int = None):
             return
 
     # 現在のスタイル設定を表示
-    user_style_id = user_speaker_settings.get(user_id, "未設定")
+    user_style_id = user_speaker_settings.get(user_id, None)
+    user_speaker, user_style_name = get_style_details(user_style_id, "未設定")
 
-    user_speaker, user_style_name = (
-        get_style_details(user_style_id) if user_style_id != "未設定" else ("未設定", "")
-    )
     response = f"**{ctx.author.display_name}さんのスタイル:** {user_speaker} {user_style_name} (ID: {user_style_id})"
     await ctx.send(response)
 
 
-@bot.command(name="defaultstyle", help="このサーバーのデフォルトのスタイルを表示または変更します。")
-async def default_style(ctx, style_id: int = None):
+@bot.command(name="serverstyle", help="このサーバーのデフォルトスタイルを表示または設定します。")
+async def server_style(ctx, style_id: int = None):
     server_id = str(ctx.guild.id)
 
     # スタイルIDが指定されている場合は設定を更新
@@ -183,14 +181,9 @@ async def default_style(ctx, style_id: int = None):
             await ctx.send(f"スタイルID {style_id} は無効です。")
             return
 
-    # 現在のスタイル設定を表示
-    server_default_id = user_speaker_settings.get(server_id, {}).get("default", "未設定")
-
-    server_speaker, server_default_name = (
-        get_style_details(server_default_id)
-        if server_default_id != "未設定"
-        else ("未設定", "")
-    )
+    # 現在のデフォルトスタイル設定を表示
+    server_default_id = user_speaker_settings.get(server_id, {}).get("default", None)
+    server_speaker, server_default_name = get_style_details(server_default_id, "未設定")
 
     response = f"**{ctx.guild.name}サーバーのデフォルトスタイル:** {server_speaker} {server_default_name} (ID: {server_default_id})\n"
     await ctx.send(response)
@@ -273,8 +266,8 @@ async def leave(ctx):
         await ctx.voice_client.disconnect()
 
 
-@bot.command(name="liststyles", help="利用可能なスタイルIDの一覧を表示します。")
-async def list_styles(ctx):
+@bot.command(name="showstyles", help="利用可能なスタイルIDの一覧を表示します。")
+async def show_styles(ctx):
     message_lines = []
     for speaker in speakers:
         name = speaker["name"]
