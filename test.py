@@ -92,9 +92,7 @@ async def synthesis(speaker, query_data):
             return None
 
 
-async def text_to_speech(voice_client, text, speaker=8):
-    # ステータスを更新: 読み上げ中
-    await bot.change_presence(activity=discord.Game(name=f"読み上げ中 | {speaker}のスタイルで"))
+async def text_to_speech(voice_client, text, speaker):
     # 既に音声を再生中であれば、待機します。
     while voice_client.is_playing():
         await asyncio.sleep(0.5)
@@ -112,8 +110,6 @@ async def text_to_speech(voice_client, text, speaker=8):
             finally:
                 # エラーが発生してもリソースを確実に解放します。
                 audio_source.cleanup()
-    # ステータスを更新: 待機中
-    await bot.change_presence(activity=discord.Game(name="待機中 | !helpでヘルプ"))
 
 
 async def process_speech_queue():
