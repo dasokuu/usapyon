@@ -51,14 +51,18 @@ def text_to_speech(texts, speaker=8, max_retry=20):
 
 # Discordクライアントの準備
 intents = discord.Intents.default()
-intents.messages = True
+intents.messages = True  # メッセージイベントを受け取る
+intents.guilds = True  # サーバー（ギルド）関連のイベントを受け取る
+intents.voice_states = True  # ボイスチャンネル状態の変更を受け取る
+intents.message_content = True  # メッセージ内容を受け取る
+
 
 bot = commands.Bot(command_prefix='!', intents=intents)
 
 @bot.event
 async def on_ready():
     print(f'{bot.user.name} has connected to Discord!')
-    
+
 @bot.command(name='join', help='このコマンドはボットをボイスチャンネルに接続します。')
 async def join(ctx):
     print("Join command received")  # コマンド受信の確認

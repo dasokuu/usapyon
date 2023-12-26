@@ -8,6 +8,7 @@ intents = discord.Intents.default()
 intents.messages = True  # メッセージイベントを受け取る
 intents.guilds = True  # サーバー（ギルド）関連のイベントを受け取る
 intents.voice_states = True  # ボイスチャンネル状態の変更を受け取る
+intents.message_content = True  # メッセージ内容を受け取る
 
 bot = commands.Bot(command_prefix='!', intents=intents)
 
