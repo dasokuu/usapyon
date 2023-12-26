@@ -58,19 +58,23 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 @bot.event
 async def on_ready():
     print(f'{bot.user.name} has connected to Discord!')
-
+    
 @bot.command(name='join', help='このコマンドはボットをボイスチャンネルに接続します。')
 async def join(ctx):
-    if ctx.author.voice:  # コマンドの実行者がボイスチャンネルにいるか確認
+    print("Join command received")  # コマンド受信の確認
+    if ctx.author.voice:
         channel = ctx.message.author.voice.channel
+        print(f"Attempting to connect to channel: {channel}")  # 接続試行をログに記録
         try:
             await channel.connect()
-        except discord.errors.Forbidden:
-            await ctx.send("ボットにボイスチャンネルへの接続権限がありません。")
+            print(f"Connected to {channel}")  # 接続成功をログに記録
         except Exception as e:
+            print(f"Error occurred: {e}")  # エラー情報をログに記録
             await ctx.send(f"エラーが発生しました: {e}")
     else:
+        print("Command issuer is not in a voice channel")  # コマンド実行者がボイスチャンネルにいないことをログに記録
         await ctx.send("ボイスチャンネルに参加してからコマンドを実行してください。")
+
 
 
 @bot.command(name='leave', help='このコマンドはボットをボイスチャンネルから切断します。')
