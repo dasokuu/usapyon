@@ -248,7 +248,12 @@ async def on_message(message):
         return
 
     server_id = str(message.guild.id)
-    user_default_style_id = speaker_settings[server_id]["user_default"]
+    # Initialize default settings for the server if none exist
+    if server_id not in speaker_settings:
+        speaker_settings[server_id] = {"user_default": USER_DEFAULT_STYLE_ID}
+
+    # Use get to safely access 'user_default' key
+    user_default_style_id = speaker_settings[server_id].get("user_default", USER_DEFAULT_STYLE_ID)
 
     style_id = speaker_settings.get(str(message.author.id), user_default_style_id)
 
