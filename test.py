@@ -295,13 +295,14 @@ speech_queue = asyncio.Queue()
 
 headers = {"Content-Type": "application/json"}
 
-def get_style_name(style_id):
-    """指定されたスタイルIDに対応するスタイル名を返します。見つからない場合は '不明' を返します。"""
+def get_style_details(style_id):
+    """指定されたスタイルIDに対応するスピーカー名とスタイル名を返します。見つからない場合は ('不明', '不明') を返します。"""
     for speaker in styles_info:
         for style in speaker["styles"]:
             if style["id"] == style_id:
-                return style["name"]
-    return "不明"
+                return (speaker["name"], style["name"])
+    return ("不明", "不明")
+
 
 
 def save_user_settings():
@@ -401,13 +402,14 @@ async def on_ready():
 
 @bot.command(name="setstyle", help="使用するスタイルIDを設定します。")
 async def set_style(ctx, style_id: int):
-    style_name = get_style_name(style_id)
-    if style_name != "不明":
+    speaker_name, style_name = get_style_details(style_id)
+    if speaker_name != "不明" and style_name != "不明":
         user_speaker_settings[str(ctx.author.id)] = style_id
-        await ctx.send(f"{ctx.author.mention}さんのスタイルを「{style_name}」(ID: {style_id})に設定しました。")
+        await ctx.send(f"{ctx.author.mention}さんのスタイルを「{speaker_name} {style_name}」(ID: {style_id})に設定しました。")
     else:
         await ctx.send(f"スタイルID {style_id} は無効です。")
     save_user_settings()
+
 
 
 @bot.command(name="setdefault", help="このサーバーのデフォルトのスタイルIDを変更します。")
@@ -521,11 +523,11 @@ async def check_style(ctx):
     server_default_id = user_speaker_settings.get(server_id, {}).get("default", "未設定")
     user_style_id = user_speaker_settings.get(user_id, "未設定")
 
-    server_default_name = get_style_name(server_default_id) if server_default_id != "未設定" else "未設定"
-    user_style_name = get_style_name(user_style_id) if user_style_id != "未設定" else "未設定"
+    server_speaker, server_default_name = get_style_details(server_default_id) if server_default_id != "未設定" else ("未設定", "")
+    user_speaker, user_style_name = get_style_details(user_style_id) if user_style_id != "未設定" else ("未設定", "")
     
-    response = f"**{ctx.guild.name}サーバーのデフォルトスタイル:** {server_default_name} (ID: {server_default_id})\n"
-    response += f"**{ctx.author.display_name}さんのスタイル:** {user_style_name} (ID: {user_style_id})"
+    response = f"**{ctx.guild.name}サーバーのデフォルトスタイル:** {server_speaker} {server_default_name} (ID: {server_default_id})\n"
+    response += f"**{ctx.author.display_name}さんのスタイル:** {user_speaker} {user_style_name} (ID: {user_style_id})"
     await ctx.send(response)
 
 @bot.command(name="checkserver", help="このサーバーの情報を表示します。")
