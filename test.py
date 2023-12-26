@@ -372,14 +372,14 @@ async def on_ready():
 
 @bot.command(name="set_speaker", help="使用するスピーカーを設定します。")
 async def set_speaker(ctx, style_id: int):
-    # ユーザーが指定したスピーカーIDがspeakers_infoのどれかのスタイルのIDと一致するか確認します。
+    # ユーザーが指定したスタイルIDがspeakers_infoのどれかのスタイルのIDと一致するか確認します。
     valid_style_ids = [style["id"] for speaker in speakers_info for style in speaker["styles"]]
     if style_id in valid_style_ids:
-        # ユーザーのスピーカー設定を更新します。
+        # ユーザーのスタイル設定を更新します。
         user_speaker_settings[ctx.author.id] = style_id
-        await ctx.send(f"スピーカーをID {style_id} に設定しました。")
+        await ctx.send(f"スピーカーをスタイルID {style_id} に設定しました。")
     else:
-        await ctx.send(f"スピーカーID {style_id} は無効です。")
+        await ctx.send(f"スタイルID {style_id} は無効です。")
 
 
 @bot.event
