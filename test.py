@@ -20,8 +20,7 @@ async def audio_query(text, style_id, max_retry):
                     print(f"Unprocessable Entity: {error_detail}")
                     break
                 await asyncio.sleep(1)
-        raise ConnectionError("リトライ回数が上限に到達しました。 audio_query")
-
+        raise ConnectionError("Retry limit reached for audio_query")
 
 async def synthesis(speaker, query_data, max_retry):
     synth_payload = {"speaker": speaker}
@@ -31,11 +30,11 @@ async def synthesis(speaker, query_data, max_retry):
                 if response.status == 200:
                     return await response.read()
                 await asyncio.sleep(1)
-        raise ConnectionError("音声エラー：リトライ回数が上限に到達しました。 synthesis")
+        raise ConnectionError("Retry limit reached for synthesis")
 
 async def text_to_speech(ctx, texts, speaker=8, max_retry=20):
     if not texts:
-        await ctx.send("メッセージを指定してください。")
+        await ctx.send("Please provide a message to speak.")
         return
     texts = re.split("(?<=！|。|？)", texts)
     for text in texts:
@@ -57,18 +56,18 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 async def on_ready():
     print(f'{bot.user.name} has connected to Discord!')
 
-@bot.command(name='join', help='このコマンドはボットをボイスチャンネルに接続します。')
+@bot.command(name='join', help='Connects the bot to your voice channel.')
 async def join(ctx):
     if ctx.author.voice and ctx.author.voice.channel:
         channel = ctx.author.voice.channel
         await channel.connect()
 
-@bot.command(name='leave', help='このコマンドはボットをボイスチャンネルから切断します。')
+@bot.command(name='leave', help='Disconnects the bot from the voice channel.')
 async def leave(ctx):
     if ctx.voice_client:
         await ctx.voice_client.disconnect()
 
-@bot.command(name='speak', help='指定したテキストを読み上げます。')
+@bot.command(name='speak', help='Reads the specified text aloud.')
 async def speak(ctx, *, message=None):
     await text_to_speech(ctx, message)
 
