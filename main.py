@@ -168,7 +168,8 @@ async def on_message(message):
         or not message.author.voice
         or message.author.voice.channel != voice_client.channel
         or message.content.startswith("!")
-        or str(message.channel.id) != allowed_text_channel_id  # メッセージが指定されたテキストチャンネルからでなければ無視
+        or str(message.channel.id)
+        != allowed_text_channel_id  # メッセージが指定されたテキストチャンネルからでなければ無視
     ):
         return
 
@@ -329,15 +330,18 @@ async def join(ctx):
         # ギルドIDとテキストチャンネルIDを取得し、設定に保存
         server_id = str(ctx.guild.id)
         text_channel_id = str(ctx.channel.id)  # このコマンドを使用したテキストチャンネルID
-        speaker_settings[server_id]["text_channel"] = text_channel_id  # 設定にテキストチャンネルIDを保存
+        speaker_settings[server_id][
+            "text_channel"
+        ] = text_channel_id  # 設定にテキストチャンネルIDを保存
         save_style_settings()  # 設定を保存
 
         # 通知スタイルIDを取得
-        notify_style_id = speaker_settings.get(server_id, {}).get("notify", NOTIFY_STYLE_ID)
+        notify_style_id = speaker_settings.get(server_id, {}).get(
+            "notify", NOTIFY_STYLE_ID
+        )
 
         # メッセージとスタイルIDをキューに追加
         await speech_queue.put((voice_client, welcome_message, notify_style_id))
-
 
 
 @bot.command(name="leave", help="ボットをボイスチャンネルから切断します。")
@@ -367,10 +371,12 @@ async def show_styles(ctx):
         message_lines.append(f"**{name}** {styles}")
     await ctx.send("\n".join(message_lines))
 
+
 @bot.command(name="servers", help="ボットが加入しているサーバー数を確認します。")
 async def servers(ctx):
     number_of_servers = len(bot.guilds)  # 加入しているサーバー数を取得
     await ctx.send(f"現在、{number_of_servers}個のサーバーに参加しています。")
+
 
 speakers = fetch_speakers()
 speaker_settings = load_style_settings()
