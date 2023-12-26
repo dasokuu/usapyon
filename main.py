@@ -6,7 +6,6 @@ import aiohttp
 import io
 import os
 import requests
-import time
 
 # ユーザーのデフォルトスタイルID
 USER_DEFAULT_STYLE_ID = 3
