@@ -295,6 +295,8 @@ speech_queue = asyncio.Queue()
 
 headers = {"Content-Type": "application/json"}
 
+# ユーザーごとのスピーカー設定を保持する辞書
+user_speaker_settings = {}
 
 async def audio_query(text, speaker):
     # 音声合成用のクエリを作成します。
@@ -366,20 +368,27 @@ async def on_ready():
     bot.loop.create_task(process_speech_queue())
 
 
+@bot.command(name="set_speaker", help="使用するスピーカーを設定します。")
+async def set_speaker(ctx, speaker_id: int):
+    # スピーカーIDが有効かどうかをチェックします。
+    if any(speaker["id"] == speaker_id for speaker in speakers_info):
+        # ユーザーのスピーカー設定を更新します。
+        user_speaker_settings[ctx.author.id] = speaker_id
+        await ctx.send(f"スピーカーをID {speaker_id} に設定しました。")
+    else:
+        await ctx.send(f"スピーカーID {speaker_id} は無効です。")
+
 @bot.event
 async def on_message(message):
     if message.author == bot.user:
         return
 
     voice_client = message.guild.voice_client
-    if (
-        voice_client
-        and voice_client.channel
-        and message.author.voice
-        and message.author.voice.channel == voice_client.channel
-    ):
+    if voice_client and voice_client.channel and message.author.voice and message.author.voice.channel == voice_client.channel:
+        # ユーザーごとに設定されたスピーカーを取得します。
+        speaker_id = user_speaker_settings.get(message.author.id, 3)  # デフォルトはID 3
         # キューにボイスクライアントとメッセージを追加します。
-        await speech_queue.put((voice_client, message.content))
+        await speech_queue.put((voice_client, message.content, speaker_id))
 
     await bot.process_commands(message)
 
