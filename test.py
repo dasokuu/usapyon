@@ -133,7 +133,7 @@ async def on_ready():
     bot.loop.create_task(process_speech_queue())
 
 
-@bot.command(name="defaultuserstyle", help="ユーザーのデフォルトのスタイルを表示または設定します。")
+@bot.command(name="defaultuserstyle", help="デフォルトユーザーのスタイルを表示または設定します。")
 async def default_user_style(ctx, style_id: int = None):
     user_id = str(ctx.author.id)
 
@@ -193,7 +193,7 @@ async def my_style(ctx, style_id: int = None):
     await ctx.send(response)
 
 
-@bot.command(name="serverstyle", help="このサーバーのデフォルトスタイルを表示または設定します。")
+@bot.command(name="serverstyle", help="このサーバーのスタイルを表示または設定します。")
 async def server_style(ctx, style_id: int = None):
     server_id = str(ctx.guild.id)
 
@@ -207,19 +207,19 @@ async def server_style(ctx, style_id: int = None):
                 user_speaker_settings[server_id] = {}
             user_speaker_settings[server_id]["default"] = style_id
             save_user_settings()
-            await ctx.send(f"このサーバーのデフォルトのスタイルIDを {style_id} に設定しました。")
+            await ctx.send(f"このサーバーのスタイルIDを {style_id} に設定しました。")
             return
         else:
             await ctx.send(f"スタイルID {style_id} は無効です。")
             return
 
-    # 現在のデフォルトスタイル設定を表示
-    server_default_id = user_speaker_settings.get(server_id, {}).get(
+    # 現在のサーバースタイル設定を表示
+    server_style_id = user_speaker_settings.get(server_id, {}).get(
         "default", GLOBAL_DEFAULT_STYLE_ID
     )
-    server_speaker, server_default_name = get_style_details(server_default_id, "デフォルト")
+    server_speaker, server_default_name = get_style_details(server_style_id, "デフォルト")
 
-    response = f"**{ctx.guild.name}のデフォルトスタイル:** {server_speaker} {server_default_name} (ID: {server_default_id})\n"
+    response = f"**{ctx.guild.name}のサーバースタイル:** {server_speaker} {server_default_name} (ID: {server_style_id})\n"
     await ctx.send(response)
 
 
