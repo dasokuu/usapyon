@@ -6,6 +6,10 @@ import aiohttp
 import io
 import os
 import requests
+import time
+
+last_status_update = time.time()
+update_interval = 60  # ステータス更新の間隔（秒）
 
 # ユーザーのデフォルトスタイルID
 USER_DEFAULT_STYLE_ID = 3
@@ -15,6 +19,13 @@ MAX_MESSAGE_LENGTH = 200  # 適切な最大長を定義
 
 # グローバル変数を追加して、現在再生中の音声を追跡します。
 current_voice_client = None
+
+async def update_status(message):
+    global last_status_update
+    current_time = time.time()
+    if current_time - last_status_update >= update_interval:
+        await bot.change_presence(activity=discord.Game(name=message))
+        last_status_update = current_time
 
 
 def fetch_speakers():
@@ -190,7 +201,7 @@ async def notify_style(ctx, style_id: int = None):
             speaker_name, style_name = get_style_details(style_id)
             if server_id not in speaker_settings:
                 speaker_settings[server_id] = {}
-            speaker_settings[server_id]["notify_style"] = style_id
+            speaker_settings[server_id]["notify"] = style_id
             save_style_settings()
             await ctx.send(
                 f"入退出通知スタイルを {style_id} 「{speaker_name} {style_name}」(ID: {style_id})に設定しました。"
@@ -315,7 +326,18 @@ async def join(ctx):
         voice_client = await channel.connect()
         # 接続メッセージの読み上げ
         welcome_message = "読み上げを開始します。"
-        await text_to_speech(voice_client, welcome_message)
+
+        # ctxからギルドIDを取得
+        server_id = str(ctx.guild.id)
+
+        # Use get to safely access 'notify' key
+        notify_style_id = speaker_settings.get(server_id, {}).get(
+            "notify", NOTIFY_STYLE_ID
+        )
+
+        # メッセージとスタイルIDをキューに追加
+        await speech_queue.put((voice_client, welcome_message, notify_style_id))
+
 
 
 @bot.command(name="leave", help="ボットをボイスチャンネルから切断します。")
