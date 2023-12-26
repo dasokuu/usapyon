@@ -296,20 +296,20 @@ speech_queue = asyncio.Queue()
 headers = {"Content-Type": "application/json"}
 
 
-# 設定を保存する関数
 def save_user_settings():
     with open('user_settings.json', 'w') as f:
         json.dump(user_speaker_settings, f)
 
-# 設定を読み込む関数
 def load_user_settings():
     try:
         with open('user_settings.json', 'r') as f:
             return json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
-        return {}  # ファイルがないか、内容が空の場合は空の辞書を返す
+        return {}
 
 user_speaker_settings = load_user_settings()
+print("Loaded speaker settings:", user_speaker_settings)
+
 
 
 async def audio_query(text, speaker):
@@ -421,6 +421,7 @@ async def on_message(message):
 
     # ユーザーごとに設定されたスピーカーを取得します。
     style_id = user_speaker_settings.get(message.author.id, 8)  # デフォルトはID 8
+    print(style_id)
 
     # キューにボイスクライアント、メッセージ、スタイルIDを追加します。
     await speech_queue.put((voice_client, message.content, style_id))
