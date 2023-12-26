@@ -20,6 +20,7 @@ MAX_MESSAGE_LENGTH = 200  # 適切な最大長を定義
 # グローバル変数を追加して、現在再生中の音声を追跡します。
 current_voice_client = None
 
+
 async def update_status(message):
     global last_status_update
     current_time = time.time()
@@ -337,7 +338,6 @@ async def join(ctx):
 
         # メッセージとスタイルIDをキューに追加
         await speech_queue.put((voice_client, welcome_message, notify_style_id))
-
 
 
 @bot.command(name="leave", help="ボットをボイスチャンネルから切断します。")
