@@ -197,10 +197,33 @@ async def on_message(message):
 
 @bot.event
 async def on_voice_state_update(member, before, after):
-    # ボット自身の状態変更かどうか確認します。
+    # ボット自身の状態変更を無視
     if member == bot.user:
-        # ボイスチャンネルから切断されたかどうかを確認
-        if before.channel is not None and after.channel is None:
+        return
+
+    # ボットが接続しているボイスチャンネルを取得
+    voice_client = member.guild.voice_client
+
+    # ボットがボイスチャンネルに接続していなければ何もしない
+    if not voice_client or not voice_client.channel:
+        return
+
+    # ボイスチャンネルに接続したとき
+    if before.channel != voice_client.channel and after.channel == voice_client.channel:
+        message = f"{member.display_name}さんが{after.channel.name}に入室しました。"
+        notify_style_id = speaker_settings.get(str(member.guild.id), {}).get("notify", YOUR_DEFAULT_STYLE_ID)
+        await speech_queue.put((voice_client, message, notify_style_id))
+
+    # ボイスチャンネルから切断したとき
+    elif before.channel == voice_client.channel and after.channel != voice_client.channel:
+        message = f"{member.display_name}さんが{before.channel.name}から退出しました。"
+        notify_style_id = speaker_settings.get(str(member.guild.id), {}).get("notify", YOUR_DEFAULT_STYLE_ID)
+        await speech_queue.put((voice_client, message, notify_style_id))
+
+    # ボイスチャンネルに誰もいなくなったら自動的に切断します。
+    if after.channel is None and member.guild.voice_client:
+        # ボイスチャンネルにまだ誰かいるか確認します。
+        if not any(not user.bot for user in before.channel.members):
             server_id = str(member.guild.id)
             if (
                 server_id in speaker_settings
@@ -210,26 +233,6 @@ async def on_voice_state_update(member, before, after):
                 del speaker_settings[server_id]["text_channel"]
                 save_style_settings()  # 変更を保存
                 print(f"テキストチャンネルの設定をクリアしました: サーバーID {server_id}")
-        return
-
-    # ボイスチャンネルに接続したとき
-    if before.channel is None and after.channel is not None:
-        message = f"{member.display_name}さんが{after.channel.name}に入室しました。"
-        if member.guild.voice_client:
-            # キューにボイスクライアントとメッセージを追加します。
-            await speech_queue.put((member.guild.voice_client, message))
-
-    # ボイスチャンネルから切断したとき
-    elif before.channel is not None and after.channel is None:
-        message = f"{member.display_name}さんが{before.channel.name}から退出しました。"
-        if member.guild.voice_client:
-            # キューにボイスクライアントとメッセージを追加します。
-            await speech_queue.put((member.guild.voice_client, message))
-
-    # ボイスチャンネルに誰もいなくなったら自動的に切断します。
-    if after.channel is None and member.guild.voice_client:
-        # ボイスチャンネルにまだ誰かいるか確認します。
-        if not any(not user.bot for user in before.channel.members):
             await member.guild.voice_client.disconnect()
 
 
