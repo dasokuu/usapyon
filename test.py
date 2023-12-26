@@ -22,8 +22,6 @@ def fetch_speakers():
 
 # 使用例
 speakers = fetch_speakers()
-if speakers:
-    print("取得したスピーカー情報:", speakers)
 
 # 非同期キューを作成します。
 speech_queue = asyncio.Queue()
@@ -54,7 +52,6 @@ def load_user_settings():
 
 
 user_speaker_settings = load_user_settings()
-print("Loaded speaker settings:", user_speaker_settings)
 
 
 async def audio_query(text, speaker):
