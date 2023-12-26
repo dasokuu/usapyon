@@ -32,7 +32,7 @@ async def synthesis(speaker, query_data, max_retry):
                 await asyncio.sleep(1)
         raise ConnectionError("Retry limit reached for synthesis")
 
-async def text_to_speech(ctx, texts, speaker=8, max_retry=20):
+async def text_to_speech(ctx, texts, speaker=8, max_retry=1):
     if not texts:
         await ctx.send("Please provide a message to speak.")
         return
