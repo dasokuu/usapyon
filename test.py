@@ -163,8 +163,8 @@ async def style(ctx, style_id: int = None):
     await ctx.send(response)
 
 
-@bot.command(name="defaultstyle", help="このサーバーのデフォルトのスタイルIDを変更します。")
-async def set_default_style(ctx, style_id: int):
+@bot.command(name="defaultstyle", help="このサーバーのデフォルトのスタイルを表示または変更します。")
+async def default_style(ctx, style_id: int = None):
     server_id = str(ctx.guild.id)
 
     # スタイルIDが指定されている場合は設定を更新
