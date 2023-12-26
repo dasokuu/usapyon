@@ -508,6 +508,36 @@ async def styles(ctx):
         message_lines.append(f"**{name}** {styles}")
     await ctx.send("\n".join(message_lines))
 
+@bot.command(name="checkstyle", help="現在のスタイル設定を確認します。")
+async def check_style(ctx):
+    server_id = str(ctx.guild.id)
+    user_id = str(ctx.author.id)
+    server_default = user_speaker_settings.get(server_id, {}).get("default", "未設定")
+    user_style = user_speaker_settings.get(user_id, "未設定")
+    
+    response = f"**{ctx.guild.name}サーバーのデフォルトスタイルID:** {server_default}\n"
+    response += f"**{ctx.author.display_name}さんのスタイルID:** {user_style}"
+    await ctx.send(response)
+
+@bot.command(name="checkserver", help="このサーバーの情報を表示します。")
+async def check_server(ctx):
+    server = ctx.guild
+    num_members = server.member_count
+    num_channels = len(server.channels)
+    server_owner = server.owner.display_name if server.owner else "不明"
+
+    response = f"**サーバー名:** {server.name}\n"
+    response += f"**オーナー:** {server_owner}\n"
+    response += f"**メンバー数:** {num_members}\n"
+    response += f"**チャンネル数:** {num_channels}"
+    await ctx.send(response)
+
+@bot.command(name="checkbot", help="ボットの状態を確認します。")
+async def check_bot(ctx):
+    response = f"**ボット名:** {bot.user.name}\n"
+    response += f"**接続サーバー数:** {len(bot.guilds)}\n"
+    await ctx.send(response)
+
 
 if __name__ == "__main__":
     bot.run(os.getenv("DISCORD_BOT_TOKEN"))
