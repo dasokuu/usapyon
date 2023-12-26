@@ -165,7 +165,7 @@ async def user_default_style(ctx, style_id: int = None):
         user_speaker, user_default_style_name = get_style_details(
             current_default, "デフォルト"
         )
-        response = f"**{ctx.author.display_name}さんのデフォルトスタイル:** {user_speaker} {user_default_style_name} (ID: {current_default})"
+        response = f"ユーザーのデフォルトスタイル:** {user_speaker} {user_default_style_name} (ID: {current_default})"
         await ctx.send(response)
 
 
