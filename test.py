@@ -349,8 +349,8 @@ async def text_to_speech(voice_client, text, speaker=3):
 async def process_speech_queue():
     while True:
         # キューから取得するアイテムの数を3つに修正します。
-        voice_client, text, speaker_id = await speech_queue.get()
-        await text_to_speech(voice_client, text, speaker_id)
+        voice_client, text, style_id = await speech_queue.get()
+        await text_to_speech(voice_client, text, style_id)
         speech_queue.task_done()
 
 
@@ -371,15 +371,15 @@ async def on_ready():
 
 
 @bot.command(name="set_speaker", help="使用するスピーカーを設定します。")
-async def set_speaker(ctx, speaker_id: int):
+async def set_speaker(ctx, style_id: int):
     # ユーザーが指定したスピーカーIDがspeakers_infoのどれかのスタイルのIDと一致するか確認します。
-    valid_speaker_ids = [style["id"] for speaker in speakers_info for style in speaker["styles"]]
-    if speaker_id in valid_speaker_ids:
+    valid_style_ids = [style["id"] for speaker in speakers_info for style in speaker["styles"]]
+    if style_id in valid_style_ids:
         # ユーザーのスピーカー設定を更新します。
-        user_speaker_settings[ctx.author.id] = speaker_id
-        await ctx.send(f"スピーカーをID {speaker_id} に設定しました。")
+        user_speaker_settings[ctx.author.id] = style_id
+        await ctx.send(f"スピーカーをID {style_id} に設定しました。")
     else:
-        await ctx.send(f"スピーカーID {speaker_id} は無効です。")
+        await ctx.send(f"スピーカーID {style_id} は無効です。")
 
 
 @bot.event
@@ -390,9 +390,9 @@ async def on_message(message):
     voice_client = message.guild.voice_client
     if voice_client and voice_client.channel and message.author.voice and message.author.voice.channel == voice_client.channel:
         # ユーザーごとに設定されたスピーカーを取得します。
-        speaker_id = user_speaker_settings.get(message.author.id, 3)  # デフォルトはID 3
+        style_id = user_speaker_settings.get(message.author.id, 3)  # デフォルトはID 3
         # キューにボイスクライアントとメッセージを追加します。
-        await speech_queue.put((voice_client, message.content, speaker_id))
+        await speech_queue.put((voice_client, message.content, style_id))
 
     await bot.process_commands(message)
 
