@@ -7,43 +7,44 @@ import io
 import os
 import requests
 
+# グローバルデフォルトのスタイルID
+GLOBAL_DEFAULT_STYLE_ID = 8
+
 
 def fetch_speakers():
-    url = "http://127.0.0.1:50021/speakers"  # エンドポイントのURL
+    """スピーカー情報を取得します。"""
+    url = "http://127.0.0.1:50021/speakers"
     try:
-        response = requests.get(url)  # URLからデータを取得
-        response.raise_for_status()  # ステータスコードをチェック
-        speakers = response.json()  # JSONデータをPythonの辞書に変換
-        return speakers  # 変換されたデータを返す
+        response = requests.get(url)
+        response.raise_for_status()
+        return response.json()
     except requests.RequestException as e:
         print(f"データの取得に失敗しました: {e}")
         return None
 
 
-# 使用例
 speakers = fetch_speakers()
-
-# 非同期キューを作成します。
 speech_queue = asyncio.Queue()
-
 headers = {"Content-Type": "application/json"}
 
 
 def get_style_details(style_id, default_name="デフォルト"):
-    """指定されたスタイルIDに対応するスピーカー名とスタイル名を返します。見つからない場合はデフォルトの名前を返します。"""
+    """スタイルIDに対応するスピーカー名とスタイル名を返します。"""
     for speaker in speakers:
         for style in speaker["styles"]:
             if style["id"] == style_id:
                 return (speaker["name"], style["name"])
-    return (default_name, default_name)  # デフォルトの名前を返す
+    return (default_name, default_name)
 
 
 def save_user_settings():
+    """ユーザー設定を保存します。"""
     with open("user_settings.json", "w") as f:
         json.dump(user_speaker_settings, f)
 
 
 def load_user_settings():
+    """ユーザー設定をロードします。"""
     try:
         with open("user_settings.json", "r") as f:
             return json.load(f)
@@ -132,11 +133,7 @@ async def on_ready():
     bot.loop.create_task(process_speech_queue())
 
 
-# グローバルデフォルトのスタイルID
-GLOBAL_DEFAULT_STYLE_ID = 8
-
-
-@bot.command(name="defaultuserstyle", help="あなたのデフォルトスタイルIDのスタイルを表示または設定します。")
+@bot.command(name="defaultuserstyle", help="ユーザーのデフォルトスタイルIDのスタイルを表示または設定します。")
 async def default_user_style(ctx, style_id: int = None):
     user_id = str(ctx.author.id)
 
@@ -159,12 +156,15 @@ async def default_user_style(ctx, style_id: int = None):
             await ctx.send(f"スタイルID {style_id} は無効です。")
     else:
         # 現在のユーザーのデフォルトスタイルを表示
-        user_default_style_id = user_speaker_settings.get("defaults", {}).get(user_id, GLOBAL_DEFAULT_STYLE_ID)
-        user_speaker, user_default_style_name = get_style_details(user_default_style_id, "デフォルト")
+        user_default_style_id = user_speaker_settings.get("defaults", {}).get(
+            user_id, GLOBAL_DEFAULT_STYLE_ID
+        )
+        user_speaker, user_default_style_name = get_style_details(
+            user_default_style_id, "デフォルト"
+        )
 
         response = f"**{ctx.author.display_name}さんのデフォルトスタイル:** {user_speaker} {user_default_style_name} (ID: {user_default_style_id})"
         await ctx.send(response)
-
 
 
 @bot.command(name="style", help="あなたの現在のスタイルを表示または設定します。")
