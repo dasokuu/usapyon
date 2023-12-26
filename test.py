@@ -40,7 +40,7 @@ def get_style_details(style_id, default_name="デフォルト"):
 def save_user_settings():
     """ユーザー設定を保存します。"""
     with open("user_settings.json", "w") as f:
-        json.dump(user_speaker_settings, f)
+        json.dump(speaker_settings, f)
 
 
 def load_user_settings():
@@ -52,7 +52,7 @@ def load_user_settings():
         return {}
 
 
-user_speaker_settings = load_user_settings()
+speaker_settings = load_user_settings()
 
 
 async def audio_query(text, speaker):
@@ -133,13 +133,9 @@ async def on_ready():
     bot.loop.create_task(process_speech_queue())
 
 
-@bot.command(name="userstyle", help="あなたの現在のスタイルまたはデフォルトスタイルを表示または設定します。")
-async def user_style(ctx, style_id: int = None):
+@bot.command(name="userdefaultstyle", help="ユーザーのデフォルトスタイルを表示または設定します。")
+async def user_default_style(ctx, style_id: int = None):
     user_id = str(ctx.author.id)
-
-    # "defaults" セクションがなければ作成
-    if "defaults" not in user_speaker_settings:
-        user_speaker_settings["defaults"] = {}
 
     # スタイルIDが指定されている場合は設定を更新
     if style_id is not None:
@@ -147,30 +143,29 @@ async def user_style(ctx, style_id: int = None):
             style["id"] for speaker in speakers for style in speaker["styles"]
         ]
         if style_id in valid_style_ids:
-            # ユーザーのデフォルトスタイルを更新
-            user_speaker_settings["defaults"][user_id] = style_id
-            save_user_settings()
-
             speaker_name, style_name = get_style_details(style_id)
+            speaker_settings["defaults"][user_id] = style_id
+            save_user_settings()
             await ctx.send(
                 f"{ctx.author.mention}さんの新しいデフォルトスタイルを「{speaker_name} {style_name}」(ID: {style_id})に設定しました。"
             )
         else:
             await ctx.send(f"スタイルID {style_id} は無効です。")
     else:
-        # 現在のユーザーのスタイルまたはデフォルトスタイルを表示
-        user_style_id = user_speaker_settings.get(
-            user_id,
-            user_speaker_settings["defaults"].get(user_id, GLOBAL_DEFAULT_STYLE_ID),
+        # 現在のユーザーのデフォルトスタイルを表示
+        user_default_style_id = speaker_settings.get("defaults", {}).get(
+            user_id, GLOBAL_DEFAULT_STYLE_ID
         )
-        user_speaker, user_style_name = get_style_details(user_style_id, "デフォルト")
+        user_speaker, user_default_style_name = get_style_details(
+            user_default_style_id, "デフォルト"
+        )
 
-        response = f"**{ctx.author.display_name}さんのスタイル:** {user_speaker} {user_style_name} (ID: {user_style_id})"
+        response = f"**{ctx.author.display_name}さんのデフォルトスタイル:** {user_speaker} {user_default_style_name} (ID: {user_default_style_id})"
         await ctx.send(response)
 
 
-@bot.command(name="serverstyle", help="このサーバーのスタイルを表示または設定します。")
-async def server_style(ctx, style_id: int = None):
+@bot.command(name="notifystyle", help="入退室通知のスタイルを表示または設定します。")
+async def notify_style(ctx, style_id: int = None):
     server_id = str(ctx.guild.id)
 
     # スタイルIDが指定されている場合は設定を更新
@@ -179,29 +174,56 @@ async def server_style(ctx, style_id: int = None):
             style["id"] for speaker in speakers for style in speaker["styles"]
         ]
         if style_id in valid_style_ids:
-            # サーバーのデフォルトスタイルを更新
-            if server_id not in user_speaker_settings:
-                user_speaker_settings[server_id] = {}
-            user_speaker_settings[server_id]["default"] = style_id
-            save_user_settings()
-
             speaker_name, style_name = get_style_details(style_id)
+            if server_id not in speaker_settings:
+                speaker_settings[server_id] = {}
+            speaker_settings[server_id]["default"] = style_id
+            save_user_settings()
             await ctx.send(
                 f"このサーバーのスタイルIDを {style_id} 「{speaker_name} {style_name}」(ID: {style_id})に設定しました。"
             )
+            return
         else:
             await ctx.send(f"スタイルID {style_id} は無効です。")
-    else:
-        # 現在のサーバースタイル設定を表示
-        server_default_id = user_speaker_settings.get(server_id, {}).get(
-            "default", GLOBAL_DEFAULT_STYLE_ID
-        )
-        server_speaker, server_default_name = get_style_details(
-            server_default_id, "デフォルト"
-        )
+            return
 
-        response = f"**{ctx.guild.name}のサーバースタイル:** {server_speaker} {server_default_name} (ID: {server_default_id})"
-        await ctx.send(response)
+    # 現在のサーバースタイル設定を表示
+    server_style_id = speaker_settings.get(server_id, {}).get(
+        "default", GLOBAL_DEFAULT_STYLE_ID
+    )
+    server_speaker, server_default_name = get_style_details(server_style_id, "デフォルト")
+
+    response = f"**{ctx.guild.name}のサーバースタイル:** {server_speaker} {server_default_name} (ID: {server_style_id})\n"
+    await ctx.send(response)
+
+
+@bot.command(name="mystyle", help="あなたの現在のスタイルを表示または設定します。")
+async def my_style(ctx, style_id: int = None):
+    user_id = str(ctx.author.id)
+
+    # スタイルIDが指定されている場合は設定を更新
+    if style_id is not None:
+        valid_style_ids = [
+            style["id"] for speaker in speakers for style in speaker["styles"]
+        ]
+        if style_id in valid_style_ids:
+            speaker_name, style_name = get_style_details(style_id)
+            speaker_settings[user_id] = style_id
+            save_user_settings()
+            await ctx.send(
+                f"{ctx.author.mention}さんのスタイルを「{speaker_name} {style_name}」(ID: {style_id})に設定しました。"
+            )
+            return
+        else:
+            await ctx.send(f"スタイルID {style_id} は無効です。")
+            return
+
+    # 現在のスタイル設定を表示
+    user_style_id = speaker_settings.get(user_id, GLOBAL_DEFAULT_STYLE_ID)
+    user_speaker, user_style_name = get_style_details(user_style_id, "デフォルト")
+
+    response = f"**{ctx.author.display_name}さんのスタイル:** {user_speaker} {user_style_name} (ID: {user_style_id})"
+    await ctx.send(response)
 
 
 @bot.event
@@ -227,13 +249,10 @@ async def on_message(message):
     server_id = str(message.guild.id)
     default_style_id = 3  # グローバルデフォルトのスタイルID
 
-    if (
-        server_id in user_speaker_settings
-        and "default" in user_speaker_settings[server_id]
-    ):
-        default_style_id = user_speaker_settings[server_id]["default"]
+    if server_id in speaker_settings and "default" in speaker_settings[server_id]:
+        default_style_id = speaker_settings[server_id]["default"]
 
-    style_id = user_speaker_settings.get(str(message.author.id), default_style_id)
+    style_id = speaker_settings.get(str(message.author.id), default_style_id)
 
     await speech_queue.put((voice_client, message.content, style_id))
 
