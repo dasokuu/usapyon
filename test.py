@@ -54,8 +54,8 @@ async def text_to_speech(voice_client, text, speaker=3):
 
 async def process_speech_queue():
     while True:
-        voice_client, text, style_id = await speech_queue.get()
-        await text_to_speech(voice_client, text, style_id)
+        voice_client, text = await speech_queue.get()
+        await text_to_speech(voice_client, text)
         speech_queue.task_done()
 
 
@@ -119,13 +119,6 @@ async def join(ctx):
 async def leave(ctx):
     if ctx.voice_client:
         await ctx.voice_client.disconnect()
-
-# スタイルIDを指定して読み上げる機能を追加
-@bot.command(name='speak', help='指定されたテキストを指定されたスタイルで読み上げます。')
-async def speak(ctx, style_id: int, *, message=None):
-    if message:
-        # キューにボイスクライアント、メッセージ、スタイルIDを追加します。
-        await speech_queue.put((ctx.voice_client, message, style_id))
 
 @bot.command(name='speakers', help='利用可能なスピーカーとスタイルの一覧を表示します。')
 async def speakers(ctx):
