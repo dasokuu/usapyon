@@ -133,7 +133,7 @@ async def on_ready():
     bot.loop.create_task(process_speech_queue())
 
 
-@bot.command(name="defaultuserstyle", help="ユーザーのデフォルトスタイルIDのスタイルを表示または設定します。")
+@bot.command(name="defaultuserstyle", help="ユーザーのデフォルトのスタイルを表示または設定します。")
 async def default_user_style(ctx, style_id: int = None):
     user_id = str(ctx.author.id)
 
@@ -167,8 +167,8 @@ async def default_user_style(ctx, style_id: int = None):
         await ctx.send(response)
 
 
-@bot.command(name="style", help="あなたの現在のスタイルを表示または設定します。")
-async def style(ctx, style_id: int = None):
+@bot.command(name="mystyle", help="あなたの現在のスタイルを表示または設定します。")
+async def my_style(ctx, style_id: int = None):
     user_id = str(ctx.author.id)
 
     # スタイルIDが指定されている場合は設定を更新
