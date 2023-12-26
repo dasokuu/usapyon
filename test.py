@@ -21,9 +21,9 @@ def fetch_speakers():
 
 
 # 使用例
-speakers_data = fetch_speakers()
-if speakers_data:
-    print("取得したスピーカー情報:", speakers_data)
+speakers = fetch_speakers()
+if speakers:
+    print("取得したスピーカー情報:", speakers)
 
 # 非同期キューを作成します。
 speech_queue = asyncio.Queue()
