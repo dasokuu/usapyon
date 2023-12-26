@@ -295,20 +295,24 @@ speech_queue = asyncio.Queue()
 
 headers = {"Content-Type": "application/json"}
 
+
 # 設定を保存する関数
 def save_user_settings():
-    with open('user_settings.json', 'w') as f:
+    with open("user_settings.json", "w") as f:
         json.dump(user_speaker_settings, f)
+
 
 # 設定を読み込む関数
 def load_user_settings():
-    if os.path.exists('user_settings.json'):
-        with open('user_settings.json', 'r') as f:
+    if os.path.exists("user_settings.json"):
+        with open("user_settings.json", "r") as f:
             return json.load(f)
     return {}
 
+
 # ユーザー設定を読み込みます
 user_speaker_settings = load_user_settings()
+
 
 async def audio_query(text, speaker):
     # 音声合成用のクエリを作成します。
@@ -345,7 +349,7 @@ async def text_to_speech(voice_client, text, speaker=3):
     # 既に音声を再生中であれば、待機します。
     while voice_client.is_playing():
         await asyncio.sleep(0.5)
-        
+
     # 音声合成のクエリデータを取得し、音声を再生します。
     query_data = await audio_query(text, speaker)
     if query_data:
@@ -368,7 +372,6 @@ async def process_speech_queue():
         speech_queue.task_done()
 
 
-
 intents = discord.Intents.default()
 intents.messages = True
 intents.guilds = True
@@ -387,7 +390,9 @@ async def on_ready():
 @bot.command(name="set_speaker", help="使用するスピーカーを設定します。")
 async def set_speaker(ctx, style_id: int):
     # ユーザーが指定したスタイルIDがspeakers_infoのどれかのスタイルのIDと一致するか確認します。
-    valid_style_ids = [style["id"] for speaker in speakers_info for style in speaker["styles"]]
+    valid_style_ids = [
+        style["id"] for speaker in speakers_info for style in speaker["styles"]
+    ]
     if style_id in valid_style_ids:
         # ユーザーのスタイル設定を更新します。
         user_speaker_settings[ctx.author.id] = style_id
@@ -399,18 +404,24 @@ async def set_speaker(ctx, style_id: int):
 
 @bot.event
 async def on_message(message):
-    if message.author == bot.user or message.content.startswith('!'):
-        # コマンドを読み上げないようにする
+    # ボット自身のメッセージは無視
+    if message.author == bot.user:
         return
 
-    voice_client = message.guild.voice_client
-    if voice_client and voice_client.channel and message.author.voice and message.author.voice.channel == voice_client.channel:
-        # ユーザーごとに設定されたスピーカーを取得します。
-        style_id = user_speaker_settings.get(message.author.id, 8)  # デフォルトはID 8
-        # キューにボイスクライアントとメッセージを追加します。
-        await speech_queue.put((voice_client, message.content, style_id))
-
+    # コマンド処理を妨げないようにする
     await bot.process_commands(message)
+
+    # ボイスチャンネルに接続されていない、またはメッセージがコマンドの場合は無視
+    voice_client = message.guild.voice_client
+    if not voice_client or not voice_client.channel or not message.author.voice or message.author.voice.channel != voice_client.channel or message.content.startswith('!'):
+        return
+
+    # ユーザーごとに設定されたスピーカーを取得します。
+    style_id = user_speaker_settings.get(message.author.id, 8)  # デフォルトはID 8
+
+    # キューにボイスクライアント、メッセージ、スタイルIDを追加します。
+    await speech_queue.put((voice_client, message.content, style_id))
+
 
 
 @bot.event
