@@ -11,6 +11,9 @@ import requests
 USER_DEFAULT_STYLE_ID = 3
 NOTIFY_STYLE_ID = 8
 
+MAX_MESSAGE_LENGTH = 200  # 適切な最大長を定義
+
+
 
 def fetch_speakers():
     """スピーカー情報を取得します。"""
@@ -250,6 +253,11 @@ async def on_message(message):
         or message.content.startswith("!")
     ):
         return
+    
+    if len(message.content) > MAX_MESSAGE_LENGTH:
+    # テキストチャンネルに警告を送信
+        await message.channel.send(f"申し訳ありません、メッセージが長すぎて読み上げられません！（最大 {MAX_MESSAGE_LENGTH} 文字）")
+        return  # このメッセージのTTS処理をスキップ
 
     server_id = str(message.guild.id)
     # Initialize default settings for the server if none exist
