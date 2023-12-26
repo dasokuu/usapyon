@@ -41,7 +41,7 @@ async def synthesis(speaker, query_data):
                 return await response.read()
             return None
 
-async def text_to_speech(voice_client, text, speaker=8):
+async def text_to_speech(voice_client, text, speaker=3):
     query_data = await audio_query(text, speaker)
     if query_data:
         voice_data = await synthesis(speaker, query_data)
