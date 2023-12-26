@@ -345,7 +345,7 @@ async def synthesis(speaker, query_data):
             return None
 
 
-async def text_to_speech(voice_client, text, speaker=3):
+async def text_to_speech(voice_client, text, speaker=8):
     # 既に音声を再生中であれば、待機します。
     while voice_client.is_playing():
         await asyncio.sleep(0.5)
