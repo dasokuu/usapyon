@@ -202,7 +202,10 @@ async def on_voice_state_update(member, before, after):
         # ボイスチャンネルから切断されたかどうかを確認
         if before.channel is not None and after.channel is None:
             server_id = str(member.guild.id)
-            if server_id in speaker_settings and "text_channel" in speaker_settings[server_id]:
+            if (
+                server_id in speaker_settings
+                and "text_channel" in speaker_settings[server_id]
+            ):
                 # テキストチャンネルIDの設定をクリア
                 del speaker_settings[server_id]["text_channel"]
                 save_style_settings()  # 変更を保存
@@ -335,13 +338,17 @@ async def join(ctx):
         # 接続メッセージの読み上げ
         welcome_message = "読み上げを開始します。"
 
-        # ギルドIDとテキストチャンネルIDを取得し、設定に保存
         server_id = str(ctx.guild.id)
         text_channel_id = str(ctx.channel.id)  # このコマンドを使用したテキストチャンネルID
-        speaker_settings[server_id][
-            "text_channel"
-        ] = text_channel_id  # 設定にテキストチャンネルIDを保存
-        save_style_settings()  # 設定を保存
+
+        # サーバー設定が存在しない場合は初期化
+        if server_id not in speaker_settings:
+            speaker_settings[server_id] = {"text_channel": text_channel_id}
+        else:
+            # 既にサーバー設定が存在する場合はテキストチャンネルIDを更新
+            speaker_settings[server_id]["text_channel"] = text_channel_id
+
+        save_style_settings()  # 変更を保存
 
         # 通知スタイルIDを取得
         notify_style_id = speaker_settings.get(server_id, {}).get(
