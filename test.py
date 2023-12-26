@@ -40,14 +40,15 @@ async def text_to_speech(voice_client, texts, speaker=8):
 
     texts = re.split("(?<=！|。|？)", texts)
     for text in texts:
-        query_data = await audio_query(text, speaker, 1)
+        query_data = await audio_query(text, speaker)  # 修正: max_retry引数を削除
         if query_data:
-            voice_data = await synthesis(speaker, query_data, 1)
+            voice_data = await synthesis(speaker, query_data)  # 修正: max_retry引数を削除
             if voice_data:
                 audio_source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(io.BytesIO(voice_data), pipe=True))
                 if voice_client.is_playing():
                     voice_client.stop()
                 voice_client.play(audio_source)
+
 
 intents = discord.Intents.default()
 intents.messages = True
