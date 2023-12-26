@@ -429,10 +429,9 @@ async def on_message(message):
     if not voice_client or not voice_client.channel or not message.author.voice or message.author.voice.channel != voice_client.channel or message.content.startswith('!'):
         return
 
-    # ユーザーごとに設定されたスピーカーを取得します。
-    style_id = user_speaker_settings.get(str(message.author.id), 8)  # デフォルトはID 8
-
-    # キューにボイスクライアント、メッセージ、スタイルIDを追加します。
+    default_style_id = user_speaker_settings.get("default", 3)  # 新しいデフォルト設定
+    style_id = user_speaker_settings.get(str(message.author.id), default_style_id)
+    
     await speech_queue.put((voice_client, message.content, style_id))
 
 
