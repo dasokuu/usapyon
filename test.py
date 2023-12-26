@@ -8,9 +8,6 @@ import os
 import requests
 import time
 
-last_status_update = time.time()
-update_interval = 60  # ステータス更新の間隔（秒）
-
 # ユーザーのデフォルトスタイルID
 USER_DEFAULT_STYLE_ID = 3
 NOTIFY_STYLE_ID = 8
@@ -19,14 +16,6 @@ MAX_MESSAGE_LENGTH = 200  # 適切な最大長を定義
 
 # グローバル変数を追加して、現在再生中の音声を追跡します。
 current_voice_client = None
-
-
-async def update_status(message):
-    global last_status_update
-    current_time = time.time()
-    if current_time - last_status_update >= update_interval:
-        await bot.change_presence(activity=discord.Game(name=message))
-        last_status_update = current_time
 
 
 def fetch_speakers():
@@ -105,8 +94,7 @@ async def synthesis(speaker, query_data):
 
 
 async def text_to_speech(voice_client, text, speaker):
-    # ステータスを更新: 読み上げ中
-    await update_status(f"読み上げ中 | {speaker}のスタイルで")
+    await bot.change_presence(activity=discord.Game(name=f"読み上げ中 | {speaker}のスタイルで"))
     # 既に音声を再生中であれば、待機します。
     while voice_client.is_playing():
         await asyncio.sleep(0.5)
@@ -125,7 +113,7 @@ async def text_to_speech(voice_client, text, speaker):
                 # エラーが発生してもリソースを確実に解放します。
                 audio_source.cleanup()\
     # ステータスを更新: 待機中
-    await update_status("待機中 | !helpでヘルプ")
+    await bot.change_presence(activity=discord.Game(name="待機中 | !helpでヘルプ"))
 
 
 async def process_speech_queue():
