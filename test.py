@@ -1,4 +1,4 @@
-# 利用可能な話者情報を格納
+# 利用可能なスタイル情報を格納
 styles_info = [
     {
         "supported_features": {"permitted_synthesis_morphing": "SELF_ONLY"},
@@ -390,8 +390,8 @@ async def on_ready():
     bot.loop.create_task(process_speech_queue())
 
 
-@bot.command(name="setspk", help="使用する話者スタイルIDを設定します。")
-async def set_speaker(ctx, style_id: int):
+@bot.command(name="style", help="使用するスタイルIDを設定します。")
+async def set_style(ctx, style_id: int):
     valid_style_ids = [
         style["id"] for speaker in styles_info for style in speaker["styles"]
     ]
@@ -402,14 +402,14 @@ async def set_speaker(ctx, style_id: int):
         await ctx.send(f"スタイルID {style_id} は無効です。")
     save_user_settings()
 
-@bot.command(name="setdef", help="デフォルトの話者スタイルIDを変更します。")
+@bot.command(name="default", help="デフォルトのスタイルIDを変更します。")
 async def set_default(ctx, style_id: int):
     valid_style_ids = [
         style["id"] for speaker in styles_info for style in speaker["styles"]
     ]
     if style_id in valid_style_ids:
         user_speaker_settings["default"] = style_id
-        await ctx.send(f"デフォルトの話者スタイルIDを {style_id} に設定しました。")
+        await ctx.send(f"デフォルトのスタイルIDを {style_id} に設定しました。")
     else:
         await ctx.send(f"スタイルID {style_id} は無効です。")
     save_user_settings()
@@ -479,7 +479,7 @@ async def leave(ctx):
         await ctx.voice_client.disconnect()
 
 
-@bot.command(name="styles", help="利用可能な話者とスタイルIDの一覧を表示します。")
+@bot.command(name="styles", help="利用可能なスタイルIDの一覧を表示します。")
 async def styles(ctx):
     message_lines = []
     for speaker in styles_info:
