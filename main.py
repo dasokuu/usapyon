@@ -148,7 +148,7 @@ async def on_ready():
 
 @bot.event
 async def on_message(message):
-    server_id = str(message.guild.id)
+    guild_id = str(message.guild.id)
 
     # ボット自身のメッセージは無視
     if message.author == bot.user:
@@ -160,7 +160,7 @@ async def on_message(message):
     # ボイスチャンネルに接続されていない、またはメッセージがコマンドの場合は無視
     voice_client = message.guild.voice_client
     # 設定されたテキストチャンネルIDを取得（存在しない場合はNone）
-    allowed_text_channel_id = speaker_settings.get(server_id, {}).get("text_channel")
+    allowed_text_channel_id = speaker_settings.get(guild_id, {}).get("text_channel")
     if (
         not voice_client
         or not voice_client.channel
@@ -179,13 +179,13 @@ async def on_message(message):
         )
         return  # このメッセージのTTS処理をスキップ
 
-    server_id = str(message.guild.id)
+    guild_id = str(message.guild.id)
     # Initialize default settings for the server if none exist
-    if server_id not in speaker_settings:
-        speaker_settings[server_id] = {"user_default": USER_DEFAULT_STYLE_ID}
+    if guild_id not in speaker_settings:
+        speaker_settings[guild_id] = {"user_default": USER_DEFAULT_STYLE_ID}
 
     # Use get to safely access 'user_default' key
-    user_default_style_id = speaker_settings[server_id].get(
+    user_default_style_id = speaker_settings[guild_id].get(
         "user_default", USER_DEFAULT_STYLE_ID
     )
 
@@ -263,15 +263,15 @@ async def on_voice_state_update(member, before, after):
 
             # キューをクリアする
             await clear_speech_queue()
-            server_id = str(member.guild.id)
+            guild_id = str(member.guild.id)
             if (
-                server_id in speaker_settings
-                and "text_channel" in speaker_settings[server_id]
+                guild_id in speaker_settings
+                and "text_channel" in speaker_settings[guild_id]
             ):
                 # テキストチャンネルIDの設定をクリア
-                del speaker_settings[server_id]["text_channel"]
+                del speaker_settings[guild_id]["text_channel"]
                 save_style_settings()  # 変更を保存
-                print(f"テキストチャンネルの設定をクリアしました: サーバーID {server_id}")
+                print(f"テキストチャンネルの設定をクリアしました: サーバーID {guild_id}")
             await member.guild.voice_client.disconnect()
 
 
@@ -280,14 +280,14 @@ async def on_voice_state_update(member, before, after):
     help="ユーザーのデフォルトスタイルを表示または設定します。使用法: !_userdefaultstyle [スタイルID]",
 )
 async def user_default_style(ctx, style_id: int = None):
-    server_id = str(ctx.guild.id)
+    guild_id = str(ctx.guild.id)
 
     # Ensure server settings are initialized
-    if server_id not in speaker_settings:
-        speaker_settings[server_id] = {"user_default": USER_DEFAULT_STYLE_ID}
+    if guild_id not in speaker_settings:
+        speaker_settings[guild_id] = {"user_default": USER_DEFAULT_STYLE_ID}
 
     # Use get to safely access 'user_default'
-    current_default = speaker_settings[server_id].get(
+    current_default = speaker_settings[guild_id].get(
         "user_default", USER_DEFAULT_STYLE_ID
     )
 
@@ -297,7 +297,7 @@ async def user_default_style(ctx, style_id: int = None):
         ]
         if style_id in valid_style_ids:
             speaker_name, style_name = get_style_details(style_id)
-            speaker_settings[server_id]["user_default"] = style_id
+            speaker_settings[guild_id]["user_default"] = style_id
             save_style_settings()
             await ctx.send(
                 f"ユーザーのデフォルトスタイルを「{speaker_name} {style_name}」(ID: {style_id})に設定しました。"
@@ -317,7 +317,7 @@ async def user_default_style(ctx, style_id: int = None):
     name="notifystyle", help="入退室通知のスタイルを表示または設定します。使用法: !notifystyle [スタイルID]"
 )
 async def notify_style(ctx, style_id: int = None):
-    server_id = str(ctx.guild.id)
+    guild_id = str(ctx.guild.id)
 
     # スタイルIDが指定されている場合は設定を更新
     if style_id is not None:
@@ -326,9 +326,9 @@ async def notify_style(ctx, style_id: int = None):
         ]
         if style_id in valid_style_ids:
             speaker_name, style_name = get_style_details(style_id)
-            if server_id not in speaker_settings:
-                speaker_settings[server_id] = {}
-            speaker_settings[server_id]["notify"] = style_id
+            if guild_id not in speaker_settings:
+                speaker_settings[guild_id] = {}
+            speaker_settings[guild_id]["notify"] = style_id
             save_style_settings()
             await ctx.send(
                 f"入退出通知スタイルを {style_id} 「{speaker_name} {style_name}」(ID: {style_id})に設定しました。"
@@ -339,7 +339,7 @@ async def notify_style(ctx, style_id: int = None):
             return
 
     # 現在のサーバースタイル設定を表示
-    notify_style_id = speaker_settings.get(server_id, {}).get(
+    notify_style_id = speaker_settings.get(guild_id, {}).get(
         "default", NOTIFY_STYLE_ID
     )
     notify_speaker, notify_default_name = get_style_details(notify_style_id, "デフォルト")
@@ -385,20 +385,20 @@ async def join(ctx):
         # 接続メッセージの読み上げ
         welcome_message = "読み上げを開始します。"
 
-        server_id = str(ctx.guild.id)
+        guild_id = str(ctx.guild.id)
         text_channel_id = str(ctx.channel.id)  # このコマンドを使用したテキストチャンネルID
 
         # サーバー設定が存在しない場合は初期化
-        if server_id not in speaker_settings:
-            speaker_settings[server_id] = {"text_channel": text_channel_id}
+        if guild_id not in speaker_settings:
+            speaker_settings[guild_id] = {"text_channel": text_channel_id}
         else:
             # 既にサーバー設定が存在する場合はテキストチャンネルIDを更新
-            speaker_settings[server_id]["text_channel"] = text_channel_id
+            speaker_settings[guild_id]["text_channel"] = text_channel_id
 
         save_style_settings()  # 変更を保存
 
         # 通知スタイルIDを取得
-        notify_style_id = speaker_settings.get(server_id, {}).get(
+        notify_style_id = speaker_settings.get(guild_id, {}).get(
             "notify", NOTIFY_STYLE_ID
         )
 
@@ -409,10 +409,10 @@ async def join(ctx):
 @bot.command(name="leave", help="ボットをボイスチャンネルから切断します。")
 async def leave(ctx):
     if ctx.voice_client:
-        server_id = str(ctx.guild.id)
+        guild_id = str(ctx.guild.id)
         # テキストチャンネルIDの設定をクリア
-        if "text_channel" in speaker_settings.get(server_id, {}):
-            del speaker_settings[server_id]["text_channel"]
+        if "text_channel" in speaker_settings.get(guild_id, {}):
+            del speaker_settings[guild_id]["text_channel"]
             save_style_settings()  # 変更を保存
         await ctx.voice_client.disconnect()
         await ctx.send("ボイスチャンネルから切断しました。")
