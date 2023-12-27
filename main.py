@@ -67,17 +67,26 @@ playback_queue = asyncio.Queue()
 
 async def process_playback_queue():
     while True:
-        voice_client, audio_source = await playback_queue.get()
-        if voice_client and not voice_client.is_playing():
-            voice_client.play(audio_source)
-            while voice_client.is_playing():
-                await asyncio.sleep(0.1)
-        playback_queue.task_done()
+        item = await playback_queue.get()
+        try:
+            if isinstance(item, tuple) and len(item) == 2:
+                voice_client, audio_source = item
+                if voice_client and not voice_client.is_playing():
+                    voice_client.play(audio_source)
+                    while voice_client.is_playing():
+                        await asyncio.sleep(0.1)
+            else:
+                raise ValueError(f"Unexpected item format in queue: {item}")
+        except ValueError as e:
+            print(e)  # Log the error or handle it as needed.
+        finally:
+            playback_queue.task_done()
 
 
-async def audio_query(text, speaker):
+
+async def audio_query(text, style_id):
     # 音声合成用のクエリを作成します。
-    query_payload = {"text": text, "speaker": speaker}
+    query_payload = {"text": text, "speaker": style_id}
     async with aiohttp.ClientSession() as session:
         async with session.post(
             "http://127.0.0.1:50021/audio_query", headers=headers, params=query_payload
@@ -106,9 +115,9 @@ async def synthesis(speaker, query_data):
             return None
 
 
-async def text_to_speech(voice_client, text, speaker_id):
+async def text_to_speech(voice_client, text, style_id):
     # スピーカー名とスタイル名を取得
-    speaker_name, style_name = get_style_details(speaker_id)
+    speaker_name, style_name = get_style_details(style_id)
 
     # ステータスメッセージにスピーカー名とスタイル名を含める
     reading_status = f"読み上げ中 | VOICEVOX:{speaker_name}"
@@ -119,9 +128,9 @@ async def text_to_speech(voice_client, text, speaker_id):
         await asyncio.sleep(0.5)
 
     # 音声合成のクエリデータを取得し、音声を再生します。
-    query_data = await audio_query(text, speaker_id)
+    query_data = await audio_query(text, style_id)
     if query_data:
-        voice_data = await synthesis(speaker_id, query_data)
+        voice_data = await synthesis(style_id, query_data)
         if voice_data:
             audio_source = discord.FFmpegPCMAudio(io.BytesIO(voice_data), pipe=True)
             try:
@@ -404,7 +413,7 @@ async def join(ctx):
         )
 
         # メッセージとスタイルIDをキューに追加
-        await playback_queue.put((voice_client, welcome_message, notify_style_id))
+        await text_to_speech(voice_client, welcome_message, notify_style_id)
 
 
 @bot.command(name="leave", help="ボットをボイスチャンネルから切断します。")
