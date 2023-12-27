@@ -17,7 +17,6 @@ MAX_MESSAGE_LENGTH = 200  # 適切な最大長を定義
 current_voice_client = None
 
 
-speech_queue = asyncio.Queue()
 headers = {"Content-Type": "application/json"}
 intents = discord.Intents.default()
 intents.messages = True
@@ -61,6 +60,19 @@ def load_style_settings():
             return json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         return {}
+
+
+playback_queue = asyncio.Queue()
+
+
+async def process_playback_queue():
+    while True:
+        voice_client, audio_source = await playback_queue.get()
+        if voice_client and not voice_client.is_playing():
+            voice_client.play(audio_source)
+            while voice_client.is_playing():
+                await asyncio.sleep(0.1)
+        playback_queue.task_done()
 
 
 async def audio_query(text, speaker):
@@ -113,7 +125,8 @@ async def text_to_speech(voice_client, text, speaker_id):
         if voice_data:
             try:
                 audio_source = discord.FFmpegPCMAudio(io.BytesIO(voice_data), pipe=True)
-                voice_client.play(audio_source)
+                # 再生キューに追加
+                await playback_queue.put((voice_client, audio_source))
                 while voice_client.is_playing():
                     await asyncio.sleep(1)
             finally:
@@ -124,26 +137,11 @@ async def text_to_speech(voice_client, text, speaker_id):
     await bot.change_presence(activity=discord.Game(name="待機中 | !helpでヘルプ"))
 
 
-async def process_speech_queue():
-    global current_voice_client
-    while True:
-        try:
-            voice_client, text, style_id = await speech_queue.get()
-            current_voice_client = voice_client
-            await text_to_speech(voice_client, text, style_id)
-        except Exception as e:
-            print(f"Error processing speech queue: {e}")
-        finally:
-            speech_queue.task_done()
-            current_voice_client = None
-
-
 @bot.event
 async def on_ready():
     print(f"Logged in as {bot.user.name}")
     await bot.change_presence(activity=discord.Game(name="待機中 | !helpでヘルプ"))
-    # バックグラウンドタスクとしてキュー処理関数を開始します。
-    bot.loop.create_task(process_speech_queue())
+    bot.loop.create_task(process_playback_queue())
 
 
 @bot.event
@@ -191,17 +189,17 @@ async def on_message(message):
 
     style_id = speaker_settings.get(str(message.author.id), user_default_style_id)
 
-    await speech_queue.put((voice_client, message.content, style_id))
+    await text_to_speech(voice_client, message.content, style_id)
 
 
-# キューをクリアするための関数
-async def clear_speech_queue():
-    while not speech_queue.empty():
+async def clear_playback_queue():
+    while not playback_queue.empty():
         try:
-            speech_queue.get_nowait()
+            playback_queue.get_nowait()
         except asyncio.QueueEmpty:
             continue
-        speech_queue.task_done()
+        playback_queue.task_done()
+
 
 
 @bot.command(name="clear", help="読み上げキューをクリアし、待機状態にします。")
@@ -213,7 +211,7 @@ async def clear(ctx):
         current_voice_client.stop()
 
     # キューをクリアする
-    await clear_speech_queue()
+    await clear_playback_queue()
 
     # ボットのステータスを更新する
     await bot.change_presence(activity=discord.Game(name="待機中 | !helpでヘルプ"))
@@ -241,7 +239,7 @@ async def on_voice_state_update(member, before, after):
         notify_style_id = speaker_settings.get(str(member.guild.id), {}).get(
             "notify", NOTIFY_STYLE_ID
         )
-        await speech_queue.put((voice_client, message, notify_style_id))
+        await playback_queue.put((voice_client, message, notify_style_id))
 
     # ボイスチャンネルから切断したとき
     elif (
@@ -251,7 +249,7 @@ async def on_voice_state_update(member, before, after):
         notify_style_id = speaker_settings.get(str(member.guild.id), {}).get(
             "notify", NOTIFY_STYLE_ID
         )
-        await speech_queue.put((voice_client, message, notify_style_id))
+        await playback_queue.put((voice_client, message, notify_style_id))
 
     # ボイスチャンネルに誰もいなくなったら自動的に切断します。
     if after.channel is None and member.guild.voice_client:
@@ -262,7 +260,7 @@ async def on_voice_state_update(member, before, after):
                 current_voice_client.stop()
 
             # キューをクリアする
-            await clear_speech_queue()
+            await clear_playback_queue()
             guild_id = str(member.guild.id)
             if (
                 guild_id in speaker_settings
@@ -339,9 +337,7 @@ async def notify_style(ctx, style_id: int = None):
             return
 
     # 現在のサーバースタイル設定を表示
-    notify_style_id = speaker_settings.get(guild_id, {}).get(
-        "default", NOTIFY_STYLE_ID
-    )
+    notify_style_id = speaker_settings.get(guild_id, {}).get("default", NOTIFY_STYLE_ID)
     notify_speaker, notify_default_name = get_style_details(notify_style_id, "デフォルト")
 
     response = f"**{ctx.guild.name}の通知スタイル:** {notify_speaker} {notify_default_name} (ID: {notify_style_id})\n"
@@ -403,7 +399,7 @@ async def join(ctx):
         )
 
         # メッセージとスタイルIDをキューに追加
-        await speech_queue.put((voice_client, welcome_message, notify_style_id))
+        await playback_queue.put((voice_client, welcome_message, notify_style_id))
 
 
 @bot.command(name="leave", help="ボットをボイスチャンネルから切断します。")
