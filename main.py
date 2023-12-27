@@ -123,15 +123,21 @@ async def text_to_speech(voice_client, text, speaker_id):
     if query_data:
         voice_data = await synthesis(speaker_id, query_data)
         if voice_data:
+            audio_source = discord.FFmpegPCMAudio(io.BytesIO(voice_data), pipe=True)
             try:
-                audio_source = discord.FFmpegPCMAudio(io.BytesIO(voice_data), pipe=True)
-                # 再生キューに追加
+                # Add the audio source to the playback queue
                 await playback_queue.put((voice_client, audio_source))
                 while voice_client.is_playing():
                     await asyncio.sleep(1)
+            except Exception as e:
+                print(f"An error occurred while playing audio: {e}")
             finally:
-                # エラーが発生してもリソースを確実に解放します。
-                audio_source.cleanup()
+                try:
+                    # Ensure cleanup is safe to call
+                    if audio_source and not audio_source.is_closed():
+                        audio_source.cleanup()
+                except Exception as e:
+                    print(f"Failed to clean up audio source: {e}")
 
     # ステータスを待機中に更新
     await bot.change_presence(activity=discord.Game(name="待機中 | !helpでヘルプ"))
