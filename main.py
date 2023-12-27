@@ -223,6 +223,8 @@ async def on_voice_state_update(member, before, after):
     if after.channel is None and member.guild.voice_client:
         # ボイスチャンネルにまだ誰かいるか確認します。
         if not any(not user.bot for user in before.channel.members):
+            # Update the bot's status here
+            await bot.change_presence(activity=discord.Game(name="待機中 | !helpでヘルプ"))
             server_id = str(member.guild.id)
             if (
                 server_id in speaker_settings
