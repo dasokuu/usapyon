@@ -140,13 +140,6 @@ async def text_to_speech(voice_client, text, style_id):
                     await asyncio.sleep(1)
             except Exception as e:
                 print(f"An error occurred while playing audio: {e}")
-            finally:
-                try:
-                    # Ensure cleanup is safe to call
-                    if audio_source:
-                        audio_source.cleanup()
-                except Exception as e:
-                    print(f"Failed to clean up audio source: {e}")
 
     # ステータスを待機中に更新
     await bot.change_presence(activity=discord.Game(name="待機中 | !helpでヘルプ"))
