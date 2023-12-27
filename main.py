@@ -151,23 +151,26 @@ async def text_to_speech(voice_client, text, style_id, guild_id):
     # ステータスを待機中に更新
     await bot.change_presence(activity=discord.Game(name="待機中 | !helpでヘルプ"))
 
+
 async def replace_mentions_with_names(text, message):
     """
-    メッセージ内のメンションをユーザー名に置き換えます。
+    メッセージ内のメンションをより自然な形式「○○さんへ」に置き換えます。
     """
     # メンションを検出する正規表現パターン
-    mention_pattern = re.compile(r'<@!?(\d+)>')
+    mention_pattern = re.compile(r"<@!?(\d+)>")
 
     def replace_mention(match):
         # マッチしたIDを取得
         user_id = int(match.group(1))
         # メンションされたユーザーをサーバーから検索
         user = message.guild.get_member(user_id)
-        # ユーザーが見つかればその名前を返し、見つからなければ元のメンションテキストを返す
-        return user.display_name if user else match.group(0)
+        # ユーザーが見つかればその名前に「さんへ」を追加して返し、見つからなければ元のメンションテキストを返す
+        return user.display_name + "さんへ" if user else match.group(0)
 
-    # テキスト内の全てのメンションをユーザー名に置き換える
+    # テキスト内の全てのメンションを変換
     return mention_pattern.sub(replace_mention, text)
+
+
 @bot.event
 async def on_ready():
     print(f"Logged in as {bot.user.name}")
