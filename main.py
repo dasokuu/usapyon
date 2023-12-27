@@ -24,12 +24,9 @@ intents.guilds = True
 intents.voice_states = True
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
-
-# Global dictionary for guild-specific playback queues
 guild_playback_queues = {}
-
 def get_guild_playback_queue(guild_id):
-    """Retrieve or create a playback queue for a specific guild."""
+    """指定されたギルドIDのplayback_queueを取得または作成します。"""
     if guild_id not in guild_playback_queues:
         guild_playback_queues[guild_id] = asyncio.Queue()
     return guild_playback_queues[guild_id]
@@ -75,17 +72,22 @@ playback_queue = asyncio.Queue()
 
 
 async def process_playback_queue(guild_id):
-    """Process the playback queue for a specific guild."""
-    queue = get_guild_playback_queue(guild_id)
+    guild_queue = get_guild_playback_queue(guild_id)
     while True:
-        item = await queue.get()
+        item = await guild_queue.get()
         try:
-            # Your existing processing logic here...
-            pass  # Replace with your existing processing logic
+            if isinstance(item, tuple) and len(item) == 2:
+                voice_client, audio_source = item
+                if voice_client and not voice_client.is_playing():
+                    voice_client.play(audio_source)
+                    while voice_client.is_playing():
+                        await asyncio.sleep(0.1)
+            else:
+                raise ValueError(f"Unexpected item format in queue: {item}")
         except ValueError as e:
             print(e)  # Log the error or handle it as needed.
         finally:
-            queue.task_done()
+            guild_queue.task_done()
 
 
 
@@ -150,13 +152,11 @@ async def text_to_speech(voice_client, text, style_id):
     await bot.change_presence(activity=discord.Game(name="待機中 | !helpでヘルプ"))
 
 
-# Modify the on_ready event to start processing queues for each guild
 @bot.event
 async def on_ready():
     print(f"Logged in as {bot.user.name}")
     await bot.change_presence(activity=discord.Game(name="待機中 | !helpでヘルプ"))
-    for guild in bot.guilds:
-        bot.loop.create_task(process_playback_queue(str(guild.id)))
+    bot.loop.create_task(process_playback_queue())
 
 
 @bot.event
@@ -204,32 +204,30 @@ async def on_message(message):
 
     style_id = speaker_settings.get(str(message.author.id), user_default_style_id)
 
-    # Use the guild-specific queue
-    playback_queue = get_guild_playback_queue(guild_id)
-    await playback_queue.put((voice_client, message.content, style_id))
+    await text_to_speech(voice_client, message.content, style_id)
 
 
 async def clear_playback_queue(guild_id):
-    """Clear the playback queue for a specific guild."""
-    queue = get_guild_playback_queue(guild_id)
-    while not queue.empty():
+    guild_queue = get_guild_playback_queue(guild_id)
+    while not guild_queue.empty():
         try:
-            queue.get_nowait()
+            guild_queue.get_nowait()
         except asyncio.QueueEmpty:
             continue
-        queue.task_done()
+        guild_queue.task_done()
 
 
 @bot.command(name="clear", help="読み上げキューをクリアし、待機状態にします。")
 async def clear(ctx):
     global current_voice_client
+    guild_id = str(ctx.guild.id)
 
     # 現在の読み上げを停止する
     if current_voice_client and current_voice_client.is_playing():
         current_voice_client.stop()
 
     # キューをクリアする
-    await clear_playback_queue()
+    await clear_playback_queue(guild_id)
 
     # ボットのステータスを更新する
     await bot.change_presence(activity=discord.Game(name="待機中 | !helpでヘルプ"))
@@ -240,6 +238,9 @@ async def clear(ctx):
 
 @bot.event
 async def on_voice_state_update(member, before, after):
+    guild_id = str(message.guild.id)
+    guild_queue = get_guild_playback_queue(guild_id)
+
     # ボット自身の状態変更を無視
     if member == bot.user:
         return
@@ -257,7 +258,7 @@ async def on_voice_state_update(member, before, after):
         notify_style_id = speaker_settings.get(str(member.guild.id), {}).get(
             "notify", NOTIFY_STYLE_ID
         )
-        await playback_queue.put((voice_client, message, notify_style_id))
+        await guild_queue.put((voice_client, message, notify_style_id))
 
     # ボイスチャンネルから切断したとき
     elif (
@@ -267,7 +268,7 @@ async def on_voice_state_update(member, before, after):
         notify_style_id = speaker_settings.get(str(member.guild.id), {}).get(
             "notify", NOTIFY_STYLE_ID
         )
-        await playback_queue.put((voice_client, message, notify_style_id))
+        await guild_queue.put((voice_client, message, notify_style_id))
 
     # ボイスチャンネルに誰もいなくなったら自動的に切断します。
     if after.channel is None and member.guild.voice_client:
@@ -278,8 +279,7 @@ async def on_voice_state_update(member, before, after):
                 current_voice_client.stop()
 
             # キューをクリアする
-            await clear_playback_queue()
-            guild_id = str(member.guild.id)
+            await clear_playback_queue(guild_id)
             if (
                 guild_id in speaker_settings
                 and "text_channel" in speaker_settings[guild_id]
