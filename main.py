@@ -169,7 +169,7 @@ async def replace_mentions_with_names(text, message):
     def replace_role_mention(match):
         role_id = int(match.group(1))
         role = discord.utils.get(message.guild.roles, id=role_id)
-        return role.name + "役職" if role else match.group(0)
+        return role.name + "役職" if role else "特定のロール"  # ロールが見つからない場合のテキストは適宜変更してください
 
     # ユーザーメンションを「○○さんへ」に置き換え
     text = user_mention_pattern.sub(replace_user_mention, text)
