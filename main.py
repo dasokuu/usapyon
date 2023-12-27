@@ -1,4 +1,5 @@
 import asyncio
+import re
 import discord
 from discord.ext import commands
 import json
@@ -159,8 +160,15 @@ async def on_ready():
 
 @bot.event
 async def on_message(message):
+    # メッセージを処理する前に、カスタム絵文字とURLを置換
+    def replace_custom_emoji_and_urls(text):
+        # カスタム絵文字を置換
+        text = re.sub(r'<:\w*:\d*>', '', text)
+        # URLを「URL省略」と置換
+        text = re.sub(r'https?://\S+', 'URL省略', text)
+        return text
     guild_id = str(message.guild.id)
-
+    
     # ボット自身のメッセージは無視
     if message.author == bot.user:
         return
@@ -201,8 +209,9 @@ async def on_message(message):
     )
 
     style_id = speaker_settings.get(str(message.author.id), user_default_style_id)
-
-    await text_to_speech(voice_client, message.content, style_id, guild_id)
+    # メッセージ内容を置換
+    message_content = replace_custom_emoji_and_urls(message.content)
+    await text_to_speech(voice_client, message_content, style_id, guild_id)
 
 
 async def clear_playback_queue(guild_id):
