@@ -155,7 +155,6 @@ async def text_to_speech(voice_client, text, style_id, guild_id):
 async def replace_mentions_with_names(text, message):
     """
     メッセージ内のユーザーメンションを「○○さんへ」、ロールメンションを「○○役職」に置き換えます。
-    ボットの名前が変更されていても正しく表示されるようにします。
     """
     # ユーザーメンションを検出する正規表現パターン
     user_mention_pattern = re.compile(r"<@!?(\d+)>")
@@ -164,19 +163,15 @@ async def replace_mentions_with_names(text, message):
 
     def replace_user_mention(match):
         user_id = int(match.group(1))
-        # メッセージのあるギルドからユーザー情報を取得
         user = message.guild.get_member(user_id)
-        # ユーザーが見つかった場合はその表示名を、見つからなければ元のメンションを返す
         return user.display_name + "さん" if user else match.group(0)
 
     def replace_role_mention(match):
         role_id = int(match.group(1))
-        # メッセージのあるギルドからロール情報を取得
         role = discord.utils.get(message.guild.roles, id=role_id)
-        # ロールが見つかった場合はその名前を、見つからなければ元のメンションを返す
         return role.name + "役職" if role else match.group(0)
 
-    # ユーザーメンションを「○○さんへ」に置き換え
+    # ユーザーメンションを「○○さん」に置き換え
     text = user_mention_pattern.sub(replace_user_mention, text)
     # ロールメンションを「○○役職」に置き換え
     text = role_mention_pattern.sub(replace_role_mention, text)
