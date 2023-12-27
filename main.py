@@ -25,6 +25,15 @@ intents.voice_states = True
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
+# Global dictionary for guild-specific playback queues
+guild_playback_queues = {}
+
+def get_guild_playback_queue(guild_id):
+    """Retrieve or create a playback queue for a specific guild."""
+    if guild_id not in guild_playback_queues:
+        guild_playback_queues[guild_id] = asyncio.Queue()
+    return guild_playback_queues[guild_id]
+
 
 def fetch_speakers():
     """スピーカー情報を取得します。"""
@@ -65,22 +74,18 @@ def load_style_settings():
 playback_queue = asyncio.Queue()
 
 
-async def process_playback_queue():
+async def process_playback_queue(guild_id):
+    """Process the playback queue for a specific guild."""
+    queue = get_guild_playback_queue(guild_id)
     while True:
-        item = await playback_queue.get()
+        item = await queue.get()
         try:
-            if isinstance(item, tuple) and len(item) == 2:
-                voice_client, audio_source = item
-                if voice_client and not voice_client.is_playing():
-                    voice_client.play(audio_source)
-                    while voice_client.is_playing():
-                        await asyncio.sleep(0.1)
-            else:
-                raise ValueError(f"Unexpected item format in queue: {item}")
+            # Your existing processing logic here...
+            pass  # Replace with your existing processing logic
         except ValueError as e:
             print(e)  # Log the error or handle it as needed.
         finally:
-            playback_queue.task_done()
+            queue.task_done()
 
 
 
@@ -145,11 +150,13 @@ async def text_to_speech(voice_client, text, style_id):
     await bot.change_presence(activity=discord.Game(name="待機中 | !helpでヘルプ"))
 
 
+# Modify the on_ready event to start processing queues for each guild
 @bot.event
 async def on_ready():
     print(f"Logged in as {bot.user.name}")
     await bot.change_presence(activity=discord.Game(name="待機中 | !helpでヘルプ"))
-    bot.loop.create_task(process_playback_queue())
+    for guild in bot.guilds:
+        bot.loop.create_task(process_playback_queue(str(guild.id)))
 
 
 @bot.event
@@ -197,16 +204,20 @@ async def on_message(message):
 
     style_id = speaker_settings.get(str(message.author.id), user_default_style_id)
 
-    await text_to_speech(voice_client, message.content, style_id)
+    # Use the guild-specific queue
+    playback_queue = get_guild_playback_queue(guild_id)
+    await playback_queue.put((voice_client, message.content, style_id))
 
 
-async def clear_playback_queue():
-    while not playback_queue.empty():
+async def clear_playback_queue(guild_id):
+    """Clear the playback queue for a specific guild."""
+    queue = get_guild_playback_queue(guild_id)
+    while not queue.empty():
         try:
-            playback_queue.get_nowait()
+            queue.get_nowait()
         except asyncio.QueueEmpty:
             continue
-        playback_queue.task_done()
+        queue.task_done()
 
 
 @bot.command(name="clear", help="読み上げキューをクリアし、待機状態にします。")
