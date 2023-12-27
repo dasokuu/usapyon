@@ -239,7 +239,7 @@ async def clear(ctx):
 
 @bot.event
 async def on_voice_state_update(member, before, after):
-    guild_id = str(message.guild.id)
+    guild_id = str(member.guild.id)
     guild_queue = get_guild_playback_queue(guild_id)
 
     # ボット自身の状態変更を無視
