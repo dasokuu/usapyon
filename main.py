@@ -218,23 +218,23 @@ async def clear_playback_queue(guild_id):
         guild_queue.task_done()
 
 
-@bot.command(name="clear", help="読み上げキューをクリアし、待機状態にします。")
-async def clear(ctx):
-    global current_voice_client
-    guild_id = str(ctx.guild.id)
+# @bot.command(name="clear", help="読み上げキューをクリアし、待機状態にします。")
+# async def clear(ctx):
+#     global current_voice_client
+#     guild_id = str(ctx.guild.id)
 
-    # 現在の読み上げを停止する
-    if current_voice_client and current_voice_client.is_playing():
-        current_voice_client.stop()
+#     # 現在の読み上げを停止する
+#     if current_voice_client and current_voice_client.is_playing():
+#         current_voice_client.stop()
 
-    # キューをクリアする
-    await clear_playback_queue(guild_id)
+#     # キューをクリアする
+#     await clear_playback_queue(guild_id)
 
-    # ボットのステータスを更新する
-    await bot.change_presence(activity=discord.Game(name="待機中 | !helpでヘルプ"))
+#     # ボットのステータスを更新する
+#     await bot.change_presence(activity=discord.Game(name="待機中 | !helpでヘルプ"))
 
-    # ユーザーに通知する
-    await ctx.send("読み上げを停止し、キューをクリアしました。ボットは待機中です。")
+#     # ユーザーに通知する
+#     await ctx.send("読み上げを停止し、キューをクリアしました。ボットは待機中です。")
 
 
 @bot.event
