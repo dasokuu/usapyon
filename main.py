@@ -259,7 +259,7 @@ async def on_voice_state_update(member, before, after):
         notify_style_id = speaker_settings.get(str(member.guild.id), {}).get(
             "notify", NOTIFY_STYLE_ID
         )
-        await text_to_speech(voice_client, message.content, notify_style_id, guild_id)
+        await text_to_speech(voice_client, message, notify_style_id, guild_id)
 
 
     # ボイスチャンネルから切断したとき
@@ -270,7 +270,7 @@ async def on_voice_state_update(member, before, after):
         notify_style_id = speaker_settings.get(str(member.guild.id), {}).get(
             "notify", NOTIFY_STYLE_ID
         )
-        await text_to_speech(voice_client, message.content, notify_style_id, guild_id)
+        await text_to_speech(voice_client, message, notify_style_id, guild_id)
 
     # ボイスチャンネルに誰もいなくなったら自動的に切断します。
     if after.channel is None and member.guild.voice_client:
