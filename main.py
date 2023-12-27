@@ -156,7 +156,8 @@ async def text_to_speech(voice_client, text, style_id):
 async def on_ready():
     print(f"Logged in as {bot.user.name}")
     await bot.change_presence(activity=discord.Game(name="待機中 | !helpでヘルプ"))
-    bot.loop.create_task(process_playback_queue())
+    for guild in bot.guilds:
+        bot.loop.create_task(process_playback_queue(str(guild.id)))
 
 
 @bot.event
