@@ -201,7 +201,6 @@ async def clear_playback_queue():
         playback_queue.task_done()
 
 
-
 @bot.command(name="clear", help="読み上げキューをクリアし、待機状態にします。")
 async def clear(ctx):
     global current_voice_client
