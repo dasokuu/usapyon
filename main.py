@@ -122,7 +122,7 @@ async def synthesis(speaker, query_data):
             return None
 
 
-async def text_to_speech(voice_client, text, style_id):
+async def text_to_speech(voice_client, text, style_id, guild_id):
     # スピーカー名とスタイル名を取得
     speaker_name, style_name = get_style_details(style_id)
 
@@ -140,11 +140,10 @@ async def text_to_speech(voice_client, text, style_id):
         voice_data = await synthesis(style_id, query_data)
         if voice_data:
             audio_source = discord.FFmpegPCMAudio(io.BytesIO(voice_data), pipe=True)
+            guild_queue = get_guild_playback_queue(guild_id)
             try:
-                # Add the audio source to the playback queue
-                await playback_queue.put((voice_client, audio_source))
-                while voice_client.is_playing():
-                    await asyncio.sleep(1)
+                # ギルド固有のキューにオーディオソースを追加
+                await guild_queue.put((voice_client, audio_source))
             except Exception as e:
                 print(f"An error occurred while playing audio: {e}")
 
@@ -158,6 +157,7 @@ async def on_ready():
     await bot.change_presence(activity=discord.Game(name="待機中 | !helpでヘルプ"))
     for guild in bot.guilds:
         bot.loop.create_task(process_playback_queue(str(guild.id)))
+
 
 
 @bot.event
@@ -205,7 +205,7 @@ async def on_message(message):
 
     style_id = speaker_settings.get(str(message.author.id), user_default_style_id)
 
-    await text_to_speech(voice_client, message.content, style_id)
+    await text_to_speech(voice_client, message.content, style_id, guild_id)
 
 
 async def clear_playback_queue(guild_id):
@@ -418,7 +418,7 @@ async def join(ctx):
         )
 
         # メッセージとスタイルIDをキューに追加
-        await text_to_speech(voice_client, welcome_message, notify_style_id)
+        await text_to_speech(voice_client, welcome_message, notify_style_id, guild_id)
 
 
 @bot.command(name="leave", help="ボットをボイスチャンネルから切断します。")
@@ -435,12 +435,13 @@ async def leave(ctx):
 
 @bot.command(name="skip", help="現在再生中の音声をスキップします。")
 async def skip(ctx):
-    global current_voice_client
-    if current_voice_client and current_voice_client.is_playing():
-        current_voice_client.stop()
+    voice_client = ctx.guild.voice_client
+    if voice_client and voice_client.is_playing():
+        voice_client.stop()
         await ctx.send("現在の読み上げをスキップしました。")
     else:
         await ctx.send("再生中の音声はありません。")
+
 
 
 @bot.command(name="showstyles", help="利用可能なスタイルIDの一覧を表示します。")
