@@ -25,6 +25,8 @@ intents.voice_states = True
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 guild_playback_queues = {}
+
+
 def get_guild_playback_queue(guild_id):
     """指定されたギルドIDのplayback_queueを取得または作成します。"""
     if guild_id not in guild_playback_queues:
@@ -88,7 +90,6 @@ async def process_playback_queue(guild_id):
             print(e)  # Log the error or handle it as needed.
         finally:
             guild_queue.task_done()
-
 
 
 async def audio_query(text, style_id):
@@ -157,7 +158,6 @@ async def on_ready():
     await bot.change_presence(activity=discord.Game(name="待機中 | !helpでヘルプ"))
     for guild in bot.guilds:
         bot.loop.create_task(process_playback_queue(str(guild.id)))
-
 
 
 @bot.event
@@ -441,7 +441,6 @@ async def skip(ctx):
         await ctx.send("現在の読み上げをスキップしました。")
     else:
         await ctx.send("再生中の音声はありません。")
-
 
 
 @bot.command(name="showstyles", help="利用可能なスタイルIDの一覧を表示します。")
