@@ -154,21 +154,29 @@ async def text_to_speech(voice_client, text, style_id, guild_id):
 
 async def replace_mentions_with_names(text, message):
     """
-    メッセージ内のメンションをより自然な形式「○○さんへ」に置き換えます。
+    メッセージ内のユーザーメンションを「○○さんへ」、ロールメンションを「○○役職」に置き換えます。
     """
-    # メンションを検出する正規表現パターン
-    mention_pattern = re.compile(r"<@!?(\d+)>")
+    # ユーザーメンションを検出する正規表現パターン
+    user_mention_pattern = re.compile(r"<@!?(\d+)>")
+    # ロールメンションを検出する正規表現パターン
+    role_mention_pattern = re.compile(r"<@&(\d+)>")
 
-    def replace_mention(match):
-        # マッチしたIDを取得
+    def replace_user_mention(match):
         user_id = int(match.group(1))
-        # メンションされたユーザーをサーバーから検索
         user = message.guild.get_member(user_id)
-        # ユーザーが見つかればその名前に「さんへ」を追加して返し、見つからなければ元のメンションテキストを返す
         return user.display_name + "さんへ" if user else match.group(0)
 
-    # テキスト内の全てのメンションを変換
-    return mention_pattern.sub(replace_mention, text)
+    def replace_role_mention(match):
+        role_id = int(match.group(1))
+        role = discord.utils.get(message.guild.roles, id=role_id)
+        return role.name + "役職" if role else match.group(0)
+
+    # ユーザーメンションを「○○さんへ」に置き換え
+    text = user_mention_pattern.sub(replace_user_mention, text)
+    # ロールメンションを「○○役職」に置き換え
+    text = role_mention_pattern.sub(replace_role_mention, text)
+
+    return text
 
 
 @bot.event
