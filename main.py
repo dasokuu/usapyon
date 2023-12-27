@@ -156,14 +156,22 @@ async def on_ready():
     await bot.change_presence(activity=discord.Game(name="待機中 | !helpでヘルプ"))
     for guild in bot.guilds:
         bot.loop.create_task(process_playback_queue(str(guild.id)))
-
-
+import pykakasi
+# pykakasiの準備
+kks = pykakasi.kakasi()
 @bot.event
 async def on_message(message):
     # メッセージを処理する前に、カスタム絵文字とURLを置換
     def replace_custom_emoji_and_urls(text):
+    # カスタム絵文字の名前をローマ字に変換して置換
+        def replace_emoji(match):
+            emoji_name = match.group(1)  # カスタム絵文字の名前を取得
+            result = kks.convert(emoji_name)  # ローマ字に変換
+            romanji_name = "".join([item['hepburn'] for item in result])  # ローマ字を結合
+            return romanji_name  # ローマ字読みの名前を返す
+
         # カスタム絵文字を置換
-        text = re.sub(r'<:\w*:\d*>', '', text)
+        text = re.sub(r'<:(\w*):\d*>', replace_emoji, text)
         # URLを「URL省略」と置換
         text = re.sub(r'https?://\S+', 'URL省略', text)
         return text
