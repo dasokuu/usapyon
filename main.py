@@ -151,7 +151,23 @@ async def text_to_speech(voice_client, text, style_id, guild_id):
     # ステータスを待機中に更新
     await bot.change_presence(activity=discord.Game(name="待機中 | !helpでヘルプ"))
 
+async def replace_mentions_with_names(text, message):
+    """
+    メッセージ内のメンションをユーザー名に置き換えます。
+    """
+    # メンションを検出する正規表現パターン
+    mention_pattern = re.compile(r'<@!?(\d+)>')
 
+    def replace_mention(match):
+        # マッチしたIDを取得
+        user_id = int(match.group(1))
+        # メンションされたユーザーをサーバーから検索
+        user = message.guild.get_member(user_id)
+        # ユーザーが見つかればその名前を返し、見つからなければ元のメンションテキストを返す
+        return user.display_name if user else match.group(0)
+
+    # テキスト内の全てのメンションをユーザー名に置き換える
+    return mention_pattern.sub(replace_mention, text)
 @bot.event
 async def on_ready():
     print(f"Logged in as {bot.user.name}")
@@ -215,8 +231,11 @@ async def on_message(message):
     )
 
     style_id = speaker_settings.get(str(message.author.id), user_default_style_id)
+    # メッセージからメンションをユーザー名に置き換える
+    message_content = await replace_mentions_with_names(message.content, message)
+
     # メッセージ内容を置換
-    message_content = replace_custom_emoji_and_urls(message.content)
+    message_content = replace_custom_emoji_and_urls(message_content)
     await text_to_speech(voice_client, message_content, style_id, guild_id)
 
 
