@@ -237,7 +237,7 @@ async def on_voice_state_update(member, before, after):
             await member.guild.voice_client.disconnect()
 
 
-@bot.command(name="_userdefaultstyle", help="ユーザーのデフォルトスタイルを表示または設定します。")
+@bot.command(name="_userdefaultstyle", help="ユーザーのデフォルトスタイルを表示または設定します。\n使用法: `!_userdefaultstyle [スタイルID]`")
 async def user_default_style(ctx, style_id: int = None):
     server_id = str(ctx.guild.id)
 
@@ -272,7 +272,7 @@ async def user_default_style(ctx, style_id: int = None):
         await ctx.send(response)
 
 
-@bot.command(name="notifystyle", help="入退室通知のスタイルを表示または設定します。")
+@bot.command(name="notifystyle", help="入退室通知のスタイルを表示または設定します。\n使用法: `!notifystyle [スタイルID]`")
 async def notify_style(ctx, style_id: int = None):
     server_id = str(ctx.guild.id)
 
@@ -305,7 +305,7 @@ async def notify_style(ctx, style_id: int = None):
     await ctx.send(response)
 
 
-@bot.command(name="mystyle", help="あなたの現在のスタイルを表示または設定します。")
+@bot.command(name="mystyle", help="あなたの現在のスタイルを表示または設定します。\n使用法: `!mystyle [スタイルID]`")
 async def my_style(ctx, style_id: int = None):
     user_id = str(ctx.author.id)
 
