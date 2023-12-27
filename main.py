@@ -70,9 +70,6 @@ def load_style_settings():
         return {}
 
 
-playback_queue = asyncio.Queue()
-
-
 async def process_playback_queue(guild_id):
     guild_queue = get_guild_playback_queue(guild_id)
     while True:
@@ -240,8 +237,6 @@ async def clear_playback_queue(guild_id):
 @bot.event
 async def on_voice_state_update(member, before, after):
     guild_id = str(member.guild.id)
-    guild_queue = get_guild_playback_queue(guild_id)
-
     # ボット自身の状態変更を無視
     if member == bot.user:
         return
@@ -260,7 +255,6 @@ async def on_voice_state_update(member, before, after):
             "notify", NOTIFY_STYLE_ID
         )
         await text_to_speech(voice_client, message, notify_style_id, guild_id)
-
 
     # ボイスチャンネルから切断したとき
     elif (
