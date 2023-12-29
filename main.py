@@ -25,7 +25,7 @@ if __name__ == "__main__":
     async def on_ready():
         print(f"Logged in as {bot.user.name}")
         await bot.change_presence(activity=discord.Game(name=GAME_NAME))
-        await self.tree.sync(guild=GUILD_ID)
+        await bot.tree.sync(guild=GUILD_ID)
         for guild in bot.guilds:
             bot.loop.create_task(process_playback_queue(str(guild.id)))
 
