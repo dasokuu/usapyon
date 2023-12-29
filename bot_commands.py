@@ -241,20 +241,20 @@ def setup_commands(bot):
         for embed in embeds:
             await ctx.send(embed=embed)
 
-    # Define choices for type
-    type_choices = [
-        app_commands.Choice(name="user_default", value="user_default"),
-        app_commands.Choice(name="notify", value="notify"),
-        app_commands.Choice(name="user", value="user"),
-    ]
+    # # Define choices for type
+    # type_choices = [
+    #     app_commands.Choice(name="user_default", value="user_default"),
+    #     app_commands.Choice(name="notify", value="notify"),
+    #     app_commands.Choice(name="user", value="user"),
+    # ]
 
-    # Dynamically generate style ID choices based on your styles data
-    for speaker in speakers:
-        name = speaker["name"]
-        style_id_choices = [
-            app_commands.Choice(name=style["name"], value=style["id"])
-            for style in speaker["styles"]
-        ]
+    # # Dynamically generate style ID choices based on your styles data
+    # for speaker in speakers:
+    #     name = speaker["name"]
+    #     style_id_choices = [
+    #         app_commands.Choice(name=style["name"], value=style["id"])
+    #         for style in speaker["styles"]
+    #     ]
 
     # @tree.command(description="スタイルを表示または設定します。")
     # @app_commands.choices(type=type_choices)
