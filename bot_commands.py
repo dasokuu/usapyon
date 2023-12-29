@@ -1,7 +1,13 @@
 import discord
 from discord.ext import commands
 from settings import USER_DEFAULT_STYLE_ID, NOTIFY_STYLE_ID
-from utils import speakers, speaker_settings, save_style_settings, get_style_details, validate_style_id
+from utils import (
+    speakers,
+    speaker_settings,
+    save_style_settings,
+    get_style_details,
+    validate_style_id,
+)
 from voice import text_to_speech
 
 
@@ -63,108 +69,63 @@ class CustomHelpCommand(commands.HelpCommand):
         await channel.send(error)
 
 
+async def handle_style_command(ctx, style_id: int, type: str):
+    guild_id = str(ctx.guild.id)
+    user_id = str(ctx.author.id)
+
+    # スタイルIDが指定されている場合は設定を更新
+    if style_id is not None:
+        valid, speaker_name, style_name = validate_style_id(style_id)
+        if not valid:
+            await ctx.send(f"スタイルID {style_id} は無効です。")
+            return
+
+        # スタイルを更新
+        update_style_setting(guild_id, user_id, style_id, type)
+        await ctx.send(
+            f"スタイルを「{speaker_name} {style_name}」(スタイルID: {style_id})に設定しました。"
+        )
+        return
+
+    # 現在のスタイル設定を表示
+    current_style_id, speaker_name, style_name = get_current_style_details(
+        guild_id, user_id, type
+    )
+    await ctx.send(f"現在のスタイル: {speaker_name} {style_name} (スタイルID: {current_style_id})")
+
+
+def update_style_setting(guild_id, user_id, style_id, type):
+    if type == "default":
+        speaker_settings[guild_id]["user_default"] = style_id
+    elif type == "notify":
+        speaker_settings[guild_id]["notify"] = style_id
+    elif type == "user":
+        speaker_settings[user_id] = style_id
+    save_style_settings()
+
+
+def get_current_style_details(guild_id, user_id, type):
+    if type == "default":
+        style_id = speaker_settings[guild_id].get("user_default", USER_DEFAULT_STYLE_ID)
+    elif type == "notify":
+        style_id = speaker_settings[guild_id].get("notify", NOTIFY_STYLE_ID)
+    elif type == "user":
+        style_id = speaker_settings.get(user_id, USER_DEFAULT_STYLE_ID)
+
+    speaker_name, style_name = get_style_details(style_id)
+    return style_id, speaker_name, style_name
+
+
 def setup_commands(bot):
-    @bot.command(
-        name="default_style",
-        aliases=["ds"],
-        help="このサーバーのユーザーデフォルトスタイルを表示または設定します。",
-    )
-    async def default_style(ctx, style_id: int = None):
-        guild_id = str(ctx.guild.id)
+    @bot.command(name="style", help="スタイルを表示または設定します。")
+    async def style(ctx, style_id: int = None, type: str = "default"):
+        valid_types = ["default", "notify", "user"]
+        if type not in valid_types:
+            await ctx.send(f"無効なタイプが指定されました。有効なタイプ: {', '.join(valid_types)}")
+            return
 
-        # Ensure server settings are initialized
-        if guild_id not in speaker_settings:
-            speaker_settings[guild_id] = {"user_default": USER_DEFAULT_STYLE_ID}
-
-        # Use get to safely access 'user_default'
-        current_default = speaker_settings[guild_id].get(
-            "user_default", USER_DEFAULT_STYLE_ID
-        )
-
-        if style_id is not None:
-            valid, speaker_name, style_name = validate_style_id(style_id)
-            if valid:
-                speaker_name, style_name = get_style_details(style_id)
-                speaker_settings[guild_id]["user_default"] = style_id
-                save_style_settings()
-                await ctx.send(
-                    f"このサーバーのユーザーデフォルトスタイルを「{speaker_name} {style_name}」(スタイルID: {style_id})に設定しました。"
-                )
-            else:
-                await ctx.send(f"スタイルID {style_id} は無効です。")
-        else:
-            # Display current default style
-            user_speaker, user_default_style_name = get_style_details(
-                current_default, "デフォルト"
-            )
-            response = f"**このサーバーのユーザーデフォルトスタイル:** {user_speaker} {user_default_style_name} (スタイルID: {current_default})"
-            await ctx.send(response)
-
-    @bot.command(
-        name="notify_style",
-        aliases=["ns"],
-        help="このサーバーの入退室読み上げのスタイルを表示または設定します。",
-    )
-    async def notify_style(ctx, style_id: int = None):
-        guild_id = str(ctx.guild.id)
-
-        # スタイルIDが指定されている場合は設定を更新
-        if style_id is not None:
-            valid, speaker_name, style_name = validate_style_id(style_id)
-            if valid:
-                speaker_name, style_name = get_style_details(style_id)
-                if guild_id not in speaker_settings:
-                    speaker_settings[guild_id] = {}
-                speaker_settings[guild_id]["notify"] = style_id
-                save_style_settings()
-                await ctx.send(
-                    f"このサーバーの入退室通知スタイルを {style_id} 「{speaker_name} {style_name}」(スタイルID: {style_id})に設定しました。"
-                )
-                return
-            else:
-                await ctx.send(f"スタイルID {style_id} は無効です。")
-                return
-
-        # 現在のサーバースタイル設定を表示
-        notify_style_id = speaker_settings.get(guild_id, {}).get(
-            "default", NOTIFY_STYLE_ID
-        )
-        notify_speaker, notify_default_name = get_style_details(
-            notify_style_id, "デフォルト"
-        )
-
-        response = f"**{ctx.guild.name}の入退室通知スタイル:** {notify_speaker} {notify_default_name} (スタイルID: {notify_style_id})\n"
-        await ctx.send(response)
-
-    @bot.command(
-        name="my_style",
-        aliases=["ms"],
-        help="あなたの現在のスタイルを表示または設定します。",
-    )
-    async def my_style(ctx, style_id: int = None):
-        user_id = str(ctx.author.id)
-
-        # スタイルIDが指定されている場合は設定を更新
-        if style_id is not None:
-            valid, speaker_name, style_name = validate_style_id(style_id)
-            if valid:
-                speaker_name, style_name = get_style_details(style_id)
-                speaker_settings[user_id] = style_id
-                save_style_settings()
-                await ctx.send(
-                    f"{ctx.author.mention}さんのスタイルを「{speaker_name} {style_name}」(スタイルID: {style_id})に設定しました。"
-                )
-                return
-            else:
-                await ctx.send(f"スタイルID {style_id} は無効です。")
-                return
-
-        # 現在のスタイル設定を表示
-        user_style_id = speaker_settings.get(user_id, USER_DEFAULT_STYLE_ID)
-        user_speaker, user_style_name = get_style_details(user_style_id, "デフォルト")
-
-        response = f"**{ctx.author.display_name}さんのスタイル:** {user_speaker} {user_style_name} (スタイルID: {user_style_id})"
-        await ctx.send(response)
+        # コードを共通化し、異なるスタイルタイプに対応
+        await handle_style_command(ctx, style_id, type)
 
     @bot.command(name="join", help="ボットをボイスチャンネルに接続し、読み上げを開始します。")
     async def join(ctx):
