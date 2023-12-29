@@ -5,6 +5,10 @@ from utils import speakers, speaker_settings, save_style_settings, get_style_det
 from voice import text_to_speech
 
 
+import discord
+from discord.ext import commands
+
+
 class CustomHelpCommand(commands.HelpCommand):
     def __init__(self):
         super().__init__(command_attrs={"help": "コマンドリストと説明を表示します。"})  # helpコマンド自体の説明
