@@ -42,7 +42,7 @@ async def audio_query(text, style_id):
     query_payload = {"text": text, "speaker": style_id}
     async with aiohttp.ClientSession() as session:
         async with session.post(
-            "http://127.0.0.1:50021/audio_query", headers=headers, params=query_payload
+            AUDIO_QUERY_URL, headers=headers, params=query_payload
         ) as response:
             if response.status == 200:
                 return await response.json()
@@ -58,7 +58,7 @@ async def synthesis(speaker, query_data):
     headers = {"Content-Type": "application/json", "Accept": "audio/wav"}
     async with aiohttp.ClientSession() as session:
         async with session.post(
-            "http://127.0.0.1:50021/synthesis",
+            SYNTHESIS_URL,
             headers=headers,
             params=synth_payload,
             data=json.dumps(query_data),

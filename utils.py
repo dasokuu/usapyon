@@ -15,10 +15,10 @@ from voice import text_to_speech, clear_playback_queue
 current_voice_client = None
 
 
-def fetch_speakers(speakers_url):
+def fetch_speakers():
     """スピーカー情報を取得します。"""
     try:
-        response = requests.get(speakers_url)
+        response = requests.get(SPEAKERS_URL)
         response.raise_for_status()
         return response.json()
     except requests.RequestException as e:
@@ -37,7 +37,7 @@ def get_style_details(style_id, default_name="デフォルト"):
 
 def save_style_settings():
     """スタイル設定を保存します。"""
-    with open("style_settings.json", "w") as f:
+    with open(STYLE_SETTINGS_FILE, "w") as f:
         json.dump(speaker_settings, f)
 
 
@@ -194,5 +194,5 @@ async def handle_voice_state_update(bot, member, before, after):
 
 # Initialize global variables
 guild_playback_queues = {}
-speakers = fetch_speakers(SPEAKERS_URL)  # URL is now from settings
+speakers = fetch_speakers()  # URL is now from settings
 speaker_settings = load_style_settings()
