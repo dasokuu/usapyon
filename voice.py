@@ -101,8 +101,7 @@ async def speak_line(voice_client, line, style_id, guild_queue):
     asyncio.create_task(play_from_queue(voice_client, guild_queue))
 
 
-async def play_from_queue(guild_id):
-    guild_queue = get_guild_playback_queue(guild_id)
+async def play_from_queue(voice_client, guild_queue):
     while not guild_queue.empty():
         voice_client, audio_source = await guild_queue.get()
         if not voice_client.is_playing():
