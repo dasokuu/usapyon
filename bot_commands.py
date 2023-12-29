@@ -276,6 +276,7 @@ def setup_commands(bot):
                         name=f"{speaker['name']} - {style['name']}", value=style["id"]
                     )
                 )
+        print(style_id_choices)
 
         # Ensure a style_id is provided for certain types
         if type in ["notify", "user"] and not style_id:
