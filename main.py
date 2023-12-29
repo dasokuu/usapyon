@@ -32,7 +32,7 @@ if __name__ == "__main__":
     # tree = app_commands.CommandTree(bot)
 
     # Define a slash command using the bot's tree attribute
-    @bot.tree.command(name='hello', description='Say hello!')
+    @bot.tree.command(guild=GUILD_ID, name='hello', description='Say hello in a specific guild!')
     async def slash_hello(interaction: discord.Interaction):
         await interaction.response.send_message(f'Hello {interaction.user.mention}!')
 
