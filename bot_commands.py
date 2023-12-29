@@ -19,11 +19,14 @@ class CustomHelpCommand(commands.HelpCommand):
             filtered_commands = await self.filter_commands(commands, sort=True)
             command_entries = []
             for command in filtered_commands:
-                command_name = f"!{command.name}" + (
-                    f" [{', '.join(command.aliases)}]" if command.aliases else ""
+                command_name = f"!{command.name}"
+                alias_text = (
+                    f" (または: {'|'.join(f'!{a}' for a in command.aliases)})"
+                    if command.aliases
+                    else ""
                 )
                 command_entries.append(
-                    f"`{command_name}` {command.short_doc or '説明なし'}"
+                    f"`{command_name}`{alias_text}: {command.short_doc or '説明なし'}"
                 )
             if command_entries:
                 cog_name = cog.qualified_name if cog else "その他"
@@ -35,9 +38,13 @@ class CustomHelpCommand(commands.HelpCommand):
         await channel.send(embed=embed)
 
     async def send_command_help(self, command):
+        alias_text = (
+            f" (または: {'|'.join(f'!{a}' for a in command.aliases)})"
+            if command.aliases
+            else ""
+        )
         embed = discord.Embed(
-            title=f"!{command.name}"
-            + (f" [{'|'.join(command.aliases)}]" if command.aliases else ""),
+            title=f"!{command.name}{alias_text}",
             color=0x00FF00,
         )
         embed.add_field(name="説明", value=command.help or "説明が設定されていません。", inline=False)
