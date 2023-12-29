@@ -264,8 +264,20 @@ def setup_commands(bot):
             )
     print(style_id_choices)
     @bot.tree.command(guild=TEST_GUILD_ID, description="スタイルを表示または設定します。")
-    @app_commands.choices(type=type_choices)
-    async def style(interaction: discord.Interaction, type: str, style_id: str = None):
+    @app_commands.choices(type=type_choices, style_id=style_id_choices)
+    async def style(interaction: discord.Interaction, type: str, style_id: app_commands.Transform[Optional[int], int] = None):
+        # Check if the type is valid
+        if type not in valid_types:
+            await interaction.response.send_message(f"⚠️ 指定されたタイプが無効です。", ephemeral=True)
+            return
+
+        # Ensure a style_id is provided for certain types
+        if type in ["notify", "user"] and not style_id:
+            await interaction.response.send_message(f"⚠️ スタイルIDが必要です。", ephemeral=True)
+            return
+
+        # Convert the type from the friendly name back to the internal representation
+        type_internal = next(key for key, value in type_description.items() if value == type)
         # Define valid types
         valid_types = ["user_default", "notify", "user"]
 
