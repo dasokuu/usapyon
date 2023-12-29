@@ -122,7 +122,7 @@ def setup_commands(bot):
                 speaker_settings[guild_id]["notify"] = style_id
                 save_style_settings()
                 await ctx.send(
-                    f"入退出通知スタイルを {style_id} 「{speaker_name} {style_name}」(ID: {style_id})に設定しました。"
+                    f"入退室通知スタイルを {style_id} 「{speaker_name} {style_name}」(ID: {style_id})に設定しました。"
                 )
                 return
             else:

@@ -166,7 +166,7 @@ async def handle_voice_state_update(bot, member, before, after):
     elif (
         before.channel == voice_client.channel and after.channel != voice_client.channel
     ):
-        message = f"{member.display_name}さんが退出しました。"
+        message = f"{member.display_name}さんが退室しました。"
         notify_style_id = speaker_settings.get(str(member.guild.id), {}).get(
             "notify", NOTIFY_STYLE_ID
         )
