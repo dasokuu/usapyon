@@ -212,15 +212,15 @@ def setup_commands(bot):
 
     @bot.command(name="list_styles", aliases=["ls"], help="利用可能なスタイルIDの一覧を表示します。")
     async def list_styles(ctx):
-        message_lines = ["```"]  # コードブロックの開始
-        # メッセージの説明を追加
-        message_lines.append("以下のリストにおいて、カッコ内の数字はスタイルIDを表します。")
+        embed = discord.Embed(title="利用可能なスタイルIDの一覧", color=0x00FF00)
+        embed.description = "各スピーカーと利用可能なスタイルのIDです。"
+
         for speaker in speakers:
             name = speaker["name"]
-            styles = ", ".join(
-                f"{style['name']}({style['id']})" for style in speaker["styles"]
+            styles = "\n".join(
+                f"`{style['name']}` (ID: {style['id']})" for style in speaker["styles"]
             )
-            message_lines.append(f"{name}: {styles}")
-        message_lines.append("```")  # コードブロックの終了
-        # メッセージを送信
-        await ctx.send("\n".join(message_lines))
+            embed.add_field(name=name, value=styles, inline=True)
+
+        channel = ctx.get_destination()
+        await channel.send(embed=embed)
