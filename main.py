@@ -270,25 +270,6 @@ async def clear_playback_queue(guild_id):
         guild_queue.task_done()
 
 
-# @bot.command(name="clear", help="読み上げキューをクリアし、待機状態にします。")
-# async def clear(ctx):
-#     global current_voice_client
-#     guild_id = str(ctx.guild.id)
-
-#     # 現在の読み上げを停止する
-#     if current_voice_client and current_voice_client.is_playing():
-#         current_voice_client.stop()
-
-#     # キューをクリアする
-#     await clear_playback_queue(guild_id)
-
-#     # ボットのステータスを更新する
-#     await bot.change_presence(activity=discord.Game(name="待機中 | !helpでヘルプ"))
-
-#     # ユーザーに通知する
-#     await ctx.send("読み上げを停止し、キューをクリアしました。ボットは待機中です。")
-
-
 @bot.event
 async def on_voice_state_update(member, before, after):
     guild_id = str(member.guild.id)
@@ -503,12 +484,6 @@ async def show_styles(ctx):
         )
         message_lines.append(f"**{name}** {styles}")
     await ctx.send("\n".join(message_lines))
-
-
-@bot.command(name="servers", help="ボットが加入しているサーバー数を確認します。")
-async def servers(ctx):
-    number_of_servers = len(bot.guilds)  # 加入しているサーバー数を取得
-    await ctx.send(f"現在、{number_of_servers}個のサーバーに参加しています。")
 
 
 speakers = fetch_speakers()
