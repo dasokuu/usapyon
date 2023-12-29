@@ -15,11 +15,10 @@ from voice import text_to_speech, clear_playback_queue
 current_voice_client = None
 
 
-def fetch_speakers():
+def fetch_speakers(speakers_url):
     """スピーカー情報を取得します。"""
-    url = "http://127.0.0.1:50021/speakers"
     try:
-        response = requests.get(url)
+        response = requests.get(speakers_url)
         response.raise_for_status()
         return response.json()
     except requests.RequestException as e:
