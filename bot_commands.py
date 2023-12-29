@@ -119,6 +119,12 @@ def get_current_style_details(guild_id, user_id, type):
 def setup_commands(bot):
     @bot.command(name="style", help="スタイルを表示または設定します。")
     async def style(ctx, type: str = "user", style_id: int = None):
+        # Check if the 'type' argument is actually a digit and thus a potential style ID
+        if type.isdigit():
+            # If 'type' is a digit, reassign its value to 'style_id' and set the type to 'user'
+            style_id = int(type)  # Convert the string to an integer for the style ID
+            type = "user"  # Default to 'user' type if only ID is provided
+
         valid_types = ["default", "notify", "user"]
         if type not in valid_types:
             await ctx.send(f"無効なタイプが指定されました。有効なタイプ: {', '.join(valid_types)}")
