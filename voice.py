@@ -4,9 +4,18 @@ import json
 import discord
 import io
 
+# Initialize global variables
+guild_playback_queues = {}
 headers = {"Content-Type": "application/json"}
 
-from utils import get_guild_playback_queue
+
+def get_guild_playback_queue(guild_id):
+    """指定されたギルドIDのplayback_queueを取得または作成します。"""
+    if guild_id not in guild_playback_queues:
+        guild_playback_queues[guild_id] = asyncio.Queue()
+    return guild_playback_queues[guild_id]
+
+
 async def process_playback_queue(guild_id):
     guild_queue = get_guild_playback_queue(guild_id)
     while True:

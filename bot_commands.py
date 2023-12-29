@@ -3,6 +3,7 @@ from settings import USER_DEFAULT_STYLE_ID, NOTIFY_STYLE_ID, MAX_MESSAGE_LENGTH
 from utils import speakers, speaker_settings, save_style_settings, get_style_details
 from voice import text_to_speech
 
+
 def setup_commands(bot):
     @bot.command(
         name="_userdefaultstyle",

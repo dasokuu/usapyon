@@ -10,13 +10,6 @@ from voice import text_to_speech, clear_playback_queue
 current_voice_client = None
 
 
-def get_guild_playback_queue(guild_id):
-    """指定されたギルドIDのplayback_queueを取得または作成します。"""
-    if guild_id not in guild_playback_queues:
-        guild_playback_queues[guild_id] = asyncio.Queue()
-    return guild_playback_queues[guild_id]
-
-
 def fetch_speakers():
     """スピーカー情報を取得します。"""
     url = "http://127.0.0.1:50021/speakers"
