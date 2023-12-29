@@ -13,7 +13,8 @@ intents.guilds = True
 intents.voice_states = True
 intents.message_content = True
 bot = commands.Bot(
-    command_prefix=BOT_PREFIX, intents=intents, help_command=CustomHelpCommand()
+    # command_prefix=BOT_PREFIX, intents=intents, help_command=CustomHelpCommand()
+    command_prefix=BOT_PREFIX, intents=intents
 )
 
 setup_commands(bot)
