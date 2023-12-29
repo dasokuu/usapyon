@@ -85,13 +85,12 @@ async def handle_style_command(ctx, style_id: int, type: str):
         await ctx.send(
             f"スタイルを「{speaker_name} {style_name}」(スタイルID: {style_id})に設定しました。"
         )
-        return
-
-    # 現在のスタイル設定を表示
-    current_style_id, speaker_name, style_name = get_current_style_details(
-        guild_id, user_id, type
-    )
-    await ctx.send(f"現在のスタイル: {speaker_name} {style_name} (スタイルID: {current_style_id})")
+    else:
+        # 現在のスタイル設定を表示
+        current_style_id, speaker_name, style_name = get_current_style_details(guild_id, user_id, type)
+        await ctx.send(
+            f"現在のスタイル: {speaker_name} {style_name} (スタイルID: {current_style_id})"
+        )
 
 
 def update_style_setting(guild_id, user_id, style_id, type):
