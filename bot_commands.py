@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from settings import USER_DEFAULT_STYLE_ID, NOTIFY_STYLE_ID
+from settings import USER_DEFAULT_STYLE_ID, NOTIFY_DEFAULT_STYLE_ID
 from utils import (
     speakers,
     speaker_settings,
@@ -108,7 +108,7 @@ def get_current_style_details(guild_id, user_id, type):
     if type == "default":
         style_id = speaker_settings[guild_id].get("user_default", USER_DEFAULT_STYLE_ID)
     elif type == "notify":
-        style_id = speaker_settings[guild_id].get("notify", NOTIFY_STYLE_ID)
+        style_id = speaker_settings[guild_id].get("notify", NOTIFY_DEFAULT_STYLE_ID)
     elif type == "user":
         style_id = speaker_settings.get(user_id, USER_DEFAULT_STYLE_ID)
 
@@ -149,7 +149,7 @@ def setup_commands(bot):
 
             # 通知スタイルIDを取得
             notify_style_id = speaker_settings.get(guild_id, {}).get(
-                "notify", NOTIFY_STYLE_ID
+                "notify", NOTIFY_DEFAULT_STYLE_ID
             )
 
             # メッセージとスタイルIDをキューに追加
