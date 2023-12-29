@@ -16,14 +16,15 @@ current_voice_client = None
 
 
 def fetch_speakers():
-    """スピーカー情報を取得します。"""
     try:
         response = requests.get(SPEAKERS_URL)
         response.raise_for_status()
         return response.json()
-    except requests.RequestException as e:
-        print(f"データの取得に失敗しました: {e}")
-        return None
+    except requests.HTTPError as http_err:
+        print(f"HTTP error occurred: {http_err}")
+    except Exception as err:
+        print(f"An error occurred: {err}")
+    return None
 
 
 def get_style_details(style_id, default_name="デフォルト"):
