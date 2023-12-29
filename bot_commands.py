@@ -220,7 +220,7 @@ def setup_commands(bot):
         for speaker in speakers:
             name = speaker["name"]
             styles = "\n".join(
-                f"{style['name']} `{style['id']}`)" for style in speaker["styles"]
+                f"{style['name']} `{style['id']}`" for style in speaker["styles"]
             )
 
             if field_count < 25:
