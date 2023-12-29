@@ -323,9 +323,5 @@ async def show_styles(ctx):
     await ctx.send("\n".join(message_lines))
 
 
-speakers = fetch_speakers()
-speaker_settings = load_style_settings()
-
-
 if __name__ == "__main__":
     bot.run(os.getenv("DISCORD_BOT_TOKEN"))
