@@ -118,7 +118,7 @@ def get_current_style_details(guild_id, user_id, type):
 
 def setup_commands(bot):
     @bot.command(name="style", help="スタイルを表示または設定します。")
-    async def style(ctx, style_id: int = None, type: str = "user"):
+    async def style(ctx, type: str = "user", style_id: int = None):
         valid_types = ["default", "notify", "user"]
         if type not in valid_types:
             await ctx.send(f"無効なタイプが指定されました。有効なタイプ: {', '.join(valid_types)}")
