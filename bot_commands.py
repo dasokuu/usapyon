@@ -57,10 +57,9 @@ class CustomHelpCommand(commands.HelpCommand):
             title=f"!{command.name}{alias_text}",
             color=0x00FF00,
         )
-        embed.add_field(name="説明", value=command.help or "説明が設定されていません。", inline=False)
-        embed.add_field(
-            name="使用法", value=f"`{self.get_command_signature(command)}`", inline=False
-        )
+        embed.add_field(name="使用法", value=f"`{self.get_command_signature(command)}`", inline=False)
+        embed.add_field(name="説明", value=command.help.replace("; ", "\n"), inline=False)
+
 
         channel = self.get_destination()
         await channel.send(embed=embed)
@@ -146,14 +145,10 @@ def get_current_style_details(guild_id, user_id, type):
 def setup_commands(bot):
     @bot.command(
         name="style",
-        help="スタイルを表示または設定します。\n"
-            "使用法: !style [type] [style_id]\n"
-            "type: スタイルのタイプを指定します。利用可能なタイプは 'user_default', 'notify', 'user' のいずれかです。\n"
-            "style_id: 使用したいスタイルのID。指定しない場合は現在の設定を表示します。\n"
-            "例:\n"
-            "!style user_default 1 - ユーザーデフォルトスタイルをID 1に設定。\n"
-            "!style notify - 現在の通知スタイルを表示。\n"
-            "!style user - 現在のユーザースタイルを表示。"
+        help="スタイルを表示または設定します。使用法: !style [type] [style_id] \n"
+        "type: 'user_default', 'notify', or 'user'. \n"
+        "style_id: 使用したいスタイルのID。 \n"
+        "例: !style user_default 1 - ユーザーデフォルトスタイルをID 1に設定します。",
     )
     async def style(ctx, type: str = None, style_id: int = None):
         valid_types = ["user_default", "notify", "user", None]
