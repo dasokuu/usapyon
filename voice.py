@@ -101,14 +101,17 @@ async def speak_line(voice_client, line, style_id, guild_queue):
     asyncio.create_task(play_from_queue(voice_client, guild_queue))
 
 
-async def play_from_queue(voice_client, guild_queue):
-    while True:
-        # キューから次の音声を取得
-        audio_source = await guild_queue.get()
-        voice_client.play(audio_source)
-        # 再生が終わるのを待つ
-        while voice_client.is_playing():
-            await asyncio.sleep(0.1)
+async def play_from_queue(guild_id):
+    guild_queue = get_guild_playback_queue(guild_id)
+    while not guild_queue.empty():
+        voice_client, audio_source = await guild_queue.get()
+        if not voice_client.is_playing():
+            try:
+                voice_client.play(audio_source)
+                while voice_client.is_playing():
+                    await asyncio.sleep(1)
+            except discord.ClientException:
+                print("Already playing audio.")
 
 
 async def clear_playback_queue(guild_id):
