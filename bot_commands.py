@@ -7,18 +7,22 @@ from voice import text_to_speech
 
 class CustomHelpCommand(commands.HelpCommand):
     def __init__(self):
-        super().__init__(command_attrs={
-            'help': 'コマンドリストと説明を表示します。'  # helpコマンド自体の説明
-        })
+        super().__init__(command_attrs={"help": "コマンドリストと説明を表示します。"})  # helpコマンド自体の説明
 
     async def send_bot_help(self, mapping):
-        embed = discord.Embed(title="ヘルプ", description="利用可能なコマンド一覧:", color=0x00ff00)
+        embed = discord.Embed(title="ヘルプ", description="利用可能なコマンド一覧:", color=0x00FF00)
         for cog, commands in mapping.items():
             filtered_commands = await self.filter_commands(commands, sort=True)
-            command_signatures = [self.get_command_signature(c) for c in filtered_commands]
-            if command_signatures:
-                cog_name = getattr(cog, "qualified_name", "その他のコマンド")
-                embed.add_field(name=cog_name, value="\n".join(command_signatures), inline=False)
+            for command in filtered_commands:
+                # コマンド名とその説明を追加
+                command_name = f"!{command.name}"
+                if command.aliases:
+                    aliases = "|".join(command.aliases)
+                    command_name += f" [{aliases}]"
+                command_desc = (
+                    f"{command.help}\n例: `{self.get_command_signature(command)}`"
+                )
+                embed.add_field(name=command_name, value=command_desc, inline=False)
 
         channel = self.get_destination()
         await channel.send(embed=embed)
@@ -27,7 +31,7 @@ class CustomHelpCommand(commands.HelpCommand):
         embed = discord.Embed(
             title=self.get_command_signature(command),
             description=command.help or "説明が設定されていません。",
-            color=0x00ff00
+            color=0x00FF00,
         )
         channel = self.get_destination()
         await channel.send(embed=embed)
