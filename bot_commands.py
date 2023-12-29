@@ -65,11 +65,11 @@ class CustomHelpCommand(commands.HelpCommand):
 
 def setup_commands(bot):
     @bot.command(
-        name="defaultstyle",
+        name="default_style",
         aliases=["ds"],
         help="ユーザーのデフォルトスタイルを表示または設定します。",
     )
-    async def defaultstyle(ctx, style_id: int = None):
+    async def default_style(ctx, style_id: int = None):
         guild_id = str(ctx.guild.id)
 
         # Ensure server settings are initialized
@@ -103,7 +103,7 @@ def setup_commands(bot):
             await ctx.send(response)
 
     @bot.command(
-        name="notifystyle",
+        name="notify_style",
         aliases=["ns"],
         help="入退室読み上げのスタイルを表示または設定します。",
     )
@@ -141,7 +141,7 @@ def setup_commands(bot):
         await ctx.send(response)
 
     @bot.command(
-        name="mystyle",
+        name="my_style",
         aliases=["ms"],
         help="あなたの現在のスタイルを表示または設定します。",
     )
@@ -222,8 +222,8 @@ def setup_commands(bot):
         else:
             await ctx.send("再生中の音声はありません。")
 
-    @bot.command(name="liststyles", aliases=["ls"], help="利用可能なスタイルIDの一覧を表示します。")
-    async def liststyles(ctx):
+    @bot.command(name="list_styles", aliases=["ls"], help="利用可能なスタイルIDの一覧を表示します。")
+    async def list_styles(ctx):
         message_lines = []
         for speaker in speakers:
             name = speaker["name"]
