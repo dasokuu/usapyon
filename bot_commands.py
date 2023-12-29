@@ -273,8 +273,8 @@ def setup_commands(bot):
             # 選択肢が25を超えた場合はブレイク
             if len(style_id_choices) >= 25:
                 break
-    print(speaker_choices)
-    print(style_id_choices)
+    print(len(speaker_choices))
+    print(len(style_id_choices))
     @bot.tree.command(guild=TEST_GUILD_ID, description="スタイルを表示または設定します。")
     @app_commands.choices(
         type=type_choices, speaker=speaker_choices, style_id=style_id_choices
