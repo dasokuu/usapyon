@@ -73,7 +73,6 @@ async def handle_style_command(ctx, style_id: int, type: str):
     guild_id = str(ctx.guild.id)
     user_id = str(ctx.author.id)
 
-    # スタイルIDが指定されている場合は設定を更新
     if style_id is not None:
         valid, speaker_name, style_name = validate_style_id(style_id)
         if not valid:
@@ -87,9 +86,11 @@ async def handle_style_command(ctx, style_id: int, type: str):
         )
     else:
         # 現在のスタイル設定を表示
-        current_style_id, speaker_name, style_name = get_current_style_details(guild_id, user_id, type)
+        current_style_id, speaker_name, style_name = get_current_style_details(
+            guild_id, user_id, type
+        )
         await ctx.send(
-            f"現在のスタイル: {speaker_name} {style_name} (スタイルID: {current_style_id})"
+            f"現在のスタイル ({type}): {speaker_name} {style_name} (スタイルID: {current_style_id})"
         )
 
 
@@ -117,13 +118,18 @@ def get_current_style_details(guild_id, user_id, type):
 
 def setup_commands(bot):
     @bot.command(name="style", help="スタイルを表示または設定します。")
-    async def style(ctx, style_id: int = None, *, type: str = "default"):
-        valid_types = ["default", "notify", "user"]
-        if type not in valid_types:
-            await ctx.send(f"無効なタイプが指定されました。有効なタイプ: {', '.join(valid_types)}")
-            return
-
-        await handle_style_command(ctx, style_id, type)
+    async def style(ctx, style_id: str = None):
+        # 引数を解析して適切なアクションを取る
+        if style_id and style_id.startswith("type="):
+            type = style_id.split("=")[1]
+            if type not in ["default", "notify", "user"]:
+                await ctx.send(f"無効なタイプが指定されました: {type}")
+                return
+            await handle_style_command(ctx, None, type)
+        elif style_id and style_id.isdigit():
+            await handle_style_command(ctx, int(style_id), "user")
+        else:
+            await ctx.send("コマンドが正しくありません。スタイルIDを指定するか、正しいタイプを設定してください。")
 
     @bot.command(name="join", help="ボットをボイスチャンネルに接続し、読み上げを開始します。")
     async def join(ctx):
