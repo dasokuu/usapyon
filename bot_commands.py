@@ -7,29 +7,33 @@ from voice import text_to_speech
 
 class CustomHelpCommand(commands.HelpCommand):
     def __init__(self):
-        super().__init__()
+        super().__init__(command_attrs={
+            'help': 'コマンドリストと説明を表示します。'  # helpコマンド自体の説明
+        })
 
     async def send_bot_help(self, mapping):
-        embed = discord.Embed(title="Help", description="List of available commands:", color=0x00ff00)
+        embed = discord.Embed(title="ヘルプ", description="利用可能なコマンド一覧:", color=0x00ff00)
         for cog, commands in mapping.items():
             filtered_commands = await self.filter_commands(commands, sort=True)
             command_signatures = [self.get_command_signature(c) for c in filtered_commands]
             if command_signatures:
-                cog_name = getattr(cog, "qualified_name", "No Category")
+                cog_name = getattr(cog, "qualified_name", "その他のコマンド")
                 embed.add_field(name=cog_name, value="\n".join(command_signatures), inline=False)
 
         channel = self.get_destination()
         await channel.send(embed=embed)
 
     async def send_command_help(self, command):
-        embed = discord.Embed(title=self.get_command_signature(command),
-                              description=command.help or "No description available",
-                              color=0x00ff00)
+        embed = discord.Embed(
+            title=self.get_command_signature(command),
+            description=command.help or "説明が設定されていません。",
+            color=0x00ff00
+        )
         channel = self.get_destination()
         await channel.send(embed=embed)
 
     async def command_not_found(self, string):
-        return f'No command called "{string}" found.'
+        return f'"{string}"というコマンドは見つかりませんでした。'
 
     async def send_error_message(self, error):
         channel = self.get_destination()
