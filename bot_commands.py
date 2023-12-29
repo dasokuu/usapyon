@@ -78,11 +78,11 @@ class CustomHelpCommand(commands.HelpCommand):
         await channel.send(error)
 
 
-async def handle_style_command(ctx, style_id: int, type: str = None):
-    guild_id = str(ctx.guild.id)
-    guild_name = ctx.guild.name  # ギルド名を取得
-    user_id = str(ctx.author.id)
-    user_display_namename = ctx.author.display_name  # ユーザー名を取得
+async def handle_style_command(interaction, style_id: int, type: str = None):
+    guild_id = str(interaction.guild_id)
+    guild_name = interaction.guild.name  # ギルド名を取得
+    user_id = str(interaction.user.id)
+    user_display_namename = interaction.user.display_name  # ユーザー名を取得
 
     # スタイルタイプに応じた説明を定義
     type_description = {
@@ -101,18 +101,18 @@ async def handle_style_command(ctx, style_id: int, type: str = None):
             messages.append(
                 f"**{type_description[t]}**: {speaker_name} {style_name} (スタイルID: {style_id})"
             )
-        await ctx.send("🔊 以下は現在のスタイル設定です:\n" + "\n".join(messages))
+        await interaction.response.send_message("🔊 以下は現在のスタイル設定です:\n" + "\n".join(messages))
         return
     # スタイルIDが指定されている場合は設定を更新
     if style_id is not None:
         valid, speaker_name, style_name = validate_style_id(style_id)
         if not valid:
-            await ctx.send(f"⚠️ スタイルID {style_id} は無効です。正しいIDを入力してください。")
+            await interaction.response.send_message(f"⚠️ スタイルID {style_id} は無効です。正しいIDを入力してください。")
             return
 
         # スタイルを更新
         update_style_setting(guild_id, user_id, style_id, type)
-        await ctx.send(
+        await interaction.response.send_message(
             f"✅ {type_description[type]}のスタイルが「{speaker_name} {style_name}」(スタイルID: {style_id})に更新されました。"
         )
         return
@@ -121,7 +121,7 @@ async def handle_style_command(ctx, style_id: int, type: str = None):
     current_style_id, speaker_name, style_name = get_current_style_details(
         guild_id, user_id, type
     )
-    await ctx.send(
+    await interaction.response.send_message(
         f"ℹ️ 現在の{type_description[type]}のスタイルは「{speaker_name} {style_name}」(スタイルID: {current_style_id})です。"
     )
 
@@ -149,28 +149,28 @@ def get_current_style_details(guild_id, user_id, type):
 
 
 def setup_commands(bot):
-    @bot.command(name="style", help="スタイルを表示または設定します。詳細は `!help style` で確認。")
-    async def style(ctx, type: str = None, style_id: int = None):
+    @bot.tree.command(name="style", help="スタイルを表示または設定します。詳細は `!help style` で確認。")
+    async def style(interaction, type: str = None, style_id: int = None):
         valid_types = ["user_default", "notify", "user", None]
         if type not in valid_types:
-            await ctx.send(
+            await interaction.response.send_message(
                 f"⚠️ 指定されたタイプが無効です。有効なタイプは以下の通りです: {', '.join(valid_types[:-1])}"
             )
             return
 
         # コードを共通化し、異なるスタイルタイプに対応
-        await handle_style_command(ctx, style_id, type)
+        await handle_style_command(interaction, style_id, type)
 
-    @bot.command(name="join", help="ボットをボイスチャンネルに接続し、読み上げを開始します。")
-    async def join(ctx):
-        if ctx.author.voice and ctx.author.voice.channel:
-            channel = ctx.author.voice.channel
+    @bot.tree.command(name='join', description='ボットをボイスチャンネルに接続し、読み上げを開始します。')
+    async def join_slash(interaction: discord.Interaction):
+        if interaction.user.voice.channel:
+            channel = interaction.user.voice.channel
             voice_client = await channel.connect(self_deaf=True)
             # 接続メッセージの読み上げ
             welcome_message = "読み上げを開始します。"
 
-            guild_id = str(ctx.guild.id)
-            text_channel_id = str(ctx.channel.id)  # このコマンドを使用したテキストチャンネルID
+            guild_id = str(interaction.guild_id)
+            text_channel_id = str(interaction.channel_id)  # このコマンドを使用したテキストチャンネルID
 
             # サーバー設定が存在しない場合は初期化
             if guild_id not in speaker_settings:
@@ -191,28 +191,28 @@ def setup_commands(bot):
                 voice_client, welcome_message, notify_style_id, guild_id
             )
 
-    @bot.command(name="leave", help="ボットをボイスチャンネルから切断します。")
-    async def leave(ctx):
-        if ctx.voice_client:
-            guild_id = str(ctx.guild.id)
+    @bot.tree.command(name="leave", help="ボットをボイスチャンネルから切断します。")
+    async def leave(interaction: discord.Interaction):
+        if interaction.guild.voice_client:
+            guild_id = str(interaction.guild_id)
             # テキストチャンネルIDの設定をクリア
             if "text_channel" in speaker_settings.get(guild_id, {}):
                 del speaker_settings[guild_id]["text_channel"]
                 save_style_settings()  # 変更を保存
-            await ctx.voice_client.disconnect()
-            await ctx.send("ボイスチャンネルから切断しました。")
+            await interaction.guild.voice_client.disconnect()
+            await interaction.response.send_message("ボイスチャンネルから切断しました。")
 
-    @bot.command(name="skip", help="現在再生中の音声をスキップします。")
-    async def skip(ctx):
-        voice_client = ctx.guild.voice_client
+    @bot.tree.command(name="skip", help="現在再生中の音声をスキップします。")
+    async def skip(interaction: discord.Interaction):
+        voice_client = interaction.guild.voice_client
         if voice_client and voice_client.is_playing():
             voice_client.stop()
-            await ctx.send("現在の読み上げをスキップしました。")
+            await interaction.response.send_message("現在の読み上げをスキップしました。")
         else:
-            await ctx.send("再生中の音声はありません。")
+            await interaction.response.send_message("再生中の音声はありません。")
 
-    @bot.command(name="list_styles", aliases=["ls"], help="利用可能なスタイルIDの一覧を表示します。")
-    async def list_styles(ctx):
+    @bot.tree.command(name="list_styles", aliases=["ls"], help="利用可能なスタイルIDの一覧を表示します。")
+    async def list_styles(interaction: discord.Interaction):
         embeds = []
         embed = discord.Embed(title="利用可能なスタイルIDの一覧", color=0x00FF00)
         embed.description = "各スピーカーと利用可能なスタイルのIDです。"
@@ -237,7 +237,7 @@ def setup_commands(bot):
         embeds.append(embed)
 
         for embed in embeds:
-            await ctx.send(embed=embed)
+            await interaction.response.send_message(embed=embed)
 
     # スタイルタイプに応じた説明を定義
     type_description = {
@@ -253,77 +253,76 @@ def setup_commands(bot):
         app_commands.Choice(name="notify", value=type_description["notify"]),
         app_commands.Choice(name="user", value=type_description["user"]),
     ]
-    # Dynamically generate style ID choices based on the speakers data
-    gender_categories = {
-        "男性": [
-            "玄野武宏",
-            "白上虎太郎",
-            "青山龍星",
-            "剣崎雌雄",
-            "ちび式じい",
-            "†聖騎士 紅桜†",
-            "雀松朱司",
-            "麒ヶ島宗麟",
-            "栗田まろん",
-        ],
-        "女性": [
-            "四国めたん",
-            "ずんだもん",
-            "春日部つむぎ",
-            "雨晴はう",
-            "波音リツ",
-            "冥鳴ひまり",
-            "九州そら",
-            "もち子さん",
-            "WhiteCUL",
-            "後鬼",
-            "No.7",
-            "櫻歌ミコ",
-            "小夜/SAYO",
-            "ナースロボ＿タイプＴ",
-            "春歌ナナ",
-            "猫使アル",
-            "猫使ビィ",
-            "中国うさぎ",
-            "あいえるたん",
-            "満別花丸",
-            "琴詠ニア",
-        ],
-    }
-    first_persons = {
-        "わたくし": ["四国めたん"],
-        "ずんだもん": ["ずんだもん"],
-        "僕": ["ずんだもん", "雨晴はう", "剣崎雌雄", "No.7", "雀松朱司", "栗田まろん", "猫使アル", "猫使ビィ", "満別花丸"],
-        "あーし": ["春日部つむぎ"],
-        "あたし": ["波音リツ"],
-        "おれ": ["白上虎太郎", "猫使アル", "玄野武宏", "青山龍星"],
-        "私": [
-            "冥鳴ひまり",
-            "もち子さん",
-            "No.7",
-            "櫻歌ミコ",
-            "麒ヶ島宗麟",
-            "猫使ビィ",
-            "琴詠ニア",
-            "WhiteCUL",
-            "後鬼",
-            "ナースロボ＿タイプＴ",
-            "春歌ナナ",
-            "中国うさぎ",
-            "あいえるたん",
-        ],
-        "まーくつー": ["九州そら"],
-        "もち子さん": ["もち子さん"],
-        "ワテ": ["後鬼"],
-        "わし": ["ちび式じい"],
-        "ミコ": ["櫻歌ミコ"],
-        "小夜": ["小夜/SAYO"],
-        "我": ["†聖騎士 紅桜†"],
-        "ナナ": ["春歌ナナ"],
-        "アル": ["猫使アル"],
-        "ビィ": ["猫使ビィ"],
-        "あいえるたん": ["あいえるたん"],
-    }
+    # gender_categories = {
+    #     "男性": [
+    #         "玄野武宏",
+    #         "白上虎太郎",
+    #         "青山龍星",
+    #         "剣崎雌雄",
+    #         "ちび式じい",
+    #         "†聖騎士 紅桜†",
+    #         "雀松朱司",
+    #         "麒ヶ島宗麟",
+    #         "栗田まろん",
+    #     ],
+    #     "女性": [
+    #         "四国めたん",
+    #         "ずんだもん",
+    #         "春日部つむぎ",
+    #         "雨晴はう",
+    #         "波音リツ",
+    #         "冥鳴ひまり",
+    #         "九州そら",
+    #         "もち子さん",
+    #         "WhiteCUL",
+    #         "後鬼",
+    #         "No.7",
+    #         "櫻歌ミコ",
+    #         "小夜/SAYO",
+    #         "ナースロボ＿タイプＴ",
+    #         "春歌ナナ",
+    #         "猫使アル",
+    #         "猫使ビィ",
+    #         "中国うさぎ",
+    #         "あいえるたん",
+    #         "満別花丸",
+    #         "琴詠ニア",
+    #     ],
+    # }
+    # first_persons = {
+    #     "わたくし": ["四国めたん"],
+    #     "ずんだもん": ["ずんだもん"],
+    #     "僕": ["ずんだもん", "雨晴はう", "剣崎雌雄", "No.7", "雀松朱司", "栗田まろん", "猫使アル", "猫使ビィ", "満別花丸"],
+    #     "あーし": ["春日部つむぎ"],
+    #     "あたし": ["波音リツ"],
+    #     "おれ": ["白上虎太郎", "猫使アル", "玄野武宏", "青山龍星"],
+    #     "私": [
+    #         "冥鳴ひまり",
+    #         "もち子さん",
+    #         "No.7",
+    #         "櫻歌ミコ",
+    #         "麒ヶ島宗麟",
+    #         "猫使ビィ",
+    #         "琴詠ニア",
+    #         "WhiteCUL",
+    #         "後鬼",
+    #         "ナースロボ＿タイプＴ",
+    #         "春歌ナナ",
+    #         "中国うさぎ",
+    #         "あいえるたん",
+    #     ],
+    #     "まーくつー": ["九州そら"],
+    #     "もち子さん": ["もち子さん"],
+    #     "ワテ": ["後鬼"],
+    #     "わし": ["ちび式じい"],
+    #     "ミコ": ["櫻歌ミコ"],
+    #     "小夜": ["小夜/SAYO"],
+    #     "我": ["†聖騎士 紅桜†"],
+    #     "ナナ": ["春歌ナナ"],
+    #     "アル": ["猫使アル"],
+    #     "ビィ": ["猫使ビィ"],
+    #     "あいえるたん": ["あいえるたん"],
+    # }
     first_persons = {
         "私": ["冥鳴ひまり", "もち子さん", "No.7", "櫻歌ミコ", "麒ヶ島宗麟", "猫使ビィ", "琴詠ニア"],
         "わたし": ["WhiteCUL", "後鬼", "ナースロボ＿タイプＴ", "春歌ナナ", "中国うさぎ", "あいえるたん"],
@@ -349,25 +348,6 @@ def setup_commands(bot):
         "ビィ": ["猫使ビィ"],
         "あいえるたん": ["あいえるたん"],
     }
-
-    # # Define choices for type
-    # type_choices = [
-    #     app_commands.Choice(name="user_default", value="user_default"),
-    #     app_commands.Choice(name="notify", value="notify"),
-    #     app_commands.Choice(name="user", value="user"),
-    # ]
-
-    # # Dynamically generate style ID choices based on your styles data
-    # for speaker in speakers:
-    #     name = speaker["name"]
-    #     style_id_choices = [
-    #         app_commands.Choice(name=style["name"], value=style["id"])
-    #         for style in speaker["styles"]
-    #     ]
-
-    # @tree.command(description="スタイルを表示または設定します。")
-    # @app_commands.choices(type=type_choices)
-    # @app_commands.choices(style_id=style_id_choices)
 
     @bot.tree.command(
         name="choose_first_person", guild=TEST_GUILD_ID, description="一人称を選択します。"
@@ -399,7 +379,8 @@ def setup_commands(bot):
                 )
             else:
                 await interaction.response.send_message(
-                    f"一人称「{first_person}」には{selected_char}が該当します。スタイルを選んでください。", view=StyleView(styles)
+                    f"一人称「{first_person}」には{selected_char}が該当します。スタイルを選んでください。",
+                    view=StyleView(styles),
                 )
         else:
             await interaction.response.send_message(
