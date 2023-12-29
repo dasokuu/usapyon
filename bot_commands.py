@@ -53,9 +53,9 @@ class CustomHelpCommand(commands.HelpCommand):
                 "- `type`: 設定するスタイルのタイプ。`user_default`, `notify`, または `user` から選択。\n"
                 "- `style_id`: 使用したいスタイルのID。\n\n"
                 "例:\n"
-                "- ユーザーデフォルトスタイルをID 1に設定: `!style user_default 1`\n"
-                "- 入退室通知スタイルをID 2に設定: `!style notify 2`\n"
-                "- 個人スタイルをID 3に設定: `!style user 3`\n\n"
+                "- サーバーのユーザーデフォルトスタイルをID 1に設定: `!style user_default 1`\n"
+                "- サーバーの入退室通知スタイルをID 2に設定: `!style notify 2`\n"
+                "- あなたのスタイルをID 3に設定: `!style user 3`\n\n"
                 "`style_id`の詳細や一覧は `!list_styles` で確認できます。"
             )
         else:
