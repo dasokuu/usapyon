@@ -460,9 +460,14 @@ def setup_commands(bot):
 
         async def callback(self, interaction: discord.Interaction):
             selected_style = self.values[0]
+            print(self.styles)
             # 保存されたスタイル情報からスタイル名を取得します
             style_name = next(
-                (style["name"] for style in self.styles if style["id"] == selected_style),
+                (
+                    style["name"]
+                    for style in self.styles
+                    if style["id"] == selected_style
+                ),
                 "不明なスタイル",
             )
             # ユーザーのスタイル選択を更新するロジックをここに実装
