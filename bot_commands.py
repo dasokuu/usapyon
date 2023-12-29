@@ -212,15 +212,28 @@ def setup_commands(bot):
 
     @bot.command(name="list_styles", aliases=["ls"], help="利用可能なスタイルIDの一覧を表示します。")
     async def list_styles(ctx):
+        embeds = []
         embed = discord.Embed(title="利用可能なスタイルIDの一覧", color=0x00FF00)
         embed.description = "各スピーカーと利用可能なスタイルのIDです。"
+        field_count = 0
 
         for speaker in speakers:
             name = speaker["name"]
             styles = "\n".join(
                 f"`{style['name']}` (ID: {style['id']})" for style in speaker["styles"]
             )
-            embed.add_field(name=name, value=styles, inline=True)
 
-        # Use ctx.send directly to send the message
-        await ctx.send(embed=embed)
+            if field_count < 25:
+                embed.add_field(name=name, value=styles, inline=True)
+                field_count += 1
+            else:
+                embeds.append(embed)
+                embed = discord.Embed(title="利用可能なスタイルIDの一覧 (続き)", color=0x00FF00)
+                embed.add_field(name=name, value=styles, inline=True)
+                field_count = 1  # Reset for the new embed
+
+        # Add the last embed
+        embeds.append(embed)
+
+        for embed in embeds:
+            await ctx.send(embed=embed)
