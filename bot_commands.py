@@ -29,7 +29,7 @@ class CustomHelpCommand(commands.HelpCommand):
                     f"`{command_name}`{alias_text}: {command.short_doc or '説明なし'}"
                 )
             if command_entries:
-                cog_name = cog.qualified_name if cog else "その他"
+                cog_name = getattr(cog, "name", "その他")  # ここを変更
                 embed.add_field(
                     name=cog_name, value="\n".join(command_entries), inline=False
                 )
@@ -66,11 +66,11 @@ class CustomHelpCommand(commands.HelpCommand):
 def setup_commands(bot):
     class StylesCog(commands.Cog, name="スタイル管理"):
         @bot.command(
-            name="defaultstyle",
+            name="default_style",
             aliases=["ds"],
             help="ユーザーのデフォルトスタイルを表示または設定します。",
         )
-        async def defaultstyle(ctx, style_id: int = None):
+        async def default_style(ctx, style_id: int = None):
             guild_id = str(ctx.guild.id)
 
             # Ensure server settings are initialized
@@ -104,7 +104,7 @@ def setup_commands(bot):
                 await ctx.send(response)
 
         @bot.command(
-            name="notifystyle",
+            name="notify_style",
             aliases=["ns"],
             help="入退室通知のスタイルを表示または設定します。",
         )
@@ -142,7 +142,7 @@ def setup_commands(bot):
             await ctx.send(response)
 
         @bot.command(
-            name="mystyle",
+            name="my_style",
             aliases=["ms"],
             help="あなたの現在のスタイルを表示または設定します。",
         )
@@ -173,8 +173,8 @@ def setup_commands(bot):
             response = f"**{ctx.author.display_name}さんのスタイル:** {user_speaker} {user_style_name} (ID: {user_style_id})"
             await ctx.send(response)
 
-        @bot.command(name="liststyles", aliases=["ls"], help="利用可能なスタイルIDの一覧を表示します。")
-        async def liststyles(ctx):
+        @bot.command(name="list_styles", aliases=["ls"], help="利用可能なスタイルIDの一覧を表示します。")
+        async def list_styles(ctx):
             message_lines = []
             for speaker in speakers:
                 name = speaker["name"]
@@ -187,56 +187,58 @@ def setup_commands(bot):
                 message_lines.append(f"**{name}** {styles}")
             await ctx.send("\n".join(message_lines))
 
-    bot.add_cog(StylesCog(bot))
+    class ControlCog(commands.Cog, name="操作管理"):
+        @bot.command(name="join", help="ボットをボイスチャンネルに接続し、読み上げを開始します。")
+        async def join(ctx):
+            if ctx.author.voice and ctx.author.voice.channel:
+                channel = ctx.author.voice.channel
+                voice_client = await channel.connect(self_deaf=True)
+                # 接続メッセージの読み上げ
+                welcome_message = "読み上げを開始します。"
 
-    @bot.command(name="join", help="ボットをボイスチャンネルに接続し、読み上げを開始します。")
-    async def join(ctx):
-        if ctx.author.voice and ctx.author.voice.channel:
-            channel = ctx.author.voice.channel
-            voice_client = await channel.connect(self_deaf=True)
-            # 接続メッセージの読み上げ
-            welcome_message = "読み上げを開始します。"
+                guild_id = str(ctx.guild.id)
+                text_channel_id = str(ctx.channel.id)  # このコマンドを使用したテキストチャンネルID
 
-            guild_id = str(ctx.guild.id)
-            text_channel_id = str(ctx.channel.id)  # このコマンドを使用したテキストチャンネルID
+                # サーバー設定が存在しない場合は初期化
+                if guild_id not in speaker_settings:
+                    speaker_settings[guild_id] = {"text_channel": text_channel_id}
+                else:
+                    # 既にサーバー設定が存在する場合はテキストチャンネルIDを更新
+                    speaker_settings[guild_id]["text_channel"] = text_channel_id
 
-            # サーバー設定が存在しない場合は初期化
-            if guild_id not in speaker_settings:
-                speaker_settings[guild_id] = {"text_channel": text_channel_id}
-            else:
-                # 既にサーバー設定が存在する場合はテキストチャンネルIDを更新
-                speaker_settings[guild_id]["text_channel"] = text_channel_id
-
-            save_style_settings()  # 変更を保存
-
-            # 通知スタイルIDを取得
-            notify_style_id = speaker_settings.get(guild_id, {}).get(
-                "notify", NOTIFY_STYLE_ID
-            )
-
-            # メッセージとスタイルIDをキューに追加
-            await text_to_speech(
-                voice_client, welcome_message, notify_style_id, guild_id
-            )
-
-    @bot.command(name="leave", help="ボットをボイスチャンネルから切断します。")
-    async def leave(ctx):
-        if ctx.voice_client:
-            guild_id = str(ctx.guild.id)
-            # テキストチャンネルIDの設定をクリア
-            if "text_channel" in speaker_settings.get(guild_id, {}):
-                del speaker_settings[guild_id]["text_channel"]
                 save_style_settings()  # 変更を保存
-            await ctx.voice_client.disconnect()
-            await ctx.send("ボイスチャンネルから切断しました。")
 
-    @bot.command(name="skip", help="現在再生中の音声をスキップします。")
-    async def skip(ctx):
-        voice_client = ctx.guild.voice_client
-        if voice_client and voice_client.is_playing():
-            voice_client.stop()
-            await ctx.send("現在の読み上げをスキップしました。")
-        else:
-            await ctx.send("再生中の音声はありません。")
+                # 通知スタイルIDを取得
+                notify_style_id = speaker_settings.get(guild_id, {}).get(
+                    "notify", NOTIFY_STYLE_ID
+                )
+
+                # メッセージとスタイルIDをキューに追加
+                await text_to_speech(
+                    voice_client, welcome_message, notify_style_id, guild_id
+                )
+
+        @bot.command(name="leave", help="ボットをボイスチャンネルから切断します。")
+        async def leave(ctx):
+            if ctx.voice_client:
+                guild_id = str(ctx.guild.id)
+                # テキストチャンネルIDの設定をクリア
+                if "text_channel" in speaker_settings.get(guild_id, {}):
+                    del speaker_settings[guild_id]["text_channel"]
+                    save_style_settings()  # 変更を保存
+                await ctx.voice_client.disconnect()
+                await ctx.send("ボイスチャンネルから切断しました。")
+
+        @bot.command(name="skip", help="現在再生中の音声をスキップします。")
+        async def skip(ctx):
+            voice_client = ctx.guild.voice_client
+            if voice_client and voice_client.is_playing():
+                voice_client.stop()
+                await ctx.send("現在の読み上げをスキップしました。")
+            else:
+                await ctx.send("再生中の音声はありません。")
+
+    bot.add_cog(StylesCog(bot))
+    bot.add_cog(ControlCog(bot))
 
     bot.help_command = CustomHelpCommand()
