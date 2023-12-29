@@ -57,14 +57,7 @@ class CustomHelpCommand(commands.HelpCommand):
         embed.add_field(
             name="使用法", value=f"`{self.get_command_signature(command)}`", inline=False
         )
-        # !styleコマンドのヘルプテキストを更新
-        if command.name == "style":
-            usage_text = (
-                "!style [type] [style_id]\n"
-                "type: 'user', 'default', 'notify' のいずれか (省略時: 'user')\n"
-                "style_id: スタイルID (省略可能)"
-            )
-            embed.add_field(name="使用法", value=usage_text, inline=False)
+
         channel = self.get_destination()
         await channel.send(embed=embed)
 
@@ -76,10 +69,9 @@ class CustomHelpCommand(commands.HelpCommand):
         await channel.send(error)
 
 
-async def handle_style_command(ctx, type: str, style_id: int = None):
+async def handle_style_command(ctx, style_id: int, type: str):
     guild_id = str(ctx.guild.id)
     user_id = str(ctx.author.id)
-    type_names = {"default": "デフォルト", "notify": "通知", "user": "ユーザー"}
 
     # スタイルIDが指定されている場合は設定を更新
     if style_id is not None:
@@ -91,19 +83,15 @@ async def handle_style_command(ctx, type: str, style_id: int = None):
         # スタイルを更新
         update_style_setting(guild_id, user_id, style_id, type)
         await ctx.send(
-            f"{type_names[type]}スタイルを「{speaker_name} {style_name}」(スタイルID: {style_id})に設定しました。"
+            f"スタイルを「{speaker_name} {style_name}」(スタイルID: {style_id})に設定しました。"
         )
-    else:
-        # スタイルIDが指定されていない場合、すべての設定を表示
-        messages = []
-        for t in ["user", "default", "notify"]:
-            style_id, speaker_name, style_name = get_current_style_details(
-                guild_id, user_id, t
-            )
-            messages.append(
-                f"{type_names[t]}スタイル: {speaker_name} {style_name} (スタイルID: {style_id})"
-            )
-        await ctx.send("\n".join(messages))
+        return
+    
+    # 現在のスタイル設定を表示
+    current_style_id, speaker_name, style_name = get_current_style_details(
+        guild_id, user_id, type
+    )
+    await ctx.send(f"現在のスタイル: {speaker_name} {style_name} (スタイルID: {current_style_id})")
 
 
 def update_style_setting(guild_id, user_id, style_id, type):
@@ -129,8 +117,7 @@ def get_current_style_details(guild_id, user_id, type):
 
 
 def setup_commands(bot):
-    # !styleコマンドの引数の順序を変更し、typeを最初にし、style_idをオプショナルに
-    @bot.command(name="style", help="指定したタイプのスタイルを表示または設定します。")
+    @bot.command(name="style", help="スタイルを表示または設定します。")
     async def style(ctx, type: str = "user", style_id: int = None):
         valid_types = ["default", "notify", "user"]
         if type not in valid_types:
