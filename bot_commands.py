@@ -324,7 +324,7 @@ def setup_commands(bot):
     @bot.tree.command(name='choose_style',guild=TEST_GUILD_ID, description='スタイルを選択します。')
     async def choose_style(interaction: discord.Interaction):
         # Create first person selection options
-        options = [discord.SelectOption(label=fp, value=fp) for fp in first_persons.keys()]
+        options = [discord.SelectOption(label=fp, value=fp) for fp in sorted_first_persons.keys()]
         # Prompt the user to select a first person
         await interaction.response.send_message('一人称を選択してください。', view=FirstPersonView(options))
     # @bot.tree.command(guild=TEST_GUILD_ID, description='一人称を選択します。')    
