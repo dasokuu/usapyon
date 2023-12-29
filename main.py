@@ -3,7 +3,7 @@ from discord.ext import commands
 import os
 from utils import handle_message, handle_voice_state_update
 from voice import process_playback_queue
-from bot_commands import setup_commands, CustomHelpCommand
+from bot_commands import setup, setup_commands, CustomHelpCommand
 from settings import BOT_PREFIX, GAME_NAME
 
 # Initialize bot with intents and prefix
@@ -17,6 +17,7 @@ bot = commands.Bot(
 )
 
 setup_commands(bot)
+setup(bot)
 
 
 @bot.event

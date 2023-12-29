@@ -69,8 +69,7 @@ class MyCog(commands.Cog):
 
     @commands.command(
         name="hello",
-                help="Hello World!",
-
+        help="Hello World!",
     )
     async def my_command(self, ctx):
         await ctx.send("Hello World!")
@@ -246,4 +245,5 @@ def setup_commands(bot):
             message_lines.append(f"**{name}** {styles}")
         await ctx.send("\n".join(message_lines))
 
+def setup(bot):
     bot.add_cog(MyCog(bot))
