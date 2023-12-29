@@ -8,6 +8,7 @@ from voice import text_to_speech
 import discord
 from discord.ext import commands
 
+
 class CustomHelpCommand(commands.HelpCommand):
     def __init__(self):
         super().__init__(command_attrs={"help": "コマンドリストと説明を表示します。"})  # helpコマンド自体の説明
@@ -18,8 +19,12 @@ class CustomHelpCommand(commands.HelpCommand):
             filtered_commands = await self.filter_commands(commands, sort=True)
             for command in filtered_commands:
                 # コマンド名とその説明を追加
-                command_name = f"!{command.name}" + (f" [{'|'.join(command.aliases)}]" if command.aliases else "")
-                command_desc = f"{command.help}\n使用例: `{self.get_command_signature(command)}`"
+                command_name = f"!{command.name}" + (
+                    f" [{'|'.join(command.aliases)}]" if command.aliases else ""
+                )
+                command_desc = (
+                    f"{command.help}\n使用例: `{self.get_command_signature(command)}`"
+                )
                 embed.add_field(name=command_name, value=command_desc, inline=False)
 
         channel = self.get_destination()
@@ -27,11 +32,14 @@ class CustomHelpCommand(commands.HelpCommand):
 
     async def send_command_help(self, command):
         embed = discord.Embed(
-            title=f"!{command.name}" + (f" [{'|'.join(command.aliases)}]" if command.aliases else ""),
+            title=f"!{command.name}"
+            + (f" [{'|'.join(command.aliases)}]" if command.aliases else ""),
             description=command.help or "説明が設定されていません。",
             color=0x00FF00,
         )
-        embed.add_field(name="使用例", value=f"`{self.get_command_signature(command)}`", inline=False)
+        embed.add_field(
+            name="使用方法", value=f"`{self.get_command_signature(command)}`", inline=False
+        )
         channel = self.get_destination()
         await channel.send(embed=embed)
 
@@ -43,12 +51,11 @@ class CustomHelpCommand(commands.HelpCommand):
         await channel.send(error)
 
 
-
 def setup_commands(bot):
     @bot.command(
         name="defaultstyle",
         aliases=["ds"],
-        help="ユーザーのデフォルトスタイルを表示または設定します。\n使用法: !defaultstyle [スタイルID]\n例: !ds 1",
+        help="ユーザーのデフォルトスタイルを表示または設定します。",
     )
     async def defaultstyle(ctx, style_id: int = None):
         guild_id = str(ctx.guild.id)
@@ -86,7 +93,7 @@ def setup_commands(bot):
     @bot.command(
         name="notifystyle",
         aliases=["ns"],
-        help="入退室通知のスタイルを表示または設定します。\n使用法: !notifystyle [スタイルID]\n例: !ns 2",
+        help="入退室通知のスタイルを表示または設定します。",
     )
     async def notify_style(ctx, style_id: int = None):
         guild_id = str(ctx.guild.id)
@@ -124,7 +131,7 @@ def setup_commands(bot):
     @bot.command(
         name="mystyle",
         aliases=["ms"],
-        help="あなたの現在のスタイルを表示または設定します。\n使用法: !mystyle [スタイルID]\n例: !ms 3",
+        help="あなたの現在のスタイルを表示または設定します。",
     )
     async def my_style(ctx, style_id: int = None):
         user_id = str(ctx.author.id)
