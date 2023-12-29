@@ -149,7 +149,6 @@ def get_current_style_details(guild_id, user_id, type):
 
 
 def setup_commands(bot):
-    tree = app_commands.CommandTree(bot)
 
     @bot.command(name="style", help="スタイルを表示または設定します。詳細は `!help style` で確認。")
     async def style(ctx, type: str = None, style_id: int = None):
