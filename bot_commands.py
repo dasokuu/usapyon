@@ -73,25 +73,21 @@ async def handle_style_command(ctx, style_id: int, type: str):
     guild_id = str(ctx.guild.id)
     user_id = str(ctx.author.id)
 
-    # スタイルIDが指定されている場合は設定を更新
-    if style_id is not None:
-        valid, speaker_name, style_name = validate_style_id(style_id)
-        if not valid:
-            await ctx.send(f"スタイルID {style_id} は無効です。")
-            return
-
-        # スタイルを更新
-        update_style_setting(guild_id, user_id, style_id, type)
-        await ctx.send(
-            f"スタイルを「{speaker_name} {style_name}」(スタイルID: {style_id})に設定しました。"
-        )
+    # If no style_id is provided, display the current style settings
+    if style_id is None:
+        current_style_id, speaker_name, style_name = get_current_style_details(guild_id, user_id, type)
+        await ctx.send(f"現在のスタイル: {speaker_name} {style_name} (スタイルID: {current_style_id})")
         return
 
-    # 現在のスタイル設定を表示
-    current_style_id, speaker_name, style_name = get_current_style_details(
-        guild_id, user_id, type
-    )
-    await ctx.send(f"現在のスタイル: {speaker_name} {style_name} (スタイルID: {current_style_id})")
+    # If a style_id is provided, continue to validate and update the style
+    valid, speaker_name, style_name = validate_style_id(style_id)
+    if not valid:
+        await ctx.send(f"スタイルID {style_id} は無効です。")
+        return
+
+    # Update the style
+    update_style_setting(guild_id, user_id, style_id, type)
+    await ctx.send(f"スタイルを「{speaker_name} {style_name}」(スタイルID: {style_id})に設定しました。")
 
 
 def update_style_setting(guild_id, user_id, style_id, type):
