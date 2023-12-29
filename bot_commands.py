@@ -70,7 +70,7 @@ def setup_commands(bot):
             aliases=["ds"],
             help="ユーザーのデフォルトスタイルを表示または設定します。",
         )
-        async def default_style(ctx, style_id: int = None):
+        async def default_style(self, ctx, style_id: int = None):
             guild_id = str(ctx.guild.id)
 
             # Ensure server settings are initialized
@@ -108,7 +108,7 @@ def setup_commands(bot):
             aliases=["ns"],
             help="入退室通知のスタイルを表示または設定します。",
         )
-        async def notify_style(ctx, style_id: int = None):
+        async def notify_style(self, ctx, style_id: int = None):
             guild_id = str(ctx.guild.id)
 
             # スタイルIDが指定されている場合は設定を更新
@@ -146,7 +146,7 @@ def setup_commands(bot):
             aliases=["ms"],
             help="あなたの現在のスタイルを表示または設定します。",
         )
-        async def my_style(ctx, style_id: int = None):
+        async def my_style(self, ctx, style_id: int = None):
             user_id = str(ctx.author.id)
 
             # スタイルIDが指定されている場合は設定を更新
@@ -174,7 +174,7 @@ def setup_commands(bot):
             await ctx.send(response)
 
         @bot.command(name="list_styles", aliases=["ls"], help="利用可能なスタイルIDの一覧を表示します。")
-        async def list_styles(ctx):
+        async def list_styles(self, ctx):
             message_lines = []
             for speaker in speakers:
                 name = speaker["name"]
@@ -189,7 +189,7 @@ def setup_commands(bot):
 
     class ControlCog(commands.Cog, name="操作管理"):
         @bot.command(name="join", help="ボットをボイスチャンネルに接続し、読み上げを開始します。")
-        async def join(ctx):
+        async def join(self, ctx):
             if ctx.author.voice and ctx.author.voice.channel:
                 channel = ctx.author.voice.channel
                 voice_client = await channel.connect(self_deaf=True)
@@ -219,7 +219,7 @@ def setup_commands(bot):
                 )
 
         @bot.command(name="leave", help="ボットをボイスチャンネルから切断します。")
-        async def leave(ctx):
+        async def leave(self, ctx):
             if ctx.voice_client:
                 guild_id = str(ctx.guild.id)
                 # テキストチャンネルIDの設定をクリア
@@ -230,7 +230,7 @@ def setup_commands(bot):
                 await ctx.send("ボイスチャンネルから切断しました。")
 
         @bot.command(name="skip", help="現在再生中の音声をスキップします。")
-        async def skip(ctx):
+        async def skip(self, ctx):
             voice_client = ctx.guild.voice_client
             if voice_client and voice_client.is_playing():
                 voice_client.stop()
