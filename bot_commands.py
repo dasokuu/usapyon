@@ -399,7 +399,7 @@ def setup_commands(bot):
                 )
             else:
                 await interaction.response.send_message(
-                    f"{selected_char}が該当します。スタイルを選んでください。", view=StyleView(styles)
+                    f"{first_person}には{selected_char}が該当します。スタイルを選んでください。", view=StyleView(styles)
                 )
         else:
             await interaction.response.send_message(
