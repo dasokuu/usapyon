@@ -77,7 +77,7 @@ async def handle_style_command(ctx, style_id: int, type: str = None):
 
     # スタイルタイプに応じた説明を定義
     type_description = {
-        "user_default": f"{guild_name}のユーザーデフォルトスタイル",
+        "user_default": f"{guild_name}のユーザーデフォルト",
         "notify": f"{guild_name}VC入退室時のスタイル",
         "user": f"{user_display_namename}のスタイル"
     }
