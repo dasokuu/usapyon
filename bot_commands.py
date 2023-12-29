@@ -324,34 +324,31 @@ def setup_commands(bot):
         "ビィ": ["猫使ビィ"],
         "あいえるたん": ["あいえるたん"],
     }
-    _first_persons = {
+    first_persons = {
+        "私": ["冥鳴ひまり", "もち子さん", "No.7", "櫻歌ミコ", "麒ヶ島宗麟", "猫使ビィ", "琴詠ニア"],
+        "わたし": ["WhiteCUL", "後鬼", "ナースロボ＿タイプＴ", "春歌ナナ", "中国うさぎ", "あいえるたん"],
         "わたくし": ["四国めたん"],
-        "ずんだもん": ["ずんだもん"],
-        "僕": ["ずんだもん", "雨晴はう", "剣崎雌雄", "No.7", "雀松朱司", "栗田まろん"],
         "あーし": ["春日部つむぎ"],
         "あたし": ["波音リツ"],
-        "俺": ["玄野武宏"],
+        "僕": ["ずんだもん", "雨晴はう", "剣崎雌雄", "No.7", "雀松朱司", "栗田まろん"],
+        "ぼく": ["満別花丸"],
+        "ボク": ["猫使アル", "猫使ビィ"],
         "おれ": ["白上虎太郎", "猫使アル"],
+        "俺": ["玄野武宏"],
         "オレ": ["青山龍星"],
-        "私": ["冥鳴ひまり", "もち子さん", "No.7", "櫻歌ミコ", "麒ヶ島宗麟", "猫使ビィ", "琴詠ニア"],
+        "ワテ": ["後鬼"],
+        "我": ["†聖騎士 紅桜†"],
+        "わし": ["ちび式じい"],
+        "ずんだもん": ["ずんだもん"],
         "まーくつー": ["九州そら"],
         "もち子さん": ["もち子さん"],
-        "わたし": ["WhiteCUL", "後鬼", "ナースロボ＿タイプＴ", "春歌ナナ", "中国うさぎ", "あいえるたん"],
-        "ワテ": ["後鬼"],
-        "わし": ["ちび式じい"],
         "ミコ": ["櫻歌ミコ"],
         "小夜": ["小夜/SAYO"],
-        "我": ["†聖騎士 紅桜†"],
         "ナナ": ["春歌ナナ"],
         "アル": ["猫使アル"],
-        "ボク": ["猫使アル", "猫使ビィ"],
         "ビィ": ["猫使ビィ"],
         "あいえるたん": ["あいえるたん"],
-        "ぼく": ["満別花丸"],
     }
-    sorted_first_persons = dict(
-        sorted(first_persons.items(), key=lambda item: len(item[1]), reverse=True)
-    )
 
     @bot.tree.command(
         name="choose_style", guild=TEST_GUILD_ID, description="スタイルを選択します。"
@@ -359,8 +356,7 @@ def setup_commands(bot):
     async def choose_style(interaction: discord.Interaction):
         # Create first person selection options
         options = [
-            discord.SelectOption(label=fp, value=fp)
-            for fp in sorted_first_persons.keys()
+            discord.SelectOption(label=fp, value=fp) for fp in first_persons.keys()
         ]
         # Prompt the user to select a first person
         await interaction.response.send_message(
@@ -373,7 +369,8 @@ def setup_commands(bot):
     async def choose_first_person(interaction: discord.Interaction):
         # 一人称の選択肢を作成
         options = [
-            discord.SelectOption(label=fp, value=fp) for fp in sorted_first_persons.keys()
+            discord.SelectOption(label=fp, value=fp)
+            for fp in sorted_first_persons.keys()
         ]
 
         # ユーザーに一人称を選択させる
