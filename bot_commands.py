@@ -75,8 +75,12 @@ async def handle_style_command(ctx, style_id: int, type: str):
 
     # If no style_id is provided, display the current style settings
     if style_id is None:
-        current_style_id, speaker_name, style_name = get_current_style_details(guild_id, user_id, type)
-        await ctx.send(f"現在のスタイル: {speaker_name} {style_name} (スタイルID: {current_style_id})")
+        current_style_id, speaker_name, style_name = get_current_style_details(
+            guild_id, user_id, type
+        )
+        await ctx.send(
+            f"現在のスタイル: {speaker_name} {style_name} (スタイルID: {current_style_id})"
+        )
         return
 
     # If a style_id is provided, continue to validate and update the style
