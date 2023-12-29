@@ -145,10 +145,10 @@ def get_current_style_details(guild_id, user_id, type):
 def setup_commands(bot):
     @bot.command(
         name="style",
-        help="スタイルを表示または設定します。使用法: !style [type] [style_id] \n"
-        "type: 'user_default', 'notify', or 'user'. \n"
-        "style_id: 使用したいスタイルのID。 \n"
-        "例: !style user_default 1 - ユーザーデフォルトスタイルをID 1に設定します。",
+        help="スタイルを表示または設定します。使用法: !style [type] [style_id]; "
+            "type: 'user_default', 'notify', 'user'; "
+            "style_id: 使用したいスタイルのID; "
+            "例: !style user_default 1 - ユーザーデフォルトスタイルをID 1に設定します。"
     )
     async def style(ctx, type: str = None, style_id: int = None):
         valid_types = ["user_default", "notify", "user", None]
