@@ -79,10 +79,14 @@ async def handle_style_command(ctx, style_id: int = None, type: str = "user"):
         if style_id in ["default", "notify", "user"]:
             type = style_id
             style_id = None
-        
+
         # Fetch and display the current style settings
-        current_style_id, speaker_name, style_name = get_current_style_details(guild_id, user_id, type)
-        await ctx.send(f"現在のスタイル: {speaker_name} {style_name} (スタイルID: {current_style_id})")
+        current_style_id, speaker_name, style_name = get_current_style_details(
+            guild_id, user_id, type
+        )
+        await ctx.send(
+            f"現在のスタイル: {speaker_name} {style_name} (スタイルID: {current_style_id})"
+        )
         return
 
     # If a valid style_id is provided, validate and potentially update the style
