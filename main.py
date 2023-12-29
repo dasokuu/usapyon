@@ -154,12 +154,13 @@ async def text_to_speech(voice_client, text, style_id, guild_id):
 
 async def replace_mentions_with_names(text, message):
     """
-    メッセージ内のユーザーメンションを「○○さんへ」、ロールメンションを「○○役職」に置き換えます。
+    メッセージ内のユーザーメンションを「○○さん」、ロールメンションを「○○役職」に置き換えます。
     """
     # ユーザーメンションを検出する正規表現パターン
     user_mention_pattern = re.compile(r"<@!?(\d+)>")
     # ロールメンションを検出する正規表現パターン
     role_mention_pattern = re.compile(r"<@&(\d+)>")
+    channel_pattern = re.compile(r"<#(\d+)>")
 
     def replace_user_mention(match):
         user_id = int(match.group(1))
@@ -171,10 +172,16 @@ async def replace_mentions_with_names(text, message):
         role = discord.utils.get(message.guild.roles, id=role_id)
         return role.name + "役職" if role else match.group(0)
 
+    def replace_channel_mention(match):
+        channel_id = int(match.group(1))
+        channel = message.guild.get_channel(channel_id)
+        return channel.name + "チャンネル" if channel else match.group(0)
+
     # ユーザーメンションを「○○さん」に置き換え
     text = user_mention_pattern.sub(replace_user_mention, text)
     # ロールメンションを「○○役職」に置き換え
     text = role_mention_pattern.sub(replace_role_mention, text)
+    text = channel_pattern.sub(replace_channel_mention, text)
 
     return text
 
@@ -189,7 +196,6 @@ async def on_ready():
 
 @bot.event
 async def on_message(message):
-    # メッセージを処理する前に、カスタム絵文字とURLを置換
     def replace_custom_emoji_and_urls(text):
         # カスタム絵文字の名前をかなに変換
         def convert_emoji_name_to_kana(match):
@@ -198,7 +204,12 @@ async def on_message(message):
 
         text = re.sub(r"<:(\w*):\d*>", convert_emoji_name_to_kana, text)
         text = re.sub(r"https?://\S+", "URL省略", text)
-        return text
+        return text\
+        
+    def handle_attachments(message):
+        if message.attachments:
+            return "ファイルが投稿されました。"
+        return ""
 
     guild_id = str(message.guild.id)
 
@@ -247,6 +258,9 @@ async def on_message(message):
 
     # メッセージ内容を置換
     message_content = replace_custom_emoji_and_urls(message_content)
+    # Append this to the message content if there are any attachments
+    attachment_text = handle_attachments(message)
+    message_content += attachment_text
     await text_to_speech(voice_client, message_content, style_id, guild_id)
 
 
