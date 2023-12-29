@@ -230,7 +230,7 @@ def setup_commands(bot):
         """Generates a text snippet for the speaker's styles."""
         name = speaker["name"]
         styles = ", ".join(
-            f"{style['name']} (ID: {style['id']})"
+            f"{style['name']} `{style['id']}`)"
             for style in speaker["styles"]
         )
         return f"**{name}**\n{styles}"
