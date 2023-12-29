@@ -247,10 +247,12 @@ def setup_commands(bot):
     ]
 
     # Dynamically generate style ID choices based on your styles data
-    style_id_choices = [
-        app_commands.Choice(name=speaker["name"], value=speaker["style_id"])
-        for speaker in speakers
-    ]
+    for speaker in speakers:
+        name = speaker["name"]
+        style_id_choices = [
+            app_commands.Choice(name=style["name"], value=style["id"])
+            for style in speaker["styles"]
+        ]
 
     @bot.slash_command(description="スタイルを表示または設定します。")
     @app_commands.choices(type=type_choices)
