@@ -256,7 +256,7 @@ def setup_commands(bot):
     # Dynamically generate style ID choices based on the speakers data
     # スピーカーごとに選択肢を作成
     speaker_choices = []
-    style_id_choice = []
+    style_id_choices = []
     for speaker in speakers:
         speaker_choice = app_commands.Choice(
             name=speaker["name"], value=speaker["name"]
@@ -265,14 +265,14 @@ def setup_commands(bot):
 
         # 各スピーカーのスタイルから選択肢を作成
         for style_id in speaker["styles"]:
-            style_id_choice = app_commands.Choice(
+            style_id_choices = app_commands.Choice(
                 name=f"{speaker['name']} - {style_id['name']}", value=style_id["id"]
             )
-            style_id_choice.append(style_id_choice)
+            style_id_choices.append(style_id_choices)
 
     @bot.tree.command(guild=TEST_GUILD_ID, description="スタイルを表示または設定します。")
     @app_commands.choices(
-        type=type_choices, speaker=speaker_choices, style_id=style_id_choice
+        type=type_choices, speaker=speaker_choices, style_id=style_id_choices
     )
     async def style(
         interaction: discord.Interaction,
