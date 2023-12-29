@@ -68,49 +68,29 @@ async def synthesis(speaker, query_data):
             return None
 
 
-import asyncio
-import io
-from discord import FFmpegPCMAudio
-
-# 各ギルドの再生キューを保持する辞書
-guild_queues = {}
-
-
 async def text_to_speech(voice_client, text, style_id, guild_id):
-    # ギルドごとのキューを取得（存在しない場合は新しく作成）
-    if guild_id not in guild_queues:
-        guild_queues[guild_id] = asyncio.Queue()
-    guild_queue = guild_queues[guild_id]
-
-    lines = text.split("\n")
-    for line in lines:
-        if line.strip():
-            await speak_line(voice_client, line, style_id, guild_queue)
+    try:
+        lines = text.split("\n")
+        for line in lines:
+            if line.strip():
+                await speak_line(voice_client, line, style_id, guild_id)
+    except Exception as e:
+        print(f"Error in text_to_speech: {e}")
 
 
-async def speak_line(voice_client, line, style_id, guild_queue):
-    # 音声合成の処理をここに実装
+async def speak_line(voice_client, line, style_id, guild_id):
+    # The rest of your logic for processing each line
     query_data = await audio_query(line, style_id)
-    voice_data = await synthesis(style_id, query_data)
-
-    # 合成された音声データをキューに追加
-    audio_source = FFmpegPCMAudio(io.BytesIO(voice_data), pipe=True)
-    await guild_queue.put(audio_source)
-
-    # 別のタスクでキューから音声を取り出して再生
-    asyncio.create_task(play_from_queue(voice_client, guild_queue))
-
-
-async def play_from_queue(voice_client, guild_queue):
-    while not guild_queue.empty():
-        voice_client, audio_source = await guild_queue.get()
-        if not voice_client.is_playing():
+    if query_data:
+        voice_data = await synthesis(style_id, query_data)
+        if voice_data:
+            audio_source = discord.FFmpegPCMAudio(io.BytesIO(voice_data), pipe=True)
+            guild_queue = get_guild_playback_queue(guild_id)
             try:
-                voice_client.play(audio_source)
-                while voice_client.is_playing():
-                    await asyncio.sleep(1)
-            except discord.ClientException:
-                print("Already playing audio.")
+                # Add audio source to the guild-specific queue
+                await guild_queue.put((voice_client, audio_source))
+            except Exception as e:
+                print(f"An error occurred while playing audio: {e}")
 
 
 async def clear_playback_queue(guild_id):
