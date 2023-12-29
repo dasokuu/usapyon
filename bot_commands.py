@@ -224,18 +224,11 @@ def setup_commands(bot):
 
     @bot.command(name="list_styles", aliases=["ls"], help="利用可能なスタイルIDの一覧を表示します。")
     async def list_styles(ctx):
-        # 各キャラクターとスタイルの情報をフォーマット
-        message_lines = ["```"]  # コードブロックの開始
+        message_lines = []
         for speaker in speakers:
             name = speaker["name"]
-            styles = "\n  ".join(
-                [f"{style['name']} (ID: {style['id']})" for style in speaker["styles"]]
-            )
-            message_lines.append(f"{name}:\n  {styles}")
-        message_lines.append("```")  # コードブロックの終了
-
-        # メッセージを送信（長すぎる場合はページネーションを考慮）
+            styles = ", ".join(f"{style['name']}(ID:{style['id']})" for style in speaker["styles"])
+            message_lines.append(f"**{name}**: {styles}")
+        # メッセージを送信
         await ctx.send("\n".join(message_lines))
 
-    # このコードでは、各キャラクターの名前とスタイルがコードブロック内で整理されて表示されます。
-    # 必要に応じてページネーションを追加することで、長いリストを複数のメッセージに分割して表示できます。
