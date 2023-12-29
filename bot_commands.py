@@ -212,30 +212,28 @@ def setup_commands(bot):
 
     @bot.command(name="list_styles", aliases=["ls"], help="利用可能なスタイルIDの一覧を表示します。")
     async def list_styles(ctx):
+        embeds = []
         embed = discord.Embed(title="利用可能なスタイルIDの一覧", color=0x00FF00)
         embed.description = "各スピーカーと利用可能なスタイルのIDです。"
+        field_count = 0
 
-        # Assuming we have a function to pair up speakers
-        paired_speakers = pair_up_speakers(speakers)
+        for speaker in speakers:
+            name = speaker["name"]
+            styles = "\n".join(
+                f"- {style['name']} `{style['id']}`" for style in speaker["styles"]
+            )
 
-        for pair in paired_speakers:
-            # Generate the styles text for each speaker
-            styles_text = [generate_styles_text(speaker) for speaker in pair]
-            # Join the styles text and add them as a field
-            embed.add_field(name="\u200b", value="\n\n".join(styles_text), inline=True)
+            if field_count < 25:
+                embed.add_field(name=name, value=styles, inline=True)
+                field_count += 1
+            else:
+                embeds.append(embed)
+                embed = discord.Embed(title="利用可能なスタイルIDの一覧 (続き)", color=0x00FF00)
+                embed.add_field(name=name, value=styles, inline=True)
+                field_count = 1  # Reset for the new embed
 
-        await ctx.send(embed=embed)
+        # Add the last embed
+        embeds.append(embed)
 
-    def generate_styles_text(speaker):
-        """Generates a text snippet for the speaker's styles."""
-        name = speaker["name"]
-        styles = ", ".join(
-            f"{style['name']} `{style['id']}`"
-            for style in speaker["styles"]
-        )
-        return f"**{name}**\n{styles}"
-
-    def pair_up_speakers(speakers):
-        """Pairs up speakers for display in the embed."""
-        # Pair speakers in tuples of two
-        return [(speakers[i], speakers[i + 1]) for i in range(0, len(speakers), 2)]
+        for embed in embeds:
+            await ctx.send(embed=embed)
