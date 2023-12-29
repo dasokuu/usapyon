@@ -3,7 +3,7 @@ from discord.ext import commands
 import os
 from utils import handle_message, handle_voice_state_update
 from voice import process_playback_queue
-from bot_commands import setup
+from bot_commands import setup, setup_commands
 from settings import BOT_PREFIX, GAME_NAME
 
 
@@ -37,5 +37,5 @@ if __name__ == "__main__":
     async def on_voice_state_update(member, before, after):
         await handle_voice_state_update(bot, member, before, after)
 
-    setup(bot)
+    setup_commands(bot)
     bot.run(os.getenv("VOICECHATLOID_TOKEN"))
