@@ -90,7 +90,7 @@ async def handle_style_command(ctx, style_id: int, type: str = None):
                 guild_id, user_id, t
             )
             messages.append(
-                f"{type_description[t]}: {speaker_name} {style_name} (スタイルID: {style_id})"
+                f"**{type_description[t]}**: {speaker_name} {style_name} (スタイルID: {style_id})"
             )
         await ctx.send("\n".join(messages))
         return
@@ -113,7 +113,7 @@ async def handle_style_command(ctx, style_id: int, type: str = None):
         guild_id, user_id, type
     )
     await ctx.send(
-        f"現在の{type_description[type]}スタイル: {speaker_name} {style_name} (スタイルID: {current_style_id})"
+        f"{type_description[type]}スタイル: {speaker_name} {style_name} (スタイルID: {current_style_id})"
     )
 
 
