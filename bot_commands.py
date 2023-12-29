@@ -63,6 +63,15 @@ class CustomHelpCommand(commands.HelpCommand):
         await channel.send(error)
 
 
+class MyCog(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+
+    @commands.command()
+    async def my_command(self, ctx):
+        await ctx.send("Hello World!")
+
+
 def setup_commands(bot):
     @bot.command(
         name="defaultstyle",
@@ -232,3 +241,5 @@ def setup_commands(bot):
             )
             message_lines.append(f"**{name}** {styles}")
         await ctx.send("\n".join(message_lines))
+
+    bot.add_cog(MyCog(bot))
