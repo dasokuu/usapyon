@@ -67,7 +67,7 @@ def setup_commands(bot):
     @bot.command(
         name="default_style",
         aliases=["ds"],
-        help="ユーザーのデフォルトスタイルを表示または設定します。",
+        help="このサーバーのユーザーデフォルトスタイルを表示または設定します。",
     )
     async def default_style(ctx, style_id: int = None):
         guild_id = str(ctx.guild.id)
@@ -90,7 +90,7 @@ def setup_commands(bot):
                 speaker_settings[guild_id]["user_default"] = style_id
                 save_style_settings()
                 await ctx.send(
-                    f"このサーバーのユーザーデフォルトスタイルを「{speaker_name} {style_name}」(スタイルID: {style_id})に設定しました。"
+                    f"ユーザーデフォルトスタイルを「{speaker_name} {style_name}」(スタイルID: {style_id})に設定しました。"
                 )
             else:
                 await ctx.send(f"スタイルID {style_id} は無効です。")
