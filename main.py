@@ -23,7 +23,8 @@ if __name__ == "__main__":
     async def on_ready():
         print(f"Logged in as {bot.user.name}")
         await bot.change_presence(activity=discord.Game(name=GAME_NAME))
-        await bot.sync()
+        for guild in bot.guilds:
+            await bot.tree.sync(guild=discord.Object(id=guild.id))
         for guild in bot.guilds:
             bot.loop.create_task(process_playback_queue(str(guild.id)))
 
@@ -42,4 +43,4 @@ if __name__ == "__main__":
     async def on_voice_state_update(member, before, after):
         await handle_voice_state_update(bot, member, before, after)
 
-    bot.run(os.getenv("VOICECHATLOIDTEST_TOKEN"))
+    bot.run(os.getenv("VOICECHATLOID_TOKEN"))
