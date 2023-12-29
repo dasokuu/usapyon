@@ -1,0 +1,4 @@
+# ユーザーのデフォルトスタイルID
+USER_DEFAULT_STYLE_ID = 3
+NOTIFY_STYLE_ID = 8
+MAX_MESSAGE_LENGTH = 200  # 適切な最大長を定義
