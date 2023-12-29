@@ -90,7 +90,7 @@ def setup_commands(bot):
                 speaker_settings[guild_id]["user_default"] = style_id
                 save_style_settings()
                 await ctx.send(
-                    f"ユーザーのデフォルトスタイルを「{speaker_name} {style_name}」(スタイルID: {style_id})に設定しました。"
+                    f"このサーバーのユーザーデフォルトスタイルを「{speaker_name} {style_name}」(スタイルID: {style_id})に設定しました。"
                 )
             else:
                 await ctx.send(f"スタイルID {style_id} は無効です。")
