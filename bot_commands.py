@@ -149,7 +149,6 @@ def get_current_style_details(guild_id, user_id, type):
 
 
 def setup_commands(bot):
-
     @bot.command(name="style", help="スタイルを表示または設定します。詳細は `!help style` で確認。")
     async def style(ctx, type: str = None, style_id: int = None):
         valid_types = ["user_default", "notify", "user", None]
@@ -240,38 +239,60 @@ def setup_commands(bot):
         for embed in embeds:
             await ctx.send(embed=embed)
 
+    # スタイルタイプに応じた説明を定義
+    type_description = {
+        "user_default": f"ユーザーデフォルト",
+        "notify": f"VC入退室時",
+        "user": f"あなた",
+    }
     # Define choices for type
     type_choices = [
-        app_commands.Choice(name="user_default", value="user_default"),
-        app_commands.Choice(name="notify", value="notify"),
-        app_commands.Choice(name="user", value="user"),
+        app_commands.Choice(
+            name="user_default", value=type_description["user_default"]
+        ),
+        app_commands.Choice(name="notify", value=type_description["notify"]),
+        app_commands.Choice(name="user", value=type_description["user"]),
     ]
-
-    # Dynamically generate style ID choices based on your styles data
-    for speaker in speakers:
-        name = speaker["name"]
-        style_id_choices = [
-            app_commands.Choice(name=style["name"], value=style["id"])
-            for style in speaker["styles"]
-        ]
 
     @bot.tree.command(guild=TEST_GUILD_ID, description="スタイルを表示または設定します。")
     @app_commands.choices(type=type_choices)
-    @app_commands.choices(style_id=style_id_choices)
-    async def style(interaction: discord.Interaction, type: str, style_id: int):
-        # You need to build the list of choices based on your styles
-        # This is just an example of what it might look like
+    async def style(interaction: discord.Interaction, type: str, style_id: str = None):
+        # Define valid types
         valid_types = ["user_default", "notify", "user"]
 
-        # Example of handling the command
+        # Check if the type is valid
         if type not in valid_types:
             await interaction.response.send_message(
                 f"⚠️ 指定されたタイプが無効です。", ephemeral=True
             )
             return
 
+        # Dynamically generate style ID choices based on the speakers data
+        style_id_choices = []
+        for speaker in speakers:
+            for style in speaker["styles"]:
+                style_id_choices.append(
+                    app_commands.Choice(
+                        name=f"{speaker['name']} - {style['name']}", value=style["id"]
+                    )
+                )
+
+        # Ensure a style_id is provided for certain types
+        if type in ["notify", "user"] and not style_id:
+            await interaction.response.send_message(f"⚠️ スタイルIDが必要です。", ephemeral=True)
+            return
+
+        # Check if the provided style_id is valid
+        if style_id and style_id not in [choice.value for choice in style_id_choices]:
+            await interaction.response.send_message(
+                f"⚠️ 指定されたスタイルIDが無効です。", ephemeral=True
+            )
+            return
+
         # Handle the style setting logic here...
-        await interaction.response.send_message(f"✅ スタイルが更新されました。")
-    @bot.tree.command(name="test", description="Test to see if slash commands are working")
-    async def test(interaction):
-        await interaction.response.send_message("Test")
+        # For example, update the user's preference in your database
+
+        await interaction.response.send_message(
+            f"✅ スタイルが更新されました。スタイルID: {style_id if style_id else 'Default'}",
+            ephemeral=True,
+        )
