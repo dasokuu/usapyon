@@ -8,191 +8,38 @@ import io
 import os
 import requests
 import jaconv
+from settings import USER_DEFAULT_STYLE_ID, NOTIFY_STYLE_ID, MAX_MESSAGE_LENGTH
+from utils import (
+    get_guild_playback_queue,
+    fetch_speakers,
+    get_style_details,
+    save_style_settings,
+    load_style_settings,
+    replace_content,
+)
+from voice import (
+    process_playback_queue,
+    audio_query,
+    synthesis,
+    text_to_speech,
+    speak_line,
+    clear_playback_queue,
+)
 
 
-# ユーザーのデフォルトスタイルID
-USER_DEFAULT_STYLE_ID = 3
-NOTIFY_STYLE_ID = 8
-
-MAX_MESSAGE_LENGTH = 200  # 適切な最大長を定義
-
-# グローバル変数を追加して、現在再生中の音声を追跡します。
-current_voice_client = None
-
-
-headers = {"Content-Type": "application/json"}
+# Initialize bot
 intents = discord.Intents.default()
 intents.messages = True
 intents.guilds = True
 intents.voice_states = True
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
+
+# Initialize global variables
 guild_playback_queues = {}
-
-
-def get_guild_playback_queue(guild_id):
-    """指定されたギルドIDのplayback_queueを取得または作成します。"""
-    if guild_id not in guild_playback_queues:
-        guild_playback_queues[guild_id] = asyncio.Queue()
-    return guild_playback_queues[guild_id]
-
-
-def fetch_speakers():
-    """スピーカー情報を取得します。"""
-    url = "http://127.0.0.1:50021/speakers"
-    try:
-        response = requests.get(url)
-        response.raise_for_status()
-        return response.json()
-    except requests.RequestException as e:
-        print(f"データの取得に失敗しました: {e}")
-        return None
-
-
-def get_style_details(style_id, default_name="デフォルト"):
-    """スタイルIDに対応するスピーカー名とスタイル名を返します。"""
-    for speaker in speakers:
-        for style in speaker["styles"]:
-            if style["id"] == style_id:
-                return (speaker["name"], style["name"])
-    return (default_name, default_name)
-
-
-def save_style_settings():
-    """スタイル設定を保存します。"""
-    with open("style_settings.json", "w") as f:
-        json.dump(speaker_settings, f)
-
-
-def load_style_settings():
-    """スタイル設定をロードします。"""
-    try:
-        with open("style_settings.json", "r") as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {}
-
-
-async def process_playback_queue(guild_id):
-    guild_queue = get_guild_playback_queue(guild_id)
-    while True:
-        item = await guild_queue.get()
-        try:
-            if isinstance(item, tuple) and len(item) == 2:
-                voice_client, audio_source = item
-                if voice_client and not voice_client.is_playing():
-                    voice_client.play(audio_source)
-                    while voice_client.is_playing():
-                        await asyncio.sleep(0.1)
-            else:
-                raise ValueError(f"Unexpected item format in queue: {item}")
-        except ValueError as e:
-            print(e)  # Log the error or handle it as needed.
-        finally:
-            guild_queue.task_done()
-
-
-async def audio_query(text, style_id):
-    # 音声合成用のクエリを作成します。
-    query_payload = {"text": text, "speaker": style_id}
-    async with aiohttp.ClientSession() as session:
-        async with session.post(
-            "http://127.0.0.1:50021/audio_query", headers=headers, params=query_payload
-        ) as response:
-            if response.status == 200:
-                return await response.json()
-            elif response.status == 422:
-                error_detail = await response.text()
-                print(f"処理できないエンティティ: {error_detail}")
-                return None
-
-
-async def synthesis(speaker, query_data):
-    # 音声合成を行います。
-    synth_payload = {"speaker": speaker}
-    headers = {"Content-Type": "application/json", "Accept": "audio/wav"}
-    async with aiohttp.ClientSession() as session:
-        async with session.post(
-            "http://127.0.0.1:50021/synthesis",
-            headers=headers,
-            params=synth_payload,
-            data=json.dumps(query_data),
-        ) as response:
-            if response.status == 200:
-                return await response.read()
-            return None
-
-
-async def text_to_speech(voice_client, text, style_id, guild_id):
-    lines = text.split("\n")
-    tasks = []
-
-    for line in lines:
-        if not line.strip():
-            continue
-        # Create a task for each line and add it to the task list
-        task = asyncio.create_task(speak_line(voice_client, line, style_id, guild_id))
-        tasks.append(task)
-
-    # Wait for all tasks to complete
-    await asyncio.gather(*tasks)
-
-
-async def speak_line(voice_client, line, style_id, guild_id):
-    # The rest of your logic for processing each line
-    query_data = await audio_query(line, style_id)
-    if query_data:
-        voice_data = await synthesis(style_id, query_data)
-        if voice_data:
-            audio_source = discord.FFmpegPCMAudio(io.BytesIO(voice_data), pipe=True)
-            guild_queue = get_guild_playback_queue(guild_id)
-            try:
-                # Add audio source to the guild-specific queue
-                await guild_queue.put((voice_client, audio_source))
-            except Exception as e:
-                print(f"An error occurred while playing audio: {e}")
-
-
-async def replace_content(text, message):
-    # ユーザーメンションを検出する正規表現パターン
-    user_mention_pattern = re.compile(r"<@!?(\d+)>")
-    # ロールメンションを検出する正規表現パターン
-    role_mention_pattern = re.compile(r"<@&(\d+)>")
-    # チャンネルを検出する正規表現パターン
-    channel_pattern = re.compile(r"<#(\d+)>")
-    # カスタム絵文字を検出する正規表現パターン
-    custom_emoji_pattern = re.compile(r"<:(\w*):\d*>")
-    # URLを検出する正規表現パターン
-    url_pattern = re.compile(r"https?://\S+")
-
-    def replace_user_mention(match):
-        user_id = int(match.group(1))
-        user = message.guild.get_member(user_id)
-        return user.display_name + "さん" if user else match.group(0)
-
-    def replace_role_mention(match):
-        role_id = int(match.group(1))
-        role = discord.utils.get(message.guild.roles, id=role_id)
-        return role.name + "役職" if role else match.group(0)
-
-    def replace_channel_mention(match):
-        channel_id = int(match.group(1))
-        channel = message.guild.get_channel(channel_id)
-        return channel.name + "チャンネル" if channel else match.group(0)
-
-    def replace_emoji_name_to_kana(match):
-        emoji_name = match.group(1)
-        return jaconv.alphabet2kana(emoji_name) + " "
-
-    # ユーザーメンションを「○○さん」に置き換え
-    text = user_mention_pattern.sub(replace_user_mention, text)
-    # ロールメンションを「○○役職」に置き換え
-    text = role_mention_pattern.sub(replace_role_mention, text)
-    text = channel_pattern.sub(replace_channel_mention, text)
-    text = custom_emoji_pattern.sub(replace_emoji_name_to_kana, text)
-    text = url_pattern.sub("URL省略", text)
-
-    return text
+speakers = fetch_speakers()
+speaker_settings = load_style_settings()
+current_voice_client = None
 
 
 @bot.event
@@ -258,16 +105,6 @@ async def on_message(message):
     if message.attachments:
         file_message = "ファイルが投稿されました。"
         await text_to_speech(voice_client, file_message, style_id, guild_id)
-
-
-async def clear_playback_queue(guild_id):
-    guild_queue = get_guild_playback_queue(guild_id)
-    while not guild_queue.empty():
-        try:
-            guild_queue.get_nowait()
-        except asyncio.QueueEmpty:
-            continue
-        guild_queue.task_done()
 
 
 @bot.event
