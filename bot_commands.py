@@ -294,7 +294,7 @@ def setup_commands(bot):
 
         if not validate_style_id(style_id):
             await interaction.response.send_message(
-                f"⚠️ 指定されたタイプが無効です。", ephemeral=True
+                f"⚠️ 指定されたスタイルIDが無効です。", ephemeral=True
             )
             return
 
