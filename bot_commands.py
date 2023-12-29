@@ -264,9 +264,9 @@ def setup_commands(bot):
         speaker_choices.append(speaker_choice)
 
         # 各スピーカーのスタイルから選択肢を作成
-        for style in speaker["styles"]:
+        for style_id in speaker["styles"]:
             style_id_choice = app_commands.Choice(
-                name=f"{speaker['name']} - {style['name']}", value=style["id"]
+                name=f"{speaker['name']} - {style_id['name']}", value=style_id["id"]
             )
             style_id_choice.append(style_id_choice)
 
