@@ -67,7 +67,11 @@ class MyCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command()
+    @commands.command(
+        name="hello",
+                help="Hello World!",
+
+    )
     async def my_command(self, ctx):
         await ctx.send("Hello World!")
 
