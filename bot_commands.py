@@ -49,7 +49,7 @@ class CustomHelpCommand(commands.HelpCommand):
                 "- ユーザーデフォルトスタイルをID 1に設定: !style user_default 1\n"
                 "- 入退室通知スタイルをID 2に設定: !style notify 2\n"
                 "- 個人スタイルをID 3に設定: !style user 3\n\n"
-                "各typeとstyle_idの詳細や一覧は '!list_styles' で確認できます。"
+                "style_idの詳細や一覧は '!list_styles' で確認できます。"
             )
         else:
             embed.add_field(name="説明", value=command.help, inline=False)
