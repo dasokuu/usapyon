@@ -79,7 +79,7 @@ async def handle_style_command(ctx, style_id: int, type: str = None):
     type_description = {
         "user_default": f"{guild_name}のユーザーデフォルト",
         "notify": f"{guild_name}VC入退室時のスタイル",
-        "user": f"{user_display_namename}のスタイル"
+        "user": f"{user_display_namename}のスタイル",
     }
 
     # スタイルIDが指定されていない場合、全ての設定を表示
@@ -92,19 +92,19 @@ async def handle_style_command(ctx, style_id: int, type: str = None):
             messages.append(
                 f"**{type_description[t]}**: {speaker_name} {style_name} (スタイルID: {style_id})"
             )
-        await ctx.send("\n".join(messages))
+        await ctx.send("🔊 以下は現在のスタイル設定です:\n" + "\n".join(messages))
         return
     # スタイルIDが指定されている場合は設定を更新
     if style_id is not None:
         valid, speaker_name, style_name = validate_style_id(style_id)
         if not valid:
-            await ctx.send(f"スタイルID {style_id} は無効です。")
+            await ctx.send(f"⚠️ スタイルID {style_id} は無効です。正しいIDを入力してください。")
             return
 
         # スタイルを更新
         update_style_setting(guild_id, user_id, style_id, type)
         await ctx.send(
-            f"{type_description[type]}スタイルを「{speaker_name} {style_name}」(スタイルID: {style_id})に設定しました。"
+            f"✅ {type_description[type]}のスタイルが「{speaker_name} {style_name}」(スタイルID: {style_id})に更新されました。"
         )
         return
 
@@ -113,7 +113,7 @@ async def handle_style_command(ctx, style_id: int, type: str = None):
         guild_id, user_id, type
     )
     await ctx.send(
-        f"{type_description[type]}スタイル: {speaker_name} {style_name} (スタイルID: {current_style_id})"
+        f"ℹ️ 現在の{type_description[type]}スタイルは「{speaker_name} {style_name}」(スタイルID: {current_style_id})です。"
     )
 
 
@@ -144,7 +144,9 @@ def setup_commands(bot):
     async def style(ctx, type: str = None, style_id: int = None):
         valid_types = ["user_default", "notify", "user", None]
         if type not in valid_types:
-            await ctx.send(f"無効なタイプが指定されました。有効なタイプ: {', '.join(valid_types[:-1])}")
+            await ctx.send(
+                f"⚠️ 指定されたタイプが無効です。有効なタイプは以下の通りです: {', '.join(valid_types[:-1])}"
+            )
             return
 
         # コードを共通化し、異なるスタイルタイプに対応
