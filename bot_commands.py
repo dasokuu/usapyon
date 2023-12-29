@@ -41,15 +41,15 @@ class CustomHelpCommand(commands.HelpCommand):
 
         if command.name == "style":
             embed.description = (
-                "!styleコマンドの使用法:\n"
-                "!style [type] [style_id]\n\n"
-                "- type: 設定するスタイルのタイプ。'user_default', 'notify', または 'user' から選択。\n"
-                "- style_id: 使用したいスタイルのID。\n\n"
+                "`!style`コマンドの使用法:\n"
+                "`!style [type] [style_id]`\n\n"
+                "- `type`: 設定するスタイルのタイプ。`user_default`, `notify`, または `user` から選択。\n"
+                "- `style_id`: 使用したいスタイルのID。\n\n"
                 "例:\n"
-                "- ユーザーデフォルトスタイルをID 1に設定: !style user_default 1\n"
-                "- 入退室通知スタイルをID 2に設定: !style notify 2\n"
-                "- 個人スタイルをID 3に設定: !style user 3\n\n"
-                "style_idの詳細や一覧は `!list_styles` で確認できます。"
+                "- ユーザーデフォルトスタイルをID 1に設定: `!style user_default 1`\n"
+                "- 入退室通知スタイルをID 2に設定: `!style notify 2`\n"
+                "- 個人スタイルをID 3に設定: `!style user 3`\n\n"
+                "`style_id`の詳細や一覧は `!list_styles` で確認できます。"
             )
         else:
             embed.add_field(name="説明", value=command.help, inline=False)
@@ -141,7 +141,7 @@ def get_current_style_details(guild_id, user_id, type):
 
 
 def setup_commands(bot):
-    @bot.command(name="style", help="スタイルを表示または設定します。詳細は '!help style' で確認。")
+    @bot.command(name="style", help="スタイルを表示または設定します。詳細は `!help style` で確認。")
     async def style(ctx, type: str = None, style_id: int = None):
         valid_types = ["user_default", "notify", "user", None]
         if type not in valid_types:
