@@ -7,6 +7,7 @@ from bot_commands import setup_commands, CustomHelpCommand
 from settings import BOT_PREFIX, GAME_NAME
 from discord import app_commands
 
+GUILD_ID = discord.Object(id='1189256965172514836')  # Replace 'your_guild_id' with your guild's ID
 
 if __name__ == "__main__":
     # Initialize bot with intents and prefix
@@ -24,7 +25,7 @@ if __name__ == "__main__":
     async def on_ready():
         print(f"Logged in as {bot.user.name}")
         await bot.change_presence(activity=discord.Game(name=GAME_NAME))
-        await bot.tree.sync()
+        await self.tree.sync(guild=GUILD_ID)
         for guild in bot.guilds:
             bot.loop.create_task(process_playback_queue(str(guild.id)))
 
