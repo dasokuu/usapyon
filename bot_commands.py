@@ -227,7 +227,7 @@ def setup_commands(bot):
         message_lines = []
         for speaker in speakers:
             name = speaker["name"]
-            styles = ", ".join(f"{style['name']}(ID:{style['id']})" for style in speaker["styles"])
+            styles = ", ".join(f"{style['name']}({style['id']})" for style in speaker["styles"])
             message_lines.append(f"**{name}**: {styles}")
         # メッセージを送信
         await ctx.send("\n".join(message_lines))
