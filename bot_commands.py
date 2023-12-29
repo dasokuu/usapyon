@@ -23,7 +23,7 @@ class CustomHelpCommand(commands.HelpCommand):
                     f" [{', '.join(command.aliases)}]" if command.aliases else ""
                 )
                 command_entries.append(
-                    f"`{command_name}` - {command.short_doc or '説明なし'}"
+                    f"`{command_name}` {command.short_doc or '説明なし'}"
                 )
             if command_entries:
                 cog_name = cog.qualified_name if cog else "その他"
