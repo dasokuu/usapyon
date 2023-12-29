@@ -211,7 +211,7 @@ def setup_commands(bot):
         else:
             await interaction.response.send_message("再生中の音声はありません。")
 
-    @bot.tree.command(name="list_styles", aliases=["ls"], description="利用可能なスタイルIDの一覧を表示します。")
+    @bot.tree.command(name="list_styles", description="利用可能なスタイルIDの一覧を表示します。")
     async def list_styles(interaction: discord.Interaction):
         embeds = []
         embed = discord.Embed(title="利用可能なスタイルIDの一覧", color=0x00FF00)
