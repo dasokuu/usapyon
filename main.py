@@ -1,12 +1,9 @@
 import discord
 from discord.ext import commands
 import os
-from settings import NOTIFY_STYLE_ID
-from utils import speaker_settings, save_style_settings, handle_message, handle_voice_state_update
+from utils import handle_message, handle_voice_state_update
 from voice import (
     process_playback_queue,
-    text_to_speech,
-    clear_playback_queue,
 )
 from bot_commands import setup_commands
 
