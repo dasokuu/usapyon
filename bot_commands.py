@@ -1,3 +1,4 @@
+import discord
 from discord.ext import commands
 from settings import USER_DEFAULT_STYLE_ID, NOTIFY_STYLE_ID, MAX_MESSAGE_LENGTH
 from utils import speakers, speaker_settings, save_style_settings, get_style_details
@@ -9,22 +10,30 @@ class CustomHelpCommand(commands.HelpCommand):
         super().__init__()
 
     async def send_bot_help(self, mapping):
+        embed = discord.Embed(title="Help", description="List of available commands:", color=0x00ff00)
         for cog, commands in mapping.items():
-            filtered = await self.filter_commands(commands, sort=True)
-            command_signatures = [self.get_command_signature(c) for c in filtered]
-            self.paginator.add_line(f'**{cog.qualified_name if cog else "Commands"}:**')
-            for signature in command_signatures:
-                self.paginator.add_line(signature)
+            filtered_commands = await self.filter_commands(commands, sort=True)
+            command_signatures = [self.get_command_signature(c) for c in filtered_commands]
+            if command_signatures:
+                cog_name = getattr(cog, "qualified_name", "No Category")
+                embed.add_field(name=cog_name, value="\n".join(command_signatures), inline=False)
+
+        channel = self.get_destination()
+        await channel.send(embed=embed)
 
     async def send_command_help(self, command):
-        self.add_command_formatting(command)
-        self.paginator.add_line(command.help)
+        embed = discord.Embed(title=self.get_command_signature(command),
+                              description=command.help or "No description available",
+                              color=0x00ff00)
+        channel = self.get_destination()
+        await channel.send(embed=embed)
 
     async def command_not_found(self, string):
-        return f'コマンド "{string}" が見つかりませんでした。'
+        return f'No command called "{string}" found.'
 
     async def send_error_message(self, error):
-        self.paginator.add_line(error)
+        channel = self.get_destination()
+        await channel.send(error)
 
 
 def setup_commands(bot):
