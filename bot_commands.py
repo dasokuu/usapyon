@@ -8,7 +8,7 @@ from utils import (
     get_style_details,
     validate_style_id,
 )
-from voice import text_to_speech
+from voice import clear_playback_queue, text_to_speech
 from discord import app_commands
 
 
@@ -201,8 +201,27 @@ def setup_commands(bot):
             if "text_channel" in speaker_settings.get(guild_id, {}):
                 del speaker_settings[guild_id]["text_channel"]
                 save_style_settings()  # 変更を保存
+            voice_client = interaction.guild.voice_client
+            if voice_client and voice_client.is_playing():
+                voice_client.stop()
+                await interaction.response.send_message("現在の読み上げをスキップしました。")
+            else:
+                await interaction.response.send_message("再生中の音声はありません。")
+            await interaction.response.send_message("再生中の音声はありません。")
+            clear_playback_queue(interaction.guild_id)
             await interaction.guild.voice_client.disconnect()
             await interaction.response.send_message("ボイスチャンネルから切断しました。")
+    
+    @bot.tree.command(name="clear", guild=TEST_GUILD_ID,description="ボットをボイスチャンネルから切断します。")
+    async def clear(interaction: discord.Interaction):
+        guild_id = str(interaction.guild_id)
+        voice_client = interaction.guild.voice_client
+        if voice_client and voice_client.is_playing():
+            voice_client.stop()
+            await interaction.response.send_message("現在の読み上げをスキップしました。")
+        else:
+            await interaction.response.send_message("再生中の音声はありません。")
+        clear_playback_queue(guild_id)
 
     @bot.tree.command(name="skip", guild=TEST_GUILD_ID,description="現在再生中の音声をスキップします。")
     async def skip(interaction: discord.Interaction):
