@@ -207,11 +207,6 @@ async def on_message(message):
         text = re.sub(r"https?://\S+", "URL省略", text)
         return text
 
-    def handle_attachments(message):
-        if message.attachments:
-            return "ファイルが投稿されました。"
-        return ""
-
     guild_id = str(message.guild.id)
 
     # ボット自身のメッセージは無視
@@ -259,10 +254,14 @@ async def on_message(message):
 
     # メッセージ内容を置換
     message_content = replace_custom_emoji_and_urls(message_content)
-    # Append this to the message content if there are any attachments
-    attachment_text = handle_attachments(message)
-    message_content += attachment_text
-    await text_to_speech(voice_client, message_content, style_id, guild_id)
+    # テキストメッセージがある場合、それに対する音声合成を行います。
+    if message_content.strip():
+        await text_to_speech(voice_client, message_content, style_id, guild_id)
+
+    # 添付ファイルがある場合、「ファイルが投稿されました」というメッセージに対する音声合成を行います。
+    if message.attachments:
+        file_message = "ファイルが投稿されました。"
+        await text_to_speech(voice_client, file_message, style_id, guild_id)
 
 
 async def clear_playback_queue(guild_id):
