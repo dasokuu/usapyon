@@ -1,5 +1,5 @@
-import aiohttp
-
+# import aiohttp
+from utils import get_guild_playback_queue
 async def process_playback_queue(guild_id):
     guild_queue = get_guild_playback_queue(guild_id)
     while True:

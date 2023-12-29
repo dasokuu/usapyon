@@ -1,12 +1,19 @@
+import asyncio
+import re
 import discord
 from discord.ext import commands
+import json
+import aiohttp
+import io
 import os
+import requests
+import jaconv
 from settings import USER_DEFAULT_STYLE_ID, NOTIFY_STYLE_ID, MAX_MESSAGE_LENGTH
 from utils import (
-    fetch_speakers,
+    speakers,
+    speaker_settings,
     get_style_details,
     save_style_settings,
-    load_style_settings,
     replace_content,
 )
 from voice import (
@@ -24,10 +31,7 @@ intents.voice_states = True
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# Initialize global variables
-guild_playback_queues = {}
-speakers = fetch_speakers()
-speaker_settings = load_style_settings()
+
 current_voice_client = None
 
 

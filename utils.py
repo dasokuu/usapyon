@@ -1,8 +1,9 @@
-import requests
-import json
-import jaconv
-import re
-import asyncio
+# import requests
+# import json
+# import jaconv
+# import re
+# import asyncio
+
 
 def get_guild_playback_queue(guild_id):
     """指定されたギルドIDのplayback_queueを取得または作成します。"""
@@ -87,3 +88,9 @@ async def replace_content(text, message):
     text = url_pattern.sub("URL省略", text)
 
     return text
+
+
+# Initialize global variables
+guild_playback_queues = {}
+speakers = fetch_speakers()
+speaker_settings = load_style_settings()
