@@ -60,7 +60,7 @@ def setup_commands(bot):
     @bot.command(
         name="defaultstyle",
         help="ユーザーのデフォルトスタイルを表示または設定します。",
-    )　
+    )
     async def defaultstyle(ctx, style_id: int = None):
         guild_id = str(ctx.guild.id)
 
