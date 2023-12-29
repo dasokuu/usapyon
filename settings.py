@@ -1,5 +1,5 @@
 # Constants and configurations
-BOT_PREFIX = "!"
+BOT_PREFIX = "test!"
 GAME_NAME = "待機中 | !helpでヘルプ"
 USER_DEFAULT_STYLE_ID = 2
 NOTIFY_DEFAULT_STYLE_ID = 30
