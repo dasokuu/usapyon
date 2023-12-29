@@ -23,43 +23,41 @@ class CustomHelpCommand(commands.HelpCommand):
         embed = discord.Embed(title="利用可能なコマンド", color=0x00FF00)
         for cog, commands in mapping.items():
             filtered_commands = await self.filter_commands(commands, sort=True)
-            command_entries = []
-            for command in filtered_commands:
-                command_name = f"!{command.name}"
-                alias_text = (
-                    f" (または: {'|'.join(f'`!{a}`' for a in command.aliases)})"
-                    if command.aliases
-                    else ""
-                )
-                command_entries.append(
-                    f"`{command_name}`{alias_text}: {command.short_doc or '説明なし'}"
-                )
+            command_entries = [
+                f"- !{command.name}: {command.short_doc}"
+                for command in filtered_commands
+            ]
             if command_entries:
                 cog_name = cog.qualified_name if cog else "一般コマンド"
                 embed.add_field(
                     name=cog_name, value="\n".join(command_entries), inline=False
                 )
-        for command in filtered_commands:
-            # Make sure the detailed help text is being used here
-            command_entries.append(
-                f"`{command_name}`{alias_text}: {command.help}"
-            )
+
         channel = self.get_destination()
         await channel.send(embed=embed)
 
     async def send_command_help(self, command):
-        alias_text = (
-            f" (または: {'|'.join(f'`!{a}`' for a in command.aliases)})"
-            if command.aliases
-            else ""
-        )
-        embed = discord.Embed(
-            title=f"!{command.name}{alias_text}",
-            color=0x00FF00,
-        )
-        embed.add_field(name="使用法", value=f"`{self.get_command_signature(command)}`", inline=False)
-        embed.add_field(name="説明", value=command.help.replace("; ", "\n"), inline=False)
+        embed = discord.Embed(title=f"!{command.name}", color=0x00FF00)
 
+        if command.name == "style":
+            embed.description = (
+                "!styleコマンドの使用法:\n"
+                "!style [type] [style_id]\n\n"
+                "- type: 設定するスタイルのタイプ。'user_default', 'notify', または 'user' から選択。\n"
+                "- style_id: 使用したいスタイルのID。\n\n"
+                "例:\n"
+                "- ユーザーデフォルトスタイルをID 1に設定: !style user_default 1\n"
+                "- 入退室通知スタイルをID 2に設定: !style notify 2\n"
+                "- 個人スタイルをID 3に設定: !style user 3\n\n"
+                "各typeとstyle_idの詳細や一覧は '!list_styles' で確認できます。"
+            )
+        else:
+            embed.add_field(name="説明", value=command.help, inline=False)
+            embed.add_field(
+                name="使用法",
+                value=f"`{self.get_command_signature(command)}`",
+                inline=False,
+            )
 
         channel = self.get_destination()
         await channel.send(embed=embed)
@@ -143,13 +141,7 @@ def get_current_style_details(guild_id, user_id, type):
 
 
 def setup_commands(bot):
-    @bot.command(
-        name="style",
-        help="スタイルを表示または設定します。使用法: !style [type] [style_id]; "
-            "type: 'user_default', 'notify', 'user'; "
-            "style_id: 使用したいスタイルのID; "
-            "例: !style user_default 1 - ユーザーデフォルトスタイルをID 1に設定します。"
-    )
+    @bot.command(name="style", help="スタイルを表示または設定します。詳細は '!help style' で確認。")
     async def style(ctx, type: str = None, style_id: int = None):
         valid_types = ["user_default", "notify", "user", None]
         if type not in valid_types:
