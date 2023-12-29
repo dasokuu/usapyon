@@ -240,38 +240,38 @@ def setup_commands(bot):
         for embed in embeds:
             await ctx.send(embed=embed)
 
-    # # Define choices for type
-    # type_choices = [
-    #     app_commands.Choice(name="user_default", value="user_default"),
-    #     app_commands.Choice(name="notify", value="notify"),
-    #     app_commands.Choice(name="user", value="user"),
-    # ]
+    # Define choices for type
+    type_choices = [
+        app_commands.Choice(name="user_default", value="user_default"),
+        app_commands.Choice(name="notify", value="notify"),
+        app_commands.Choice(name="user", value="user"),
+    ]
 
-    # # Dynamically generate style ID choices based on your styles data
-    # for speaker in speakers:
-    #     name = speaker["name"]
-    #     style_id_choices = [
-    #         app_commands.Choice(name=style["name"], value=style["id"])
-    #         for style in speaker["styles"]
-    #     ]
+    # Dynamically generate style ID choices based on your styles data
+    for speaker in speakers:
+        name = speaker["name"]
+        style_id_choices = [
+            app_commands.Choice(name=style["name"], value=style["id"])
+            for style in speaker["styles"]
+        ]
 
-    # @tree.command(description="スタイルを表示または設定します。")
-    # @app_commands.choices(type=type_choices)
-    # @app_commands.choices(style_id=style_id_choices)
-    # async def style(interaction: discord.Interaction, type: str, style_id: int):
-    #     # You need to build the list of choices based on your styles
-    #     # This is just an example of what it might look like
-    #     valid_types = ["user_default", "notify", "user"]
+    @bot.tree.command(description="スタイルを表示または設定します。")
+    @app_commands.choices(type=type_choices)
+    @app_commands.choices(style_id=style_id_choices)
+    async def style(interaction: discord.Interaction, type: str, style_id: int):
+        # You need to build the list of choices based on your styles
+        # This is just an example of what it might look like
+        valid_types = ["user_default", "notify", "user"]
 
-    #     # Example of handling the command
-    #     if type not in valid_types:
-    #         await interaction.response.send_message(
-    #             f"⚠️ 指定されたタイプが無効です。", ephemeral=True
-    #         )
-    #         return
+        # Example of handling the command
+        if type not in valid_types:
+            await interaction.response.send_message(
+                f"⚠️ 指定されたタイプが無効です。", ephemeral=True
+            )
+            return
 
-    #     # Handle the style setting logic here...
-    #     await interaction.response.send_message(f"✅ スタイルが更新されました。")
+        # Handle the style setting logic here...
+        await interaction.response.send_message(f"✅ スタイルが更新されました。")
     @bot.tree.command(name="test", description="Test to see if slash commands are working")
     async def test(interaction):
         await interaction.response.send_message("Test")
