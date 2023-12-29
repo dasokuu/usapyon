@@ -299,19 +299,13 @@ def setup_commands(bot):
             style_id_choices.append(style_choice)  # 修正された行
     print(len(speaker_choices))
     print(len(style_id_choices))
-    @bot.tree.command(guild=TEST_GUILD_ID, description='スタイルを選択します。')
+    @bot.tree.command(name='choose_style',guild=TEST_GUILD_ID, description='スタイルを選択します。')
     async def choose_style(interaction: discord.Interaction):
         # Create first person selection options
         options = [discord.SelectOption(label=fp, value=fp) for fp in first_persons.keys()]
         # Prompt the user to select a first person
         await interaction.response.send_message('一人称を選択してください。', view=FirstPersonView(options))
-    @bot.tree.command(guild=TEST_GUILD_ID, description='一人称を選択します。')
-    async def choose_first_person(interaction: discord.Interaction):
-        # 一人称の選択肢を作成
-        options = [discord.SelectOption(label=fp, value=fp) for fp in first_persons.keys()]
-        
-        # ユーザーに一人称を選択させる
-        await interaction.response.send_message('一人称を選択してください。', view=FirstPersonView(options))        
+    @bot.tree.command(guild=TEST_GUILD_ID, description='一人称を選択します。')    
     # @bot.tree.command(guild=TEST_GUILD_ID, description="スタイルを表示または設定します。")
     # @app_commands.choices(
     #     type=type_choices, speaker=speaker_choices, style_id=style_id_choices
