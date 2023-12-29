@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
-from settings import USER_DEFAULT_STYLE_ID, NOTIFY_STYLE_ID, MAX_MESSAGE_LENGTH
-from utils import speakers, speaker_settings, save_style_settings, get_style_details
+from settings import USER_DEFAULT_STYLE_ID, NOTIFY_STYLE_ID
+from utils import speakers, speaker_settings, save_style_settings, get_style_details, validate_style_id
 from voice import text_to_speech
 
 
@@ -82,10 +82,8 @@ def setup_commands(bot):
         )
 
         if style_id is not None:
-            valid_style_ids = [
-                style["id"] for speaker in speakers for style in speaker["styles"]
-            ]
-            if style_id in valid_style_ids:
+            valid, speaker_name, style_name = validate_style_id(style_id)
+            if valid:
                 speaker_name, style_name = get_style_details(style_id)
                 speaker_settings[guild_id]["user_default"] = style_id
                 save_style_settings()
@@ -112,10 +110,8 @@ def setup_commands(bot):
 
         # スタイルIDが指定されている場合は設定を更新
         if style_id is not None:
-            valid_style_ids = [
-                style["id"] for speaker in speakers for style in speaker["styles"]
-            ]
-            if style_id in valid_style_ids:
+            valid, speaker_name, style_name = validate_style_id(style_id)
+            if valid:
                 speaker_name, style_name = get_style_details(style_id)
                 if guild_id not in speaker_settings:
                     speaker_settings[guild_id] = {}
@@ -150,10 +146,8 @@ def setup_commands(bot):
 
         # スタイルIDが指定されている場合は設定を更新
         if style_id is not None:
-            valid_style_ids = [
-                style["id"] for speaker in speakers for style in speaker["styles"]
-            ]
-            if style_id in valid_style_ids:
+            valid, speaker_name, style_name = validate_style_id(style_id)
+            if valid:
                 speaker_name, style_name = get_style_details(style_id)
                 speaker_settings[user_id] = style_id
                 save_style_settings()

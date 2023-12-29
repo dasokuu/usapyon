@@ -15,6 +15,16 @@ from voice import text_to_speech, clear_playback_queue
 current_voice_client = None
 
 
+def validate_style_id(style_id):
+    valid_style_ids = [
+        style["id"] for speaker in speakers for style in speaker["styles"]
+    ]
+    if style_id in valid_style_ids:
+        speaker_name, style_name = get_style_details(style_id)
+        return True, speaker_name, style_name
+    return False, None, None
+
+
 def fetch_speakers():
     try:
         response = requests.get(SPEAKERS_URL)
