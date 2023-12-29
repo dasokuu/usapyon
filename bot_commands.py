@@ -263,17 +263,15 @@ def setup_commands(bot):
             name=speaker["name"], value=speaker["name"]
         )
         speaker_choices.append(speaker_choice)
-        if len(speaker_choices) >= 3:
-            break
         # 各スピーカーのスタイルから選択肢を作成
         for _style in speaker["styles"]:
             style_choice = app_commands.Choice(  # 修正された変数名
                 name=f"{_style['name']}", value=_style["id"]
             )
             style_id_choices.append(style_choice)  # 修正された行
-            # 選択肢が25を超えた場合はブレイク
-            if len(style_id_choices) >= 2:
-                break
+            # # 選択肢が25を超えた場合はブレイク
+            # if len(style_id_choices) >= 25:
+            #     break
     print(len(speaker_choices))
     print(len(style_id_choices))
     @bot.tree.command(guild=TEST_GUILD_ID, description="スタイルを表示または設定します。")
