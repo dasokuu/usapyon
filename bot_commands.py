@@ -312,64 +312,64 @@ def setup_commands(bot):
         
         # ユーザーに一人称を選択させる
         await interaction.response.send_message('一人称を選択してください。', view=FirstPersonView(options))        
-    @bot.tree.command(guild=TEST_GUILD_ID, description="スタイルを表示または設定します。")
-    @app_commands.choices(
-        type=type_choices, speaker=speaker_choices, style_id=style_id_choices
-    )
-    async def style(
-        interaction: discord.Interaction,
-        type: str = None,
-        speaker: str = None,
-        style_id: int = None,
-    ):
-        valid_types = ["user_default", "notify", "user", None]
-        # Check if the type is valid
-        if type not in valid_types:
-            await interaction.response.send_message(
-                f"⚠️ 指定されたタイプが無効です。", ephemeral=True
-            )
-            return
+    # @bot.tree.command(guild=TEST_GUILD_ID, description="スタイルを表示または設定します。")
+    # @app_commands.choices(
+    #     type=type_choices, speaker=speaker_choices, style_id=style_id_choices
+    # )
+    # async def style(
+    #     interaction: discord.Interaction,
+    #     type: str = None,
+    #     speaker: str = None,
+    #     style_id: int = None,
+    # ):
+    #     valid_types = ["user_default", "notify", "user", None]
+    #     # Check if the type is valid
+    #     if type not in valid_types:
+    #         await interaction.response.send_message(
+    #             f"⚠️ 指定されたタイプが無効です。", ephemeral=True
+    #         )
+    #         return
 
-        # Ensure a style_id is provided for certain types
-        if type in ["notify", "user"] and not style_id:
-            await interaction.response.send_message(f"⚠️ スタイルIDが必要です。", ephemeral=True)
-            return
+    #     # Ensure a style_id is provided for certain types
+    #     if type in ["notify", "user"] and not style_id:
+    #         await interaction.response.send_message(f"⚠️ スタイルIDが必要です。", ephemeral=True)
+    #         return
 
-        # Define valid types
-        valid_types = ["user_default", "notify", "user"]
+    #     # Define valid types
+    #     valid_types = ["user_default", "notify", "user"]
 
-        # Check if the type is valid
-        if type not in valid_types:
-            await interaction.response.send_message(
-                f"⚠️ 指定されたタイプが無効です。", ephemeral=True
-            )
-            return
+    #     # Check if the type is valid
+    #     if type not in valid_types:
+    #         await interaction.response.send_message(
+    #             f"⚠️ 指定されたタイプが無効です。", ephemeral=True
+    #         )
+    #         return
 
-        if not validate_style_id(style_id):
-            await interaction.response.send_message(
-                f"⚠️ 指定されたスタイルIDが無効です。", ephemeral=True
-            )
-            return
+    #     if not validate_style_id(style_id):
+    #         await interaction.response.send_message(
+    #             f"⚠️ 指定されたスタイルIDが無効です。", ephemeral=True
+    #         )
+    #         return
 
-        # Ensure a style_id is provided for certain types
-        if type in ["notify", "user"] and not style_id:
-            await interaction.response.send_message(f"⚠️ スタイルIDが必要です。", ephemeral=True)
-            return
+    #     # Ensure a style_id is provided for certain types
+    #     if type in ["notify", "user"] and not style_id:
+    #         await interaction.response.send_message(f"⚠️ スタイルIDが必要です。", ephemeral=True)
+    #         return
 
-        # Check if the provided style_id is valid
-        if style_id and style_id not in [choice.value for choice in style_id_choices]:
-            await interaction.response.send_message(
-                f"⚠️ 指定されたスタイルIDが無効です。", ephemeral=True
-            )
-            return
+    #     # Check if the provided style_id is valid
+    #     if style_id and style_id not in [choice.value for choice in style_id_choices]:
+    #         await interaction.response.send_message(
+    #             f"⚠️ 指定されたスタイルIDが無効です。", ephemeral=True
+    #         )
+    #         return
 
-        # Handle the style setting logic here...
-        # For example, update the user's preference in your database
+    #     # Handle the style setting logic here...
+    #     # For example, update the user's preference in your database
 
-        await interaction.response.send_message(
-            f"✅ スタイルが更新されました。スタイルID: {style_id if style_id else 'Default'}",
-            ephemeral=True,
-        )
+    #     await interaction.response.send_message(
+    #         f"✅ スタイルが更新されました。スタイルID: {style_id if style_id else 'Default'}",
+    #         ephemeral=True,
+    #     )
     class FirstPersonView(discord.ui.View):
         def __init__(self, options):
             super().__init__()
