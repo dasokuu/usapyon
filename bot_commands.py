@@ -9,6 +9,7 @@ from utils import (
     validate_style_id,
 )
 from voice import text_to_speech
+from discord import app_commands
 
 
 import discord
@@ -237,3 +238,34 @@ def setup_commands(bot):
 
         for embed in embeds:
             await ctx.send(embed=embed)
+
+    # Define choices for type
+    type_choices = [
+        app_commands.Choice(name="user_default", value="user_default"),
+        app_commands.Choice(name="notify", value="notify"),
+        app_commands.Choice(name="user", value="user"),
+    ]
+
+    # Dynamically generate style ID choices based on your styles data
+    style_id_choices = [
+        app_commands.Choice(name=speaker["name"], value=speaker["id"])
+        for speaker in speakers
+    ]
+
+    @bot.slash_command(description="スタイルを表示または設定します。")
+    @app_commands.choices(type=type_choices)
+    @app_commands.choices(style_id=style_id_choices)
+    async def style(interaction: discord.Interaction, type: str, style_id: int):
+        # You need to build the list of choices based on your styles
+        # This is just an example of what it might look like
+        valid_types = ["user_default", "notify", "user"]
+
+        # Example of handling the command
+        if type not in valid_types:
+            await interaction.response.send_message(
+                f"⚠️ 指定されたタイプが無効です。", ephemeral=True
+            )
+            return
+
+        # Handle the style setting logic here...
+        await interaction.response.send_message(f"✅ スタイルが更新されました。")
