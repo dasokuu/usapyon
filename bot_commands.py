@@ -396,11 +396,21 @@ def setup_commands(bot):
             super().__init__(placeholder='一人称を選択...', min_values=1, max_values=1, options=options)
 
         async def callback(self, interaction: discord.Interaction):
-            # Filter the characters based on the selected first person
             selected_fp = self.values[0]
             characters = first_persons[selected_fp]
-            # Prompt the user to select a character next
-            await interaction.response.send_message(f'{selected_fp}に対応するキャラクターを選んでください。', view=CharacterView(characters))
+
+            # キャラクターが一つだけの場合、自動的に選択
+            if len(characters) == 1:
+                selected_char = characters[0]
+                styles = [style for speaker in speakers if speaker["name"] == selected_char for style in speaker["styles"]]
+                # スタイルも一つだけならそれも自動選択
+                if len(styles) == 1:
+                    selected_style = styles[0]['id']
+                    await interaction.response.send_message(f'{selected_char}のスタイルID {selected_style} が自動的に選択されました。', ephemeral=True)
+                else:
+                    await interaction.response.send_message(f'{selected_char}のスタイルを選んでください。', view=StyleView(styles))
+            else:
+                await interaction.response.send_message(f'{selected_fp}に対応するキャラクターを選んでください。', view=CharacterView(characters))
 
     class CharacterView(discord.ui.View):
         def __init__(self, characters):
@@ -413,11 +423,15 @@ def setup_commands(bot):
             super().__init__(placeholder='キャラクターを選択...', min_values=1, max_values=1, options=options)
 
         async def callback(self, interaction: discord.Interaction):
-            # Filter the styles based on the selected character
             selected_char = self.values[0]
             styles = [style for speaker in speakers if speaker["name"] == selected_char for style in speaker["styles"]]
-            # Prompt the user to select a style next
-            await interaction.response.send_message(f'{selected_char}のスタイルを選んでください。', view=StyleView(styles))
+
+            # スタイルが一つだけの場合、自動的に選択
+            if len(styles) == 1:
+                selected_style = styles[0]['id']
+                await interaction.response.send_message(f'{selected_char}のスタイルID {selected_style} が自動的に選択されました。', ephemeral=True)
+            else:
+                await interaction.response.send_message(f'{selected_char}のスタイルを選んでください。', view=StyleView(styles))
 
     class StyleView(discord.ui.View):
         def __init__(self, styles):
@@ -430,8 +444,7 @@ def setup_commands(bot):
             super().__init__(placeholder='スタイルを選択...', min_values=1, max_values=1, options=options)
 
         async def callback(self, interaction: discord.Interaction):
-            # Set the selected style for the user
             selected_style = self.values[0]
-            # Implement your logic to update the user's style preference
+            # ユーザーのスタイル選択を更新するロジックをここに実装
             await interaction.response.send_message(f'スタイルID {selected_style} が選択されました。', ephemeral=True)
 
