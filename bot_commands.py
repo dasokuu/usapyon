@@ -190,6 +190,8 @@ def setup_commands(bot):
             await text_to_speech(
                 voice_client, welcome_message, notify_style_id, guild_id
             )
+            await interaction.response.send_message("ボイスチャンネルに接続しました。")
+
 
     @bot.tree.command(name="leave", guild=TEST_GUILD_ID,description="ボットをボイスチャンネルから切断します。")
     async def leave(interaction: discord.Interaction):
