@@ -3,6 +3,8 @@ import asyncio
 import json
 import discord
 import io
+from settings import SYNTHESIS_URL, AUDIO_QUERY_URL
+
 
 # Initialize global variables
 guild_playback_queues = {}
@@ -68,17 +70,13 @@ async def synthesis(speaker, query_data):
 
 async def text_to_speech(voice_client, text, style_id, guild_id):
     lines = text.split("\n")
-    tasks = []
-
-    for line in lines:
-        if not line.strip():
-            continue
-        # Create a task for each line and add it to the task list
-        task = asyncio.create_task(speak_line(voice_client, line, style_id, guild_id))
-        tasks.append(task)
-
-    # Wait for all tasks to complete
-    await asyncio.gather(*tasks)
+    await asyncio.gather(
+        *(
+            speak_line(voice_client, line, style_id, guild_id)
+            for line in lines
+            if line.strip()
+        )
+    )
 
 
 async def speak_line(voice_client, line, style_id, guild_id):

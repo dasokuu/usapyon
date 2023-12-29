@@ -2,9 +2,14 @@ import requests
 import json
 import jaconv
 import re
-import asyncio
 import discord
-from settings import USER_DEFAULT_STYLE_ID, NOTIFY_STYLE_ID, MAX_MESSAGE_LENGTH
+from settings import (
+    USER_DEFAULT_STYLE_ID,
+    NOTIFY_STYLE_ID,
+    MAX_MESSAGE_LENGTH,
+    SPEAKERS_URL,
+    STYLE_SETTINGS_FILE,
+)
 from voice import text_to_speech, clear_playback_queue
 
 current_voice_client = None
@@ -40,7 +45,7 @@ def save_style_settings():
 def load_style_settings():
     """スタイル設定をロードします。"""
     try:
-        with open("style_settings.json", "r") as f:
+        with open(STYLE_SETTINGS_FILE, "r") as f:
             return json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         return {}
@@ -190,5 +195,5 @@ async def handle_voice_state_update(bot, member, before, after):
 
 # Initialize global variables
 guild_playback_queues = {}
-speakers = fetch_speakers()
+speakers = fetch_speakers(SPEAKERS_URL)  # URL is now from settings
 speaker_settings = load_style_settings()
