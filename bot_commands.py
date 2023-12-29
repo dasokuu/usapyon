@@ -73,13 +73,13 @@ async def handle_style_command(ctx, style_id: int, type: str = None):
     guild_id = str(ctx.guild.id)
     guild_name = ctx.guild.name  # ギルド名を取得
     user_id = str(ctx.author.id)
-    user_name = ctx.author.name  # ユーザー名を取得
+    user_display_namename = ctx.author.display_name  # ユーザー名を取得
 
     # スタイルタイプに応じた説明を定義
     type_description = {
-        "default": f"現在の{guild_name}のユーザーデフォルト読み上げスタイル",
-        "notify": f"現在の{guild_name}の入退室時の読み上げスタイル",
-        "user": f"現在の{user_name}の読み上げスタイル"
+        "user_default": f"{guild_name}のユーザーデフォルトスタイル",
+        "notify": f"{guild_name}VC入退室時のスタイル",
+        "user": f"{user_display_namename}のスタイル"
     }
 
     # スタイルIDが指定されていない場合、全ての設定を表示
@@ -118,7 +118,7 @@ async def handle_style_command(ctx, style_id: int, type: str = None):
 
 
 def update_style_setting(guild_id, user_id, style_id, type):
-    if type == "default":
+    if type == "user_default":
         speaker_settings[guild_id]["user_default"] = style_id
     elif type == "notify":
         speaker_settings[guild_id]["notify"] = style_id
@@ -128,7 +128,7 @@ def update_style_setting(guild_id, user_id, style_id, type):
 
 
 def get_current_style_details(guild_id, user_id, type):
-    if type == "default":
+    if type == "user_default":
         style_id = speaker_settings[guild_id].get("user_default", USER_DEFAULT_STYLE_ID)
     elif type == "notify":
         style_id = speaker_settings[guild_id].get("notify", NOTIFY_DEFAULT_STYLE_ID)
@@ -142,7 +142,7 @@ def get_current_style_details(guild_id, user_id, type):
 def setup_commands(bot):
     @bot.command(name="style", help="スタイルを表示または設定します。")
     async def style(ctx, type: str = None, style_id: int = None):
-        valid_types = ["default", "notify", "user", None]
+        valid_types = ["user_default", "notify", "user", None]
         if type not in valid_types:
             await ctx.send(f"無効なタイプが指定されました。有効なタイプ: {', '.join(valid_types[:-1])}")
             return
