@@ -124,40 +124,33 @@ async def synthesis(speaker, query_data):
 
 
 async def text_to_speech(voice_client, text, style_id, guild_id):
-    # Split the text into lines
     lines = text.split("\n")
+    tasks = []
 
     for line in lines:
-        # Skip empty lines
         if not line.strip():
             continue
+        # Create a task for each line and add it to the task list
+        task = asyncio.create_task(speak_line(voice_client, line, style_id, guild_id))
+        tasks.append(task)
 
-        # Rest of your TTS logic here
-        speaker_name, style_name = get_style_details(style_id)
+    # Wait for all tasks to complete
+    await asyncio.gather(*tasks)
 
-        # Update reading status
-        reading_status = f"読み上げ中 | VOICEVOX:{speaker_name}"
-        await bot.change_presence(activity=discord.Game(name=reading_status))
 
-        # Ensure the voice client is not already playing something
-        while voice_client.is_playing():
-            await asyncio.sleep(0.5)
-
-        # Process each line separately
-        query_data = await audio_query(line, style_id)
-        if query_data:
-            voice_data = await synthesis(style_id, query_data)
-            if voice_data:
-                audio_source = discord.FFmpegPCMAudio(io.BytesIO(voice_data), pipe=True)
-                guild_queue = get_guild_playback_queue(guild_id)
-                try:
-                    # Add audio source to the guild-specific queue
-                    await guild_queue.put((voice_client, audio_source))
-                except Exception as e:
-                    print(f"An error occurred while playing audio: {e}")
-
-    # Set status to idle when done
-    await bot.change_presence(activity=discord.Game(name="待機中 | !helpでヘルプ"))
+async def speak_line(voice_client, line, style_id, guild_id):
+    # The rest of your logic for processing each line
+    query_data = await audio_query(line, style_id)
+    if query_data:
+        voice_data = await synthesis(style_id, query_data)
+        if voice_data:
+            audio_source = discord.FFmpegPCMAudio(io.BytesIO(voice_data), pipe=True)
+            guild_queue = get_guild_playback_queue(guild_id)
+            try:
+                # Add audio source to the guild-specific queue
+                await guild_queue.put((voice_client, audio_source))
+            except Exception as e:
+                print(f"An error occurred while playing audio: {e}")
 
 
 async def replace_mentions_with_names(text, message):
