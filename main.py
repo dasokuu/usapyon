@@ -3,9 +3,7 @@ from discord.ext import commands
 import os
 from settings import USER_DEFAULT_STYLE_ID, NOTIFY_STYLE_ID, MAX_MESSAGE_LENGTH
 from utils import (
-    speakers,
     speaker_settings,
-    get_style_details,
     save_style_settings,
     replace_content,
 )
@@ -14,6 +12,7 @@ from voice import (
     text_to_speech,
     clear_playback_queue,
 )
+from bot_commands import setup_commands
 
 
 # Initialize bot
@@ -23,7 +22,8 @@ intents.guilds = True
 intents.voice_states = True
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
-
+# Setup bot commands
+setup_commands(bot)
 
 current_voice_client = None
 
@@ -146,168 +146,5 @@ async def on_voice_state_update(member, before, after):
             await member.guild.voice_client.disconnect()
 
 
-@bot.command(
-    name="_userdefaultstyle",
-    help="ユーザーのデフォルトスタイルを表示または設定します。使用法: !_userdefaultstyle [スタイルID]",
-)
-async def user_default_style(ctx, style_id: int = None):
-    guild_id = str(ctx.guild.id)
-
-    # Ensure server settings are initialized
-    if guild_id not in speaker_settings:
-        speaker_settings[guild_id] = {"user_default": USER_DEFAULT_STYLE_ID}
-
-    # Use get to safely access 'user_default'
-    current_default = speaker_settings[guild_id].get(
-        "user_default", USER_DEFAULT_STYLE_ID
-    )
-
-    if style_id is not None:
-        valid_style_ids = [
-            style["id"] for speaker in speakers for style in speaker["styles"]
-        ]
-        if style_id in valid_style_ids:
-            speaker_name, style_name = get_style_details(style_id)
-            speaker_settings[guild_id]["user_default"] = style_id
-            save_style_settings()
-            await ctx.send(
-                f"ユーザーのデフォルトスタイルを「{speaker_name} {style_name}」(ID: {style_id})に設定しました。"
-            )
-        else:
-            await ctx.send(f"スタイルID {style_id} は無効です。")
-    else:
-        # Display current default style
-        user_speaker, user_default_style_name = get_style_details(
-            current_default, "デフォルト"
-        )
-        response = f"**ユーザーのデフォルトスタイル:** {user_speaker} {user_default_style_name} (ID: {current_default})"
-        await ctx.send(response)
-
-
-@bot.command(
-    name="notifystyle", help="入退室通知のスタイルを表示または設定します。使用法: !notifystyle [スタイルID]"
-)
-async def notify_style(ctx, style_id: int = None):
-    guild_id = str(ctx.guild.id)
-
-    # スタイルIDが指定されている場合は設定を更新
-    if style_id is not None:
-        valid_style_ids = [
-            style["id"] for speaker in speakers for style in speaker["styles"]
-        ]
-        if style_id in valid_style_ids:
-            speaker_name, style_name = get_style_details(style_id)
-            if guild_id not in speaker_settings:
-                speaker_settings[guild_id] = {}
-            speaker_settings[guild_id]["notify"] = style_id
-            save_style_settings()
-            await ctx.send(
-                f"入退出通知スタイルを {style_id} 「{speaker_name} {style_name}」(ID: {style_id})に設定しました。"
-            )
-            return
-        else:
-            await ctx.send(f"スタイルID {style_id} は無効です。")
-            return
-
-    # 現在のサーバースタイル設定を表示
-    notify_style_id = speaker_settings.get(guild_id, {}).get("default", NOTIFY_STYLE_ID)
-    notify_speaker, notify_default_name = get_style_details(notify_style_id, "デフォルト")
-
-    response = f"**{ctx.guild.name}の通知スタイル:** {notify_speaker} {notify_default_name} (ID: {notify_style_id})\n"
-    await ctx.send(response)
-
-
-@bot.command(name="mystyle", help="あなたの現在のスタイルを表示または設定します。使用法: !mystyle [スタイルID]")
-async def my_style(ctx, style_id: int = None):
-    user_id = str(ctx.author.id)
-
-    # スタイルIDが指定されている場合は設定を更新
-    if style_id is not None:
-        valid_style_ids = [
-            style["id"] for speaker in speakers for style in speaker["styles"]
-        ]
-        if style_id in valid_style_ids:
-            speaker_name, style_name = get_style_details(style_id)
-            speaker_settings[user_id] = style_id
-            save_style_settings()
-            await ctx.send(
-                f"{ctx.author.mention}さんのスタイルを「{speaker_name} {style_name}」(ID: {style_id})に設定しました。"
-            )
-            return
-        else:
-            await ctx.send(f"スタイルID {style_id} は無効です。")
-            return
-
-    # 現在のスタイル設定を表示
-    user_style_id = speaker_settings.get(user_id, USER_DEFAULT_STYLE_ID)
-    user_speaker, user_style_name = get_style_details(user_style_id, "デフォルト")
-
-    response = f"**{ctx.author.display_name}さんのスタイル:** {user_speaker} {user_style_name} (ID: {user_style_id})"
-    await ctx.send(response)
-
-
-@bot.command(name="join", help="ボットをボイスチャンネルに接続し、読み上げを開始します。")
-async def join(ctx):
-    if ctx.author.voice and ctx.author.voice.channel:
-        channel = ctx.author.voice.channel
-        voice_client = await channel.connect(self_deaf=True)
-        # 接続メッセージの読み上げ
-        welcome_message = "読み上げを開始します。"
-
-        guild_id = str(ctx.guild.id)
-        text_channel_id = str(ctx.channel.id)  # このコマンドを使用したテキストチャンネルID
-
-        # サーバー設定が存在しない場合は初期化
-        if guild_id not in speaker_settings:
-            speaker_settings[guild_id] = {"text_channel": text_channel_id}
-        else:
-            # 既にサーバー設定が存在する場合はテキストチャンネルIDを更新
-            speaker_settings[guild_id]["text_channel"] = text_channel_id
-
-        save_style_settings()  # 変更を保存
-
-        # 通知スタイルIDを取得
-        notify_style_id = speaker_settings.get(guild_id, {}).get(
-            "notify", NOTIFY_STYLE_ID
-        )
-
-        # メッセージとスタイルIDをキューに追加
-        await text_to_speech(voice_client, welcome_message, notify_style_id, guild_id)
-
-
-@bot.command(name="leave", help="ボットをボイスチャンネルから切断します。")
-async def leave(ctx):
-    if ctx.voice_client:
-        guild_id = str(ctx.guild.id)
-        # テキストチャンネルIDの設定をクリア
-        if "text_channel" in speaker_settings.get(guild_id, {}):
-            del speaker_settings[guild_id]["text_channel"]
-            save_style_settings()  # 変更を保存
-        await ctx.voice_client.disconnect()
-        await ctx.send("ボイスチャンネルから切断しました。")
-
-
-@bot.command(name="skip", help="現在再生中の音声をスキップします。")
-async def skip(ctx):
-    voice_client = ctx.guild.voice_client
-    if voice_client and voice_client.is_playing():
-        voice_client.stop()
-        await ctx.send("現在の読み上げをスキップしました。")
-    else:
-        await ctx.send("再生中の音声はありません。")
-
-
-@bot.command(name="showstyles", help="利用可能なスタイルIDの一覧を表示します。")
-async def show_styles(ctx):
-    message_lines = []
-    for speaker in speakers:
-        name = speaker["name"]
-        styles = ", ".join(
-            [f"{style['name']} (ID: {style['id']})" for style in speaker["styles"]]
-        )
-        message_lines.append(f"**{name}** {styles}")
-    await ctx.send("\n".join(message_lines))
-
-
 if __name__ == "__main__":
-    bot.run(os.getenv("DISCORD_BOT_TOKEN"))
+    bot.run(os.getenv("VOICECHATLOID_TOKEN"))
