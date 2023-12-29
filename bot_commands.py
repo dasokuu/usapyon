@@ -255,55 +255,103 @@ def setup_commands(bot):
     ]
     # Dynamically generate style ID choices based on the speakers data
     gender_categories = {
-        '男性': ['玄野武宏', '白上虎太郎', '青山龍星', '剣崎雌雄','ちび式じい','†聖騎士 紅桜†','雀松朱司','麒ヶ島宗麟','栗田まろん'],
-        '女性': ['四国めたん', 'ずんだもん', '春日部つむぎ', '雨晴はう', '波音リツ', '冥鳴ひまり', '九州そら', 'もち子さん','WhiteCUL','後鬼','No.7','櫻歌ミコ','小夜/SAYO','ナースロボ＿タイプＴ','春歌ナナ','猫使アル','猫使ビィ','中国うさぎ','あいえるたん','満別花丸','琴詠ニア'],
+        "男性": [
+            "玄野武宏",
+            "白上虎太郎",
+            "青山龍星",
+            "剣崎雌雄",
+            "ちび式じい",
+            "†聖騎士 紅桜†",
+            "雀松朱司",
+            "麒ヶ島宗麟",
+            "栗田まろん",
+        ],
+        "女性": [
+            "四国めたん",
+            "ずんだもん",
+            "春日部つむぎ",
+            "雨晴はう",
+            "波音リツ",
+            "冥鳴ひまり",
+            "九州そら",
+            "もち子さん",
+            "WhiteCUL",
+            "後鬼",
+            "No.7",
+            "櫻歌ミコ",
+            "小夜/SAYO",
+            "ナースロボ＿タイプＴ",
+            "春歌ナナ",
+            "猫使アル",
+            "猫使ビィ",
+            "中国うさぎ",
+            "あいえるたん",
+            "満別花丸",
+            "琴詠ニア",
+        ],
     }
     _first_persons = {
-        'わたくし': ['四国めたん'],
-        'ずんだもん': ['ずんだもん'],
-        '僕': ['ずんだもん','雨晴はう', '剣崎雌雄','No.7','雀松朱司','栗田まろん'],
-        'あーし': ['春日部つむぎ'],
-        'あたし': ['波音リツ'],
-        '俺': ['玄野武宏'],
-        'おれ': ['白上虎太郎','猫使アル'],
-        'オレ': ['青山龍星'],
-        '私': ['冥鳴ひまり', 'もち子さん','No.7','櫻歌ミコ','麒ヶ島宗麟','猫使ビィ','琴詠ニア'],
-        'まーくつー': ['九州そら'],
-        'もち子さん': ['もち子さん'],
-        'わたし': ['WhiteCUL','後鬼','ナースロボ＿タイプＴ','春歌ナナ','中国うさぎ','あいえるたん'],
-        'ワテ': ['後鬼'],
-        'わし': ['ちび式じい'],
-        'ミコ': ['櫻歌ミコ'],
-        '小夜':['小夜/SAYO'],
-        '我':['†聖騎士 紅桜†'],
-        'ナナ': ['春歌ナナ'],
-        'アル':['猫使アル'],
-        'ボク':['猫使アル','猫使ビィ'],
-        'ビィ':['猫使ビィ'],
-        'あいえるたん':['あいえるたん'],
-        'ぼく': ['満別花丸']
+        "わたくし": ["四国めたん"],
+        "ずんだもん": ["ずんだもん"],
+        "僕": ["ずんだもん", "雨晴はう", "剣崎雌雄", "No.7", "雀松朱司", "栗田まろん", "猫使アル", "猫使ビィ", "満別花丸"],
+        "あーし": ["春日部つむぎ"],
+        "あたし": ["波音リツ"],
+        "おれ": ["白上虎太郎", "猫使アル", "玄野武宏", "青山龍星"],
+        "私": [
+            "冥鳴ひまり",
+            "もち子さん",
+            "No.7",
+            "櫻歌ミコ",
+            "麒ヶ島宗麟",
+            "猫使ビィ",
+            "琴詠ニア",
+            "WhiteCUL",
+            "後鬼",
+            "ナースロボ＿タイプＴ",
+            "春歌ナナ",
+            "中国うさぎ",
+            "あいえるたん",
+        ],
+        "まーくつー": ["九州そら"],
+        "もち子さん": ["もち子さん"],
+        "ワテ": ["後鬼"],
+        "わし": ["ちび式じい"],
+        "ミコ": ["櫻歌ミコ"],
+        "小夜": ["小夜/SAYO"],
+        "我": ["†聖騎士 紅桜†"],
+        "ナナ": ["春歌ナナ"],
+        "アル": ["猫使アル"],
+        "ビィ": ["猫使ビィ"],
+        "あいえるたん": ["あいえるたん"],
     }
     first_persons = {
-        'わたくし': ['四国めたん'],
-        'ずんだもん': ['ずんだもん'],
-        '僕': ['ずんだもん','雨晴はう', '剣崎雌雄','No.7','雀松朱司','栗田まろん','猫使アル','猫使ビィ','満別花丸'],
-        'あーし': ['春日部つむぎ'],
-        'あたし': ['波音リツ'],
-        'おれ': ['白上虎太郎','猫使アル','玄野武宏','青山龍星'],
-        '私': ['冥鳴ひまり', 'もち子さん','No.7','櫻歌ミコ','麒ヶ島宗麟','猫使ビィ','琴詠ニア','WhiteCUL','後鬼','ナースロボ＿タイプＴ','春歌ナナ','中国うさぎ','あいえるたん'],
-        'まーくつー': ['九州そら'],
-        'もち子さん': ['もち子さん'],
-        'ワテ': ['後鬼'],
-        'わし': ['ちび式じい'],
-        'ミコ': ['櫻歌ミコ'],
-        '小夜':['小夜/SAYO'],
-        '我':['†聖騎士 紅桜†'],
-        'ナナ': ['春歌ナナ'],
-        'アル':['猫使アル'],
-        'ビィ':['猫使ビィ'],
-        'あいえるたん':['あいえるたん'],
+        "わたくし": ["四国めたん"],
+        "ずんだもん": ["ずんだもん"],
+        "僕": ["ずんだもん", "雨晴はう", "剣崎雌雄", "No.7", "雀松朱司", "栗田まろん"],
+        "あーし": ["春日部つむぎ"],
+        "あたし": ["波音リツ"],
+        "俺": ["玄野武宏"],
+        "おれ": ["白上虎太郎", "猫使アル"],
+        "オレ": ["青山龍星"],
+        "私": ["冥鳴ひまり", "もち子さん", "No.7", "櫻歌ミコ", "麒ヶ島宗麟", "猫使ビィ", "琴詠ニア"],
+        "まーくつー": ["九州そら"],
+        "もち子さん": ["もち子さん"],
+        "わたし": ["WhiteCUL", "後鬼", "ナースロボ＿タイプＴ", "春歌ナナ", "中国うさぎ", "あいえるたん"],
+        "ワテ": ["後鬼"],
+        "わし": ["ちび式じい"],
+        "ミコ": ["櫻歌ミコ"],
+        "小夜": ["小夜/SAYO"],
+        "我": ["†聖騎士 紅桜†"],
+        "ナナ": ["春歌ナナ"],
+        "アル": ["猫使アル"],
+        "ボク": ["猫使アル", "猫使ビィ"],
+        "ビィ": ["猫使ビィ"],
+        "あいえるたん": ["あいえるたん"],
+        "ぼく": ["満別花丸"],
     }
-    sorted_first_persons = dict(sorted(first_persons.items(), key=lambda item: len(item[1]), reverse=True))
+    sorted_first_persons = dict(
+        sorted(first_persons.items(), key=lambda item: len(item[1]), reverse=True)
+    )
 
     # スピーカーごとに選択肢を作成
     speaker_choices = []
@@ -321,71 +369,21 @@ def setup_commands(bot):
             style_id_choices.append(style_choice)  # 修正された行
     print(len(speaker_choices))
     print(len(style_id_choices))
-    @bot.tree.command(name='choose_style',guild=TEST_GUILD_ID, description='スタイルを選択します。')
+
+    @bot.tree.command(
+        name="choose_style", guild=TEST_GUILD_ID, description="スタイルを選択します。"
+    )
     async def choose_style(interaction: discord.Interaction):
         # Create first person selection options
-        options = [discord.SelectOption(label=fp, value=fp) for fp in sorted_first_persons.keys()]
+        options = [
+            discord.SelectOption(label=fp, value=fp)
+            for fp in sorted_first_persons.keys()
+        ]
         # Prompt the user to select a first person
-        await interaction.response.send_message('一人称を選択してください。', view=FirstPersonView(options))
-    # @bot.tree.command(guild=TEST_GUILD_ID, description='一人称を選択します。')    
-    # @bot.tree.command(guild=TEST_GUILD_ID, description="スタイルを表示または設定します。")
-    # @app_commands.choices(
-    #     type=type_choices, speaker=speaker_choices, style_id=style_id_choices
-    # )
-    # async def style(
-    #     interaction: discord.Interaction,
-    #     type: str = None,
-    #     speaker: str = None,
-    #     style_id: int = None,
-    # ):
-    #     valid_types = ["user_default", "notify", "user", None]
-    #     # Check if the type is valid
-    #     if type not in valid_types:
-    #         await interaction.response.send_message(
-    #             f"⚠️ 指定されたタイプが無効です。", ephemeral=True
-    #         )
-    #         return
+        await interaction.response.send_message(
+            "一人称を選択してください。", view=FirstPersonView(options)
+        )
 
-    #     # Ensure a style_id is provided for certain types
-    #     if type in ["notify", "user"] and not style_id:
-    #         await interaction.response.send_message(f"⚠️ スタイルIDが必要です。", ephemeral=True)
-    #         return
-
-    #     # Define valid types
-    #     valid_types = ["user_default", "notify", "user"]
-
-    #     # Check if the type is valid
-    #     if type not in valid_types:
-    #         await interaction.response.send_message(
-    #             f"⚠️ 指定されたタイプが無効です。", ephemeral=True
-    #         )
-    #         return
-
-    #     if not validate_style_id(style_id):
-    #         await interaction.response.send_message(
-    #             f"⚠️ 指定されたスタイルIDが無効です。", ephemeral=True
-    #         )
-    #         return
-
-    #     # Ensure a style_id is provided for certain types
-    #     if type in ["notify", "user"] and not style_id:
-    #         await interaction.response.send_message(f"⚠️ スタイルIDが必要です。", ephemeral=True)
-    #         return
-
-    #     # Check if the provided style_id is valid
-    #     if style_id and style_id not in [choice.value for choice in style_id_choices]:
-    #         await interaction.response.send_message(
-    #             f"⚠️ 指定されたスタイルIDが無効です。", ephemeral=True
-    #         )
-    #         return
-
-    #     # Handle the style setting logic here...
-    #     # For example, update the user's preference in your database
-
-    #     await interaction.response.send_message(
-    #         f"✅ スタイルが更新されました。スタイルID: {style_id if style_id else 'Default'}",
-    #         ephemeral=True,
-    #     )
     class FirstPersonView(discord.ui.View):
         def __init__(self, options):
             super().__init__()
@@ -393,7 +391,9 @@ def setup_commands(bot):
 
     class FirstPersonSelect(discord.ui.Select):
         def __init__(self, options):
-            super().__init__(placeholder='一人称を選択...', min_values=1, max_values=1, options=options)
+            super().__init__(
+                placeholder="一人称を選択...", min_values=1, max_values=1, options=options
+            )
 
         async def callback(self, interaction: discord.Interaction):
             selected_fp = self.values[0]
@@ -402,15 +402,27 @@ def setup_commands(bot):
             # キャラクターが一つだけの場合、自動的に選択
             if len(characters) == 1:
                 selected_char = characters[0]
-                styles = [style for speaker in speakers if speaker["name"] == selected_char for style in speaker["styles"]]
+                styles = [
+                    style
+                    for speaker in speakers
+                    if speaker["name"] == selected_char
+                    for style in speaker["styles"]
+                ]
                 # スタイルも一つだけならそれも自動選択
                 if len(styles) == 1:
-                    selected_style = styles[0]['id']
-                    await interaction.response.send_message(f'{selected_char}のスタイルID {selected_style} が自動的に選択されました。', ephemeral=True)
+                    selected_style = styles[0]
+                    await interaction.response.send_message(
+                        f"{selected_char}のスタイル「{selected_style['name']}」(ID: {selected_style['id']})が自動的に選択されました。",
+                        ephemeral=True,
+                    )
                 else:
-                    await interaction.response.send_message(f'{selected_char}のスタイルを選んでください。', view=StyleView(styles))
+                    await interaction.response.send_message(
+                        f"{selected_char}のスタイルを選んでください。", view=StyleView(styles)
+                    )
             else:
-                await interaction.response.send_message(f'{selected_fp}に対応するキャラクターを選んでください。', view=CharacterView(characters))
+                await interaction.response.send_message(
+                    f"{selected_fp}に対応するキャラクターを選んでください。", view=CharacterView(characters)
+                )
 
     class CharacterView(discord.ui.View):
         def __init__(self, characters):
@@ -419,19 +431,33 @@ def setup_commands(bot):
 
     class CharacterSelect(discord.ui.Select):
         def __init__(self, characters):
-            options = [discord.SelectOption(label=char, value=char) for char in characters]
-            super().__init__(placeholder='キャラクターを選択...', min_values=1, max_values=1, options=options)
+            options = [
+                discord.SelectOption(label=char, value=char) for char in characters
+            ]
+            super().__init__(
+                placeholder="キャラクターを選択...", min_values=1, max_values=1, options=options
+            )
 
         async def callback(self, interaction: discord.Interaction):
             selected_char = self.values[0]
-            styles = [style for speaker in speakers if speaker["name"] == selected_char for style in speaker["styles"]]
+            styles = [
+                style
+                for speaker in speakers
+                if speaker["name"] == selected_char
+                for style in speaker["styles"]
+            ]
 
             # スタイルが一つだけの場合、自動的に選択
             if len(styles) == 1:
-                selected_style = styles[0]['id']
-                await interaction.response.send_message(f'{selected_char}のスタイルID {selected_style} が自動的に選択されました。', ephemeral=True)
+                selected_style = styles[0]
+                await interaction.response.send_message(
+                    f"{selected_char}のスタイル「{selected_style['name']}」(ID: {selected_style['id']})が自動的に選択されました。",
+                    ephemeral=True,
+                )
             else:
-                await interaction.response.send_message(f'{selected_char}のスタイルを選んでください。', view=StyleView(styles))
+                await interaction.response.send_message(
+                    f"{selected_char}のスタイルを選んでください。", view=StyleView(styles)
+                )
 
     class StyleView(discord.ui.View):
         def __init__(self, styles):
@@ -440,11 +466,18 @@ def setup_commands(bot):
 
     class StyleSelect(discord.ui.Select):
         def __init__(self, styles):
-            options = [discord.SelectOption(label=style['name'], value=style['id']) for style in styles]
-            super().__init__(placeholder='スタイルを選択...', min_values=1, max_values=1, options=options)
+            options = [
+                discord.SelectOption(label=style["name"], value=style["id"])
+                for style in styles
+            ]
+            super().__init__(
+                placeholder="スタイルを選択...", min_values=1, max_values=1, options=options
+            )
 
-        async def callback(self, interaction: discord.Interaction):
-            selected_style = self.values[0]
-            # ユーザーのスタイル選択を更新するロジックをここに実装
-            await interaction.response.send_message(f'スタイルID {selected_style} が選択されました。', ephemeral=True)
-
+    async def callback(self, interaction: discord.Interaction):
+        selected_style = self.values[0]
+        style_name = next((style['name'] for style in styles if style['id'] == selected_style), "不明なスタイル")
+        # ユーザーのスタイル選択を更新するロジックをここに実装
+        await interaction.response.send_message(
+            f"スタイル「{style_name}」(ID: {selected_style})が選択されました。", ephemeral=True
+        )
