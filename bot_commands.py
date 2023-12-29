@@ -29,7 +29,7 @@ class CustomHelpCommand(commands.HelpCommand):
                     f"`{command_name}`{alias_text}: {command.short_doc or '説明なし'}"
                 )
             if command_entries:
-                cog_name = cog.qualified_name if cog else "その他"
+                cog_name = cog.qualified_name if cog else "一般コマンド"
                 embed.add_field(
                     name=cog_name, value="\n".join(command_entries), inline=False
                 )
