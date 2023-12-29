@@ -11,26 +11,25 @@ from discord.ext import commands
 
 class CustomHelpCommand(commands.HelpCommand):
     def __init__(self):
-        super().__init__(command_attrs={"help": "コマンドリストと説明を表示します。"})  # helpコマンド自体の説明
+        super().__init__(command_attrs={"help": "コマンドリストと説明を表示します。"})
 
     async def send_bot_help(self, mapping):
-        embed = discord.Embed(title="ヘルプ", description="利用可能なコマンド一覧:", color=0x00FF00)
-        embed.set_footer(text="---------------------------------------")  # 区切り線をフッターに設定
+        embed = discord.Embed(title="利用可能なコマンド", color=0x00FF00)
         for cog, commands in mapping.items():
             filtered_commands = await self.filter_commands(commands, sort=True)
+            command_entries = []
             for command in filtered_commands:
                 command_name = f"!{command.name}" + (
                     f" [{', '.join(command.aliases)}]" if command.aliases else ""
                 )
-                command_desc = (
-                    f"{command.help}\n例: `{self.get_command_signature(command)}`"
+                command_entries.append(
+                    f"{command_name} - {command.short_doc or '説明なし'}"
                 )
-                embed.add_field(name=command_name, value=command_desc, inline=False)
+            if command_entries:
+                cog_name = cog.qualified_name if cog else "その他"
                 embed.add_field(
-                    name="\u200b",
-                    value="---------------------------------------",
-                    inline=False,
-                )  # 区切り線
+                    name=cog_name, value="\n".join(command_entries), inline=False
+                )
 
         channel = self.get_destination()
         await channel.send(embed=embed)
@@ -39,12 +38,13 @@ class CustomHelpCommand(commands.HelpCommand):
         embed = discord.Embed(
             title=f"!{command.name}"
             + (f" [{'|'.join(command.aliases)}]" if command.aliases else ""),
-            description=command.help or "説明が設定されていません。",
             color=0x00FF00,
         )
+        embed.add_field(name="説明", value=command.help or "説明が設定されていません。", inline=False)
         embed.add_field(
             name="使用法", value=f"`{self.get_command_signature(command)}`", inline=False
         )
+
         channel = self.get_destination()
         await channel.send(embed=embed)
 
