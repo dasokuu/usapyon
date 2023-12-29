@@ -73,6 +73,13 @@ async def handle_style_command(ctx, style_id: int, type: str):
     guild_id = str(ctx.guild.id)
     user_id = str(ctx.author.id)
 
+    # スタイルタイプに応じた説明を定義
+    type_description = {
+        "default": "デフォルト",
+        "notify": "通知",
+        "user": "ユーザー"
+    }
+
     # スタイルIDが指定されている場合は設定を更新
     if style_id is not None:
         valid, speaker_name, style_name = validate_style_id(style_id)
@@ -83,7 +90,7 @@ async def handle_style_command(ctx, style_id: int, type: str):
         # スタイルを更新
         update_style_setting(guild_id, user_id, style_id, type)
         await ctx.send(
-            f"スタイルを「{speaker_name} {style_name}」(スタイルID: {style_id})に設定しました。"
+            f"{type_description[type]}スタイルを「{speaker_name} {style_name}」(スタイルID: {style_id})に設定しました。"
         )
         return
     
@@ -91,7 +98,7 @@ async def handle_style_command(ctx, style_id: int, type: str):
     current_style_id, speaker_name, style_name = get_current_style_details(
         guild_id, user_id, type
     )
-    await ctx.send(f"現在のスタイル: {speaker_name} {style_name} (スタイルID: {current_style_id})")
+    await ctx.send(f"現在の{type_description[type]}スタイル: {speaker_name} {style_name} (スタイルID: {current_style_id})")
 
 
 def update_style_setting(guild_id, user_id, style_id, type):
