@@ -350,21 +350,36 @@ def setup_commands(bot):
         "あいえるたん": ["あいえるたん"],
     }
 
+    # # Define choices for type
+    # type_choices = [
+    #     app_commands.Choice(name="user_default", value="user_default"),
+    #     app_commands.Choice(name="notify", value="notify"),
+    #     app_commands.Choice(name="user", value="user"),
+    # ]
 
+    # # Dynamically generate style ID choices based on your styles data
+    # for speaker in speakers:
+    #     name = speaker["name"]
+    #     style_id_choices = [
+    #         app_commands.Choice(name=style["name"], value=style["id"])
+    #         for style in speaker["styles"]
+    #     ]
+
+    # @tree.command(description="スタイルを表示または設定します。")
+    # @app_commands.choices(type=type_choices)
+    # @app_commands.choices(style_id=style_id_choices)
 
     @bot.tree.command(
-        name="choose_first_person", guild=TEST_GUILD_ID, description="一人称を選択します。"
+        name="choose_first_person", 
+        guild=TEST_GUILD_ID, 
+        description="一人称を選択します。"
     )
-    async def choose_first_person(interaction: discord.Interaction):
-        # 一人称の選択肢を作成
-        options = [
-            discord.SelectOption(label=fp, value=fp)
-            for fp in first_persons.keys()
-        ]
+    @app_commands.choices(first_person=[app_commands.Choice(name=fp, value=fp) for fp in first_persons.keys()])
+    async def choose_first_person(interaction: discord.Interaction, first_person: str):
 
         # ユーザーに一人称を選択させる
         await interaction.response.send_message(
-            "一人称を選択してください。", view=FirstPersonView(options)
+            "一人称を選択してください。", view=FirstPersonView(first_person)
         )
 
     class FirstPersonView(discord.ui.View):
