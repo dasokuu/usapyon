@@ -222,5 +222,5 @@ def setup_commands(bot):
             )
             embed.add_field(name=name, value=styles, inline=True)
 
-        channel = ctx.get_destination()
-        await channel.send(embed=embed)
+        ctx = ctx.get_destination()
+        await ctx.send(embed=embed)
