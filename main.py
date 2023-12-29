@@ -153,15 +153,17 @@ async def speak_line(voice_client, line, style_id, guild_id):
                 print(f"An error occurred while playing audio: {e}")
 
 
-async def replace_mentions_with_names(text, message):
-    """
-    メッセージ内のユーザーメンションを「○○さん」、ロールメンションを「○○役職」に置き換えます。
-    """
+async def replace_content(text, message):
     # ユーザーメンションを検出する正規表現パターン
     user_mention_pattern = re.compile(r"<@!?(\d+)>")
     # ロールメンションを検出する正規表現パターン
     role_mention_pattern = re.compile(r"<@&(\d+)>")
+    # チャンネルを検出する正規表現パターン
     channel_pattern = re.compile(r"<#(\d+)>")
+    # カスタム絵文字を検出する正規表現パターン
+    custom_emoji_pattern = re.compile(r"<:(\w*):\d*>")
+    # URLを検出する正規表現パターン
+    url_pattern = re.compile(r"https?://\S+")
 
     def replace_user_mention(match):
         user_id = int(match.group(1))
@@ -178,11 +180,17 @@ async def replace_mentions_with_names(text, message):
         channel = message.guild.get_channel(channel_id)
         return channel.name + "チャンネル" if channel else match.group(0)
 
+    def replace_emoji_name_to_kana(match):
+        emoji_name = match.group(1)
+        return jaconv.alphabet2kana(emoji_name) + " "
+
     # ユーザーメンションを「○○さん」に置き換え
     text = user_mention_pattern.sub(replace_user_mention, text)
     # ロールメンションを「○○役職」に置き換え
     text = role_mention_pattern.sub(replace_role_mention, text)
     text = channel_pattern.sub(replace_channel_mention, text)
+    text = custom_emoji_pattern.sub(replace_emoji_name_to_kana, text)
+    text = url_pattern.sub("URL省略", text)
 
     return text
 
@@ -197,16 +205,6 @@ async def on_ready():
 
 @bot.event
 async def on_message(message):
-    def replace_custom_emoji_and_urls(text):
-        # カスタム絵文字の名前をかなに変換
-        def convert_emoji_name_to_kana(match):
-            emoji_name = match.group(1)
-            return jaconv.alphabet2kana(emoji_name) + " "
-
-        text = re.sub(r"<:(\w*):\d*>", convert_emoji_name_to_kana, text)
-        text = re.sub(r"https?://\S+", "URL省略", text)
-        return text
-
     guild_id = str(message.guild.id)
 
     # ボット自身のメッセージは無視
@@ -249,11 +247,8 @@ async def on_message(message):
     )
 
     style_id = speaker_settings.get(str(message.author.id), user_default_style_id)
-    # メッセージからメンションをユーザー名に置き換える
-    message_content = await replace_mentions_with_names(message.content, message)
-
     # メッセージ内容を置換
-    message_content = replace_custom_emoji_and_urls(message_content)
+    message_content = replace_content(message_content)
     # テキストメッセージがある場合、それに対する音声合成を行います。
     if message_content.strip():
         await text_to_speech(voice_client, message_content, style_id, guild_id)
