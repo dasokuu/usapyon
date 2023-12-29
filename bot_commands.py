@@ -59,9 +59,8 @@ class CustomHelpCommand(commands.HelpCommand):
 def setup_commands(bot):
     @bot.command(
         name="defaultstyle",
-        aliases=["ds"],
         help="ユーザーのデフォルトスタイルを表示または設定します。",
-    )
+    )　
     async def defaultstyle(ctx, style_id: int = None):
         guild_id = str(ctx.guild.id)
 
@@ -97,7 +96,6 @@ def setup_commands(bot):
 
     @bot.command(
         name="notifystyle",
-        aliases=["ns"],
         help="入退室通知のスタイルを表示または設定します。",
     )
     async def notify_style(ctx, style_id: int = None):
@@ -135,7 +133,6 @@ def setup_commands(bot):
 
     @bot.command(
         name="mystyle",
-        aliases=["ms"],
         help="あなたの現在のスタイルを表示または設定します。",
     )
     async def my_style(ctx, style_id: int = None):
