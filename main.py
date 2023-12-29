@@ -27,9 +27,11 @@ if __name__ == "__main__":
         await tree.sync()
         for guild in bot.guilds:
             bot.loop.create_task(process_playback_queue(str(guild.id)))
+
     tree = app_commands.CommandTree(bot)
-    # Define a slash command
-    @tree.command(name='hello', description='Say hello!')
+
+    # Define a slash command using the bot's tree attribute
+    @bot.tree.command(name='hello', description='Say hello!')
     async def slash_hello(interaction: discord.Interaction):
         await interaction.response.send_message(f'Hello {interaction.user.mention}!')
 
