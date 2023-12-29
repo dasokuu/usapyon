@@ -232,5 +232,3 @@ def setup_commands(bot):
             )
             message_lines.append(f"**{name}** {styles}")
         await ctx.send("\n".join(message_lines))
-
-    bot.help_command = CustomHelpCommand()
