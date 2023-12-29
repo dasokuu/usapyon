@@ -70,17 +70,10 @@ async def synthesis(speaker, query_data):
 
 async def text_to_speech(voice_client, text, style_id, guild_id):
     try:
-        query_data = await audio_query(text, style_id)
-        if query_data:
-            voice_data = await synthesis(style_id, query_data)
-            if voice_data:
-                audio_source = discord.FFmpegPCMAudio(io.BytesIO(voice_data), pipe=True)
-                guild_queue = get_guild_playback_queue(guild_id)
-                try:
-                    # Add audio source to the guild-specific queue
-                    await guild_queue.put((voice_client, audio_source))
-                except Exception as e:
-                    print(f"An error occurred while playing audio: {e}")
+        lines = text.split("\n")
+        for line in lines:
+            if line.strip():
+                await speak_line(voice_client, line, style_id, guild_id)
     except Exception as e:
         print(f"Error in text_to_speech: {e}")
 
