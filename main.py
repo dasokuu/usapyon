@@ -124,31 +124,39 @@ async def synthesis(speaker, query_data):
 
 
 async def text_to_speech(voice_client, text, style_id, guild_id):
-    # スピーカー名とスタイル名を取得
-    speaker_name, style_name = get_style_details(style_id)
+    # Split the text into lines
+    lines = text.split("\n")
 
-    # ステータスメッセージにスピーカー名とスタイル名を含める
-    reading_status = f"読み上げ中 | VOICEVOX:{speaker_name}"
-    await bot.change_presence(activity=discord.Game(name=reading_status))
+    for line in lines:
+        # Skip empty lines
+        if not line.strip():
+            continue
 
-    # 既に音声を再生中であれば、待機します。
-    while voice_client.is_playing():
-        await asyncio.sleep(0.5)
+        # Rest of your TTS logic here
+        speaker_name, style_name = get_style_details(style_id)
 
-    # 音声合成のクエリデータを取得し、音声を再生します。
-    query_data = await audio_query(text, style_id)
-    if query_data:
-        voice_data = await synthesis(style_id, query_data)
-        if voice_data:
-            audio_source = discord.FFmpegPCMAudio(io.BytesIO(voice_data), pipe=True)
-            guild_queue = get_guild_playback_queue(guild_id)
-            try:
-                # ギルド固有のキューにオーディオソースを追加
-                await guild_queue.put((voice_client, audio_source))
-            except Exception as e:
-                print(f"An error occurred while playing audio: {e}")
+        # Update reading status
+        reading_status = f"読み上げ中 | VOICEVOX:{speaker_name}"
+        await bot.change_presence(activity=discord.Game(name=reading_status))
 
-    # ステータスを待機中に更新
+        # Ensure the voice client is not already playing something
+        while voice_client.is_playing():
+            await asyncio.sleep(0.5)
+
+        # Process each line separately
+        query_data = await audio_query(line, style_id)
+        if query_data:
+            voice_data = await synthesis(style_id, query_data)
+            if voice_data:
+                audio_source = discord.FFmpegPCMAudio(io.BytesIO(voice_data), pipe=True)
+                guild_queue = get_guild_playback_queue(guild_id)
+                try:
+                    # Add audio source to the guild-specific queue
+                    await guild_queue.put((voice_client, audio_source))
+                except Exception as e:
+                    print(f"An error occurred while playing audio: {e}")
+
+    # Set status to idle when done
     await bot.change_presence(activity=discord.Game(name="待機中 | !helpでヘルプ"))
 
 
@@ -204,8 +212,8 @@ async def on_message(message):
 
         text = re.sub(r"<:(\w*):\d*>", convert_emoji_name_to_kana, text)
         text = re.sub(r"https?://\S+", "URL省略", text)
-        return text\
-        
+        return text
+
     def handle_attachments(message):
         if message.attachments:
             return "ファイルが投稿されました。"
@@ -309,7 +317,7 @@ async def on_voice_state_update(member, before, after):
 
     # ボイスチャンネルに接続したとき
     if before.channel != voice_client.channel and after.channel == voice_client.channel:
-        message = f"{member.display_name}さんが{after.channel.name}に入室しました。"
+        message = f"{member.display_name}さんが入室しました。"
         notify_style_id = speaker_settings.get(str(member.guild.id), {}).get(
             "notify", NOTIFY_STYLE_ID
         )
@@ -319,7 +327,7 @@ async def on_voice_state_update(member, before, after):
     elif (
         before.channel == voice_client.channel and after.channel != voice_client.channel
     ):
-        message = f"{member.display_name}さんが{before.channel.name}から退出しました。"
+        message = f"{member.display_name}さんが退出しました。"
         notify_style_id = speaker_settings.get(str(member.guild.id), {}).get(
             "notify", NOTIFY_STYLE_ID
         )
