@@ -69,14 +69,17 @@ async def synthesis(speaker, query_data):
 
 
 async def text_to_speech(voice_client, text, style_id, guild_id):
-    lines = text.split("\n")
-    await asyncio.gather(
-        *(
-            speak_line(voice_client, line, style_id, guild_id)
-            for line in lines
-            if line.strip()
+    try:
+        lines = text.split("\n")
+        await asyncio.gather(
+            *(
+                speak_line(voice_client, line, style_id, guild_id)
+                for line in lines
+                if line.strip()
+            )
         )
-    )
+    except Exception as e:
+        print(f"Error in text_to_speech: {e}")
 
 
 async def speak_line(voice_client, line, style_id, guild_id):
