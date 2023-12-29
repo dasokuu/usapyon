@@ -78,8 +78,8 @@ async def handle_style_command(ctx, style_id: int, type: str = None):
     # スタイルタイプに応じた説明を定義
     type_description = {
         "user_default": f"{guild_name}のユーザーデフォルト",
-        "notify": f"{guild_name}VC入退室時のスタイル",
-        "user": f"{user_display_namename}のスタイル",
+        "notify": f"{guild_name}VC入退室時",
+        "user": f"{user_display_namename}",
     }
 
     # スタイルIDが指定されていない場合、全ての設定を表示
@@ -113,7 +113,7 @@ async def handle_style_command(ctx, style_id: int, type: str = None):
         guild_id, user_id, type
     )
     await ctx.send(
-        f"ℹ️ 現在の{type_description[type]}スタイルは「{speaker_name} {style_name}」(スタイルID: {current_style_id})です。"
+        f"ℹ️ 現在の{type_description[type]}のスタイルは「{speaker_name} {style_name}」(スタイルID: {current_style_id})です。"
     )
 
 
