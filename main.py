@@ -3,7 +3,7 @@ from discord.ext import commands
 import os
 from utils import handle_message, handle_voice_state_update
 from voice import process_playback_queue
-from bot_commands import setup, setup_commands
+from bot_commands import setup_commands
 from settings import BOT_PREFIX, GAME_NAME
 
 
