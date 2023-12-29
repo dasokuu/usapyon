@@ -135,9 +135,9 @@ async def handle_message(bot, message):
     if message_content.strip():
         await text_to_speech(voice_client, message_content, style_id, guild_id)
 
-    # 添付ファイルがある場合、「ファイルが投稿されました」というメッセージに対する音声合成を行います。
+    # 添付ファイルがある場合、「ファイルを投稿しました」というメッセージに対する音声合成を行います。
     if message.attachments:
-        file_message = "ファイルが投稿されました。"
+        file_message = "ファイルを投稿しました。"
         await text_to_speech(voice_client, file_message, style_id, guild_id)
 
 
