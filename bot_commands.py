@@ -376,34 +376,33 @@ def setup_commands(bot):
     )
     @app_commands.choices(first_person=[app_commands.Choice(name=fp, value=fp) for fp in first_persons.keys()])
     async def choose_first_person(interaction: discord.Interaction, first_person: str):
-        async def callback(self, interaction: discord.Interaction):
-            selected_fp = self.values[0]
-            characters = first_persons[selected_fp]
+        selected_fp = first_person
+        characters = first_persons[selected_fp]
 
-            # キャラクターが一つだけの場合、自動的に選択
-            if len(characters) == 1:
-                selected_char = characters[0]
-                styles = [
-                    style
-                    for speaker in speakers
-                    if speaker["name"] == selected_char
-                    for style in speaker["styles"]
-                ]
-                # スタイルも一つだけならそれも自動選択
-                if len(styles) == 1:
-                    selected_style = styles[0]
-                    await interaction.response.send_message(
-                        f"{selected_char}のスタイル「{selected_style['name']}」(ID: {selected_style['id']})が自動的に選択されました。",
-                        ephemeral=True,
-                    )
-                else:
-                    await interaction.response.send_message(
-                        f"{selected_char}のスタイルを選んでください。", view=StyleView(styles)
-                    )
+        # キャラクターが一つだけの場合、自動的に選択
+        if len(characters) == 1:
+            selected_char = characters[0]
+            styles = [
+                style
+                for speaker in speakers
+                if speaker["name"] == selected_char
+                for style in speaker["styles"]
+            ]
+            # スタイルも一つだけならそれも自動選択
+            if len(styles) == 1:
+                selected_style = styles[0]
+                await interaction.response.send_message(
+                    f"{selected_char}のスタイル「{selected_style['name']}」(ID: {selected_style['id']})が自動的に選択されました。",
+                    ephemeral=True,
+                )
             else:
                 await interaction.response.send_message(
-                    f"{selected_fp}に対応するキャラクターを選んでください。", view=CharacterView(characters)
+                    f"{selected_char}のスタイルを選んでください。", view=StyleView(styles)
                 )
+        else:
+            await interaction.response.send_message(
+                f"{selected_fp}に対応するキャラクターを選んでください。", view=CharacterView(characters)
+            )
 
     class CharacterView(discord.ui.View):
         def __init__(self, characters):
