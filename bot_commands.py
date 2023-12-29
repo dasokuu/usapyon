@@ -149,7 +149,7 @@ def get_current_style_details(guild_id, user_id, type):
 
 
 def setup_commands(bot):
-    @bot.tree.command(name="style", description="スタイルを表示または設定します。詳細は `!help style` で確認。")
+    @bot.tree.command(name="style", guild=TEST_GUILD_ID,description="スタイルを表示または設定します。詳細は `!help style` で確認。")
     async def style(interaction, type: str = None, style_id: int = None):
         valid_types = ["user_default", "notify", "user", None]
         if type not in valid_types:
@@ -161,7 +161,7 @@ def setup_commands(bot):
         # コードを共通化し、異なるスタイルタイプに対応
         await handle_style_command(interaction, style_id, type)
 
-    @bot.tree.command(name='join', description='ボットをボイスチャンネルに接続し、読み上げを開始します。')
+    @bot.tree.command(name='join', guild=TEST_GUILD_ID,description='ボットをボイスチャンネルに接続し、読み上げを開始します。')
     async def join_slash(interaction: discord.Interaction):
         if interaction.user.voice.channel:
             channel = interaction.user.voice.channel
@@ -191,7 +191,7 @@ def setup_commands(bot):
                 voice_client, welcome_message, notify_style_id, guild_id
             )
 
-    @bot.tree.command(name="leave", description="ボットをボイスチャンネルから切断します。")
+    @bot.tree.command(name="leave", guild=TEST_GUILD_ID,description="ボットをボイスチャンネルから切断します。")
     async def leave(interaction: discord.Interaction):
         if interaction.guild.voice_client:
             guild_id = str(interaction.guild_id)
@@ -202,7 +202,7 @@ def setup_commands(bot):
             await interaction.guild.voice_client.disconnect()
             await interaction.response.send_message("ボイスチャンネルから切断しました。")
 
-    @bot.tree.command(name="skip", description="現在再生中の音声をスキップします。")
+    @bot.tree.command(name="skip", guild=TEST_GUILD_ID,description="現在再生中の音声をスキップします。")
     async def skip(interaction: discord.Interaction):
         voice_client = interaction.guild.voice_client
         if voice_client and voice_client.is_playing():
@@ -211,7 +211,7 @@ def setup_commands(bot):
         else:
             await interaction.response.send_message("再生中の音声はありません。")
 
-    @bot.tree.command(name="list_styles", description="利用可能なスタイルIDの一覧を表示します。")
+    @bot.tree.command(name="list_styles", guild=TEST_GUILD_ID,description="利用可能なスタイルIDの一覧を表示します。")
     async def list_styles(interaction: discord.Interaction):
         embeds = []
         embed = discord.Embed(title="利用可能なスタイルIDの一覧", color=0x00FF00)
