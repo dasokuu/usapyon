@@ -23,7 +23,7 @@ class CustomHelpCommand(commands.HelpCommand):
                     f" [{'|'.join(command.aliases)}]" if command.aliases else ""
                 )
                 command_desc = (
-                    f"{command.help}\n使用例: `{self.get_command_signature(command)}`"
+                    f"{command.help}\n使用方法: `{self.get_command_signature(command)}`"
                 )
                 embed.add_field(name=command_name, value=command_desc, inline=False)
 
