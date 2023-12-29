@@ -4,12 +4,36 @@ from utils import speakers, speaker_settings, save_style_settings, get_style_det
 from voice import text_to_speech
 
 
+class CustomHelpCommand(commands.HelpCommand):
+    def __init__(self):
+        super().__init__()
+
+    async def send_bot_help(self, mapping):
+        for cog, commands in mapping.items():
+            filtered = await self.filter_commands(commands, sort=True)
+            command_signatures = [self.get_command_signature(c) for c in filtered]
+            self.paginator.add_line(f'**{cog.qualified_name if cog else "Commands"}:**')
+            for signature in command_signatures:
+                self.paginator.add_line(signature)
+
+    async def send_command_help(self, command):
+        self.add_command_formatting(command)
+        self.paginator.add_line(command.help)
+
+    async def command_not_found(self, string):
+        return f'コマンド "{string}" が見つかりませんでした。'
+
+    async def send_error_message(self, error):
+        self.paginator.add_line(error)
+
+
 def setup_commands(bot):
     @bot.command(
-        name="_userdefaultstyle",
-        help="ユーザーのデフォルトスタイルを表示または設定します。使用法: !_userdefaultstyle [スタイルID]",
+        name="defaultstyle",
+        aliases=["ds"],
+        help="ユーザーのデフォルトスタイルを表示または設定します。\n使用法: !defaultstyle [スタイルID]\n例: !ds 1",
     )
-    async def user_default_style(ctx, style_id: int = None):
+    async def defaultstyle(ctx, style_id: int = None):
         guild_id = str(ctx.guild.id)
 
         # Ensure server settings are initialized
@@ -43,7 +67,9 @@ def setup_commands(bot):
             await ctx.send(response)
 
     @bot.command(
-        name="notifystyle", help="入退室通知のスタイルを表示または設定します。使用法: !notifystyle [スタイルID]"
+        name="notifystyle",
+        aliases=["ns"],
+        help="入退室通知のスタイルを表示または設定します。\n使用法: !notifystyle [スタイルID]\n例: !ns 2",
     )
     async def notify_style(ctx, style_id: int = None):
         guild_id = str(ctx.guild.id)
@@ -78,7 +104,11 @@ def setup_commands(bot):
         response = f"**{ctx.guild.name}の通知スタイル:** {notify_speaker} {notify_default_name} (ID: {notify_style_id})\n"
         await ctx.send(response)
 
-    @bot.command(name="mystyle", help="あなたの現在のスタイルを表示または設定します。使用法: !mystyle [スタイルID]")
+    @bot.command(
+        name="mystyle",
+        aliases=["ms"],
+        help="あなたの現在のスタイルを表示または設定します。\n使用法: !mystyle [スタイルID]\n例: !ms 3",
+    )
     async def my_style(ctx, style_id: int = None):
         user_id = str(ctx.author.id)
 
@@ -156,8 +186,8 @@ def setup_commands(bot):
         else:
             await ctx.send("再生中の音声はありません。")
 
-    @bot.command(name="showstyles", help="利用可能なスタイルIDの一覧を表示します。")
-    async def show_styles(ctx):
+    @bot.command(name="liststyles", aliases=["ls"], help="利用可能なスタイルIDの一覧を表示します。")
+    async def liststyles(ctx):
         message_lines = []
         for speaker in speakers:
             name = speaker["name"]
@@ -166,3 +196,5 @@ def setup_commands(bot):
             )
             message_lines.append(f"**{name}** {styles}")
         await ctx.send("\n".join(message_lines))
+
+    bot.help_command = CustomHelpCommand()
