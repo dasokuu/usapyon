@@ -39,7 +39,11 @@ class CustomHelpCommand(commands.HelpCommand):
                 embed.add_field(
                     name=cog_name, value="\n".join(command_entries), inline=False
                 )
-
+        for command in filtered_commands:
+            # Make sure the detailed help text is being used here
+            command_entries.append(
+                f"`{command_name}`{alias_text}: {command.help}"
+            )
         channel = self.get_destination()
         await channel.send(embed=embed)
 
@@ -140,7 +144,13 @@ def get_current_style_details(guild_id, user_id, type):
 
 
 def setup_commands(bot):
-    @bot.command(name="style", help="スタイルを表示または設定します。")
+    @bot.command(
+        name="style",
+        help="スタイルを表示または設定します。使用法: !style [type] [style_id] \n"
+        "type: 'user_default', 'notify', or 'user'. \n"
+        "style_id: 使用したいスタイルのID。 \n"
+        "例: !style user_default 1 - ユーザーデフォルトスタイルをID 1に設定します。",
+    )
     async def style(ctx, type: str = None, style_id: int = None):
         valid_types = ["user_default", "notify", "user", None]
         if type not in valid_types:
