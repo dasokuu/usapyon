@@ -253,7 +253,16 @@ def setup_commands(bot):
         app_commands.Choice(name="notify", value=type_description["notify"]),
         app_commands.Choice(name="user", value=type_description["user"]),
     ]
-
+        # Dynamically generate style ID choices based on the speakers data
+    style_id_choices = []
+    for speaker in speakers:
+        for style in speaker["styles"]:
+            style_id_choices.append(
+                app_commands.Choice(
+                    name=f"{speaker['name']} - {style['name']}", value=style["id"]
+                )
+            )
+    print(style_id_choices)
     @bot.tree.command(guild=TEST_GUILD_ID, description="スタイルを表示または設定します。")
     @app_commands.choices(type=type_choices)
     async def style(interaction: discord.Interaction, type: str, style_id: str = None):
@@ -267,16 +276,7 @@ def setup_commands(bot):
             )
             return
 
-        # Dynamically generate style ID choices based on the speakers data
-        style_id_choices = []
-        for speaker in speakers:
-            for style in speaker["styles"]:
-                style_id_choices.append(
-                    app_commands.Choice(
-                        name=f"{speaker['name']} - {style['name']}", value=style["id"]
-                    )
-                )
-        print(style_id_choices)
+
 
         # Ensure a style_id is provided for certain types
         if type in ["notify", "user"] and not style_id:
