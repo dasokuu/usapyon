@@ -19,11 +19,7 @@ if __name__ == "__main__":
         command_prefix=BOT_PREFIX, intents=intents, help_command=CustomHelpCommand()
     )
     setup_commands(bot)
-    tree = app_commands.CommandTree(bot)
-    # Define a slash command
-    @tree.command(name='hello', description='Say hello!')
-    async def slash_hello(interaction: discord.Interaction):
-        await interaction.response.send_message(f'Hello {interaction.user.mention}!')
+
     @bot.event
     async def on_ready():
         print(f"Logged in as {bot.user.name}")
@@ -31,7 +27,11 @@ if __name__ == "__main__":
         await tree.sync()
         for guild in bot.guilds:
             bot.loop.create_task(process_playback_queue(str(guild.id)))
-
+    tree = app_commands.CommandTree(bot)
+    # Define a slash command
+    @tree.command(name='hello', description='Say hello!')
+    async def slash_hello(interaction: discord.Interaction):
+        await interaction.response.send_message(f'Hello {interaction.user.mention}!')
 
     @bot.event
     async def on_message(message):
