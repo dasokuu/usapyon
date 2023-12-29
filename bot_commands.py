@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from settings import USER_DEFAULT_STYLE_ID, NOTIFY_STYLE_ID
+from settings import USER_DEFAULT_STYLE_ID, NOTIFY_DEFAULT_STYLE_ID
 from utils import (
     speakers,
     speaker_settings,
@@ -69,21 +69,23 @@ class CustomHelpCommand(commands.HelpCommand):
         await channel.send(error)
 
 
-async def handle_style_command(ctx, style_id: int, type: str):
+async def handle_style_command(ctx, style_id: int = None, type: str = "user"):
     guild_id = str(ctx.guild.id)
     user_id = str(ctx.author.id)
 
-    # If no style_id is provided, display the current style settings
-    if style_id is None:
-        current_style_id, speaker_name, style_name = get_current_style_details(
-            guild_id, user_id, type
-        )
-        await ctx.send(
-            f"現在のスタイル: {speaker_name} {style_name} (スタイルID: {current_style_id})"
-        )
+    # Determine if the command is called with a type but without a style_id
+    if style_id is None or isinstance(style_id, str):
+        # If the style_id argument is actually a type (e.g., 'notify')
+        if style_id in ["default", "notify", "user"]:
+            type = style_id
+            style_id = None
+        
+        # Fetch and display the current style settings
+        current_style_id, speaker_name, style_name = get_current_style_details(guild_id, user_id, type)
+        await ctx.send(f"現在のスタイル: {speaker_name} {style_name} (スタイルID: {current_style_id})")
         return
 
-    # If a style_id is provided, continue to validate and update the style
+    # If a valid style_id is provided, validate and potentially update the style
     valid, speaker_name, style_name = validate_style_id(style_id)
     if not valid:
         await ctx.send(f"スタイルID {style_id} は無効です。")
@@ -108,7 +110,7 @@ def get_current_style_details(guild_id, user_id, type):
     if type == "default":
         style_id = speaker_settings[guild_id].get("user_default", USER_DEFAULT_STYLE_ID)
     elif type == "notify":
-        style_id = speaker_settings[guild_id].get("notify", NOTIFY_STYLE_ID)
+        style_id = speaker_settings[guild_id].get("notify", NOTIFY_DEFAULT_STYLE_ID)
     elif type == "user":
         style_id = speaker_settings.get(user_id, USER_DEFAULT_STYLE_ID)
 
@@ -149,7 +151,7 @@ def setup_commands(bot):
 
             # 通知スタイルIDを取得
             notify_style_id = speaker_settings.get(guild_id, {}).get(
-                "notify", NOTIFY_STYLE_ID
+                "notify", NOTIFY_DEFAULT_STYLE_ID
             )
 
             # メッセージとスタイルIDをキューに追加
