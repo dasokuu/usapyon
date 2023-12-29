@@ -461,6 +461,7 @@ def setup_commands(bot):
         async def callback(self, interaction: discord.Interaction):
             selected_style = self.values[0]
             print(self.styles)
+            print(selected_style)
             # 保存されたスタイル情報からスタイル名を取得します
             style_name = next(
                 (
