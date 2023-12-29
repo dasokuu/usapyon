@@ -263,7 +263,8 @@ def setup_commands(bot):
             name=speaker["name"], value=speaker["name"]
         )
         speaker_choices.append(speaker_choice)
-
+        if len(speaker_choices) >= 25:
+            break
         # 各スピーカーのスタイルから選択肢を作成
         for _style in speaker["styles"]:
             style_choice = app_commands.Choice(  # 修正された変数名
