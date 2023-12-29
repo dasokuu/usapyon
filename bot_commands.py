@@ -254,7 +254,7 @@ def setup_commands(bot):
         app_commands.Choice(name="user", value=type_description["user"]),
     ]
     # Dynamically generate style ID choices based on the speakers data
-    print(speakers)
+    
     # スピーカーごとに選択肢を作成
     speaker_choices = []
     style_id_choices = []
