@@ -370,11 +370,13 @@ def setup_commands(bot):
     # @app_commands.choices(style_id=style_id_choices)
 
     @bot.tree.command(
-        name="choose_first_person", 
-        guild=TEST_GUILD_ID, 
-        description="一人称を選択します。"
+        name="choose_first_person", guild=TEST_GUILD_ID, description="一人称を選択します。"
     )
-    @app_commands.choices(first_person=[app_commands.Choice(name=fp, value=fp) for fp in first_persons.keys()])
+    @app_commands.choices(
+        first_person=[
+            app_commands.Choice(name=fp, value=fp) for fp in first_persons.keys()
+        ]
+    )
     async def choose_first_person(interaction: discord.Interaction, first_person: str):
         selected_fp = first_person
         characters = first_persons[selected_fp]
@@ -397,7 +399,7 @@ def setup_commands(bot):
                 )
             else:
                 await interaction.response.send_message(
-                    f"{selected_char}のスタイルを選んでください。", view=StyleView(styles)
+                    f"{selected_char}が該当します。スタイルを選んでください。", view=StyleView(styles)
                 )
         else:
             await interaction.response.send_message(
