@@ -97,8 +97,12 @@ async def handle_style_command(ctx, type: str, style_id: int = None):
         # スタイルIDが指定されていない場合、すべての設定を表示
         messages = []
         for t in ["user", "default", "notify"]:
-            style_id, speaker_name, style_name = get_current_style_details(guild_id, user_id, t)
-            messages.append(f"{type_names[t]}スタイル: {speaker_name} {style_name} (スタイルID: {style_id})")
+            style_id, speaker_name, style_name = get_current_style_details(
+                guild_id, user_id, t
+            )
+            messages.append(
+                f"{type_names[t]}スタイル: {speaker_name} {style_name} (スタイルID: {style_id})"
+            )
         await ctx.send("\n".join(messages))
 
 
