@@ -27,7 +27,7 @@ class CustomHelpCommand(commands.HelpCommand):
             for command in filtered_commands:
                 command_name = f"`!{command.name}`"
                 alias_text = (
-                    f" (エイリアス: {'|'.join(f'`!{a}`' for a in command.aliases)})"
+                    f" (または: {'|'.join(f'`!{a}`' for a in command.aliases)})"
                     if command.aliases
                     else ""
                 )
