@@ -229,7 +229,7 @@ def setup_commands(bot):
         for speaker in speakers:
             name = speaker["name"]
             styles = ", ".join(f"{style['name']}({style['id']})" for style in speaker["styles"])
-            message_lines.append(f"**{name}**: {styles}")
+            message_lines.append(f"{name}: {styles}")
         message_lines.append("```")  # コードブロックの終了
         # メッセージを送信
         await ctx.send("\n".join(message_lines))
