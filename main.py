@@ -4,10 +4,9 @@ import os
 from utils import handle_message, handle_voice_state_update
 from voice import process_playback_queue
 from bot_commands import setup_commands, CustomHelpCommand
-from settings import BOT_PREFIX, GAME_NAME
+from settings import BOT_PREFIX, GAME_NAME, TEST_GUILD_ID
 from discord import app_commands
 
-GUILD_ID = discord.Object(id='1189256965172514836')  # Replace 'your_guild_id' with your guild's ID
 
 if __name__ == "__main__":
     # Initialize bot with intents and prefix
@@ -25,16 +24,9 @@ if __name__ == "__main__":
     async def on_ready():
         print(f"Logged in as {bot.user.name}")
         await bot.change_presence(activity=discord.Game(name=GAME_NAME))
-        await bot.tree.sync(guild=GUILD_ID)
+        await bot.tree.sync(guild=TEST_GUILD_ID)
         for guild in bot.guilds:
             bot.loop.create_task(process_playback_queue(str(guild.id)))
-
-    # tree = app_commands.CommandTree(bot)
-
-    # Define a slash command using the bot's tree attribute
-    @bot.tree.command(guild=GUILD_ID, name='hello', description='Say hello in a specific guild!')
-    async def slash_hello(interaction: discord.Interaction):
-        await interaction.response.send_message(f'Hello {interaction.user.mention}!')
 
     @bot.event
     async def on_message(message):
