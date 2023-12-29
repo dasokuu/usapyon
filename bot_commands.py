@@ -149,6 +149,8 @@ def get_current_style_details(guild_id, user_id, type):
 
 
 def setup_commands(bot):
+    tree = app_commands.CommandTree(bot)
+
     @bot.command(name="style", help="スタイルを表示または設定します。詳細は `!help style` で確認。")
     async def style(ctx, type: str = None, style_id: int = None):
         valid_types = ["user_default", "notify", "user", None]
@@ -254,7 +256,7 @@ def setup_commands(bot):
             for style in speaker["styles"]
         ]
 
-    @bot.slash_command(description="スタイルを表示または設定します。")
+    @tree.command(description="スタイルを表示または設定します。")
     @app_commands.choices(type=type_choices)
     @app_commands.choices(style_id=style_id_choices)
     async def style(interaction: discord.Interaction, type: str, style_id: int):
