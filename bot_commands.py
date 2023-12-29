@@ -8,7 +8,6 @@ from voice import text_to_speech
 import discord
 from discord.ext import commands
 
-
 class CustomHelpCommand(commands.HelpCommand):
     def __init__(self):
         super().__init__(command_attrs={"help": "コマンドリストと説明を表示します。"})  # helpコマンド自体の説明
@@ -19,13 +18,8 @@ class CustomHelpCommand(commands.HelpCommand):
             filtered_commands = await self.filter_commands(commands, sort=True)
             for command in filtered_commands:
                 # コマンド名とその説明を追加
-                command_name = f"!{command.name}"
-                if command.aliases:
-                    aliases = "|".join(command.aliases)
-                    command_name += f" [{aliases}]"
-                command_desc = (
-                    f"{command.help}\n例: `{self.get_command_signature(command)}`"
-                )
+                command_name = f"!{command.name}" + (f" [{'|'.join(command.aliases)}]" if command.aliases else "")
+                command_desc = f"{command.help}\n使用例: `{self.get_command_signature(command)}`"
                 embed.add_field(name=command_name, value=command_desc, inline=False)
 
         channel = self.get_destination()
@@ -33,10 +27,11 @@ class CustomHelpCommand(commands.HelpCommand):
 
     async def send_command_help(self, command):
         embed = discord.Embed(
-            title=self.get_command_signature(command),
+            title=f"!{command.name}" + (f" [{'|'.join(command.aliases)}]" if command.aliases else ""),
             description=command.help or "説明が設定されていません。",
             color=0x00FF00,
         )
+        embed.add_field(name="使用例", value=f"`{self.get_command_signature(command)}`", inline=False)
         channel = self.get_destination()
         await channel.send(embed=embed)
 
@@ -46,6 +41,7 @@ class CustomHelpCommand(commands.HelpCommand):
     async def send_error_message(self, error):
         channel = self.get_destination()
         await channel.send(error)
+
 
 
 def setup_commands(bot):
