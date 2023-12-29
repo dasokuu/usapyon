@@ -367,6 +367,20 @@ def setup_commands(bot):
             "一人称を選択してください。", view=FirstPersonView(options)
         )
 
+    @bot.tree.command(
+        name="choose_first_person", guild=TEST_GUILD_ID, description="一人称を選択します。"
+    )
+    async def choose_first_person(interaction: discord.Interaction):
+        # 一人称の選択肢を作成
+        options = [
+            discord.SelectOption(label=fp, value=fp) for fp in first_persons.keys()
+        ]
+
+        # ユーザーに一人称を選択させる
+        await interaction.response.send_message(
+            "一人称を選択してください。", view=FirstPersonView(options)
+        )
+
     class FirstPersonView(discord.ui.View):
         def __init__(self, options):
             super().__init__()
