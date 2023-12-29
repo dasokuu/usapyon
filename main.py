@@ -1,13 +1,6 @@
-import asyncio
-import re
 import discord
 from discord.ext import commands
-import json
-import aiohttp
-import io
 import os
-import requests
-import jaconv
 from settings import USER_DEFAULT_STYLE_ID, NOTIFY_STYLE_ID, MAX_MESSAGE_LENGTH
 from utils import (
     get_guild_playback_queue,

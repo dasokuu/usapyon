@@ -1,4 +1,10 @@
-def get_guild_playback_queue(guild_id):
+import requests
+import json
+import jaconv
+import re
+import asyncio
+
+def get_guidplayback_queue(guild_id):
     """指定されたギルドIDのplayback_queueを取得または作成します。"""
     if guild_id not in guild_playback_queues:
         guild_playback_queues[guild_id] = asyncio.Queue()
