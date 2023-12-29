@@ -460,17 +460,19 @@ def setup_commands(bot):
 
         async def callback(self, interaction: discord.Interaction):
             selected_style = self.values[0]
-            print(self.styles)
-            print(selected_style)
-            # 保存されたスタイル情報からスタイル名を取得します
+            # データ型を確認し、必要に応じて変換
+            selected_style = int(selected_style)  # これでselected_styleを整数に変換
+
+            # 保存されたスタイル情報からスタイル名を取得
             style_name = next(
                 (
                     style["name"]
                     for style in self.styles
-                    if style["id"] == selected_style
+                    if int(style["id"]) == selected_style  # ここでstyle["id"]も整数に変換
                 ),
-                "不明なスタイル",
+                f"不明なスタイル (ID: {selected_style})",
             )
+
             # ユーザーのスタイル選択を更新するロジックをここに実装
             await interaction.response.send_message(
                 f"スタイル「{style_name}」(ID: {selected_style})が選択されました。", ephemeral=True
