@@ -269,6 +269,9 @@ def setup_commands(bot):
                 name=f"{_style['name']}", value=_style["id"]
             )
             style_id_choices.append(style_choice)  # 修正された行
+            # 選択肢が25を超えた場合はブレイク
+            if len(style_id_choices) >= 25:
+                break
 
     @bot.tree.command(guild=TEST_GUILD_ID, description="スタイルを表示または設定します。")
     @app_commands.choices(
