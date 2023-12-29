@@ -90,7 +90,7 @@ def setup_commands(bot):
                 speaker_settings[guild_id]["user_default"] = style_id
                 save_style_settings()
                 await ctx.send(
-                    f"ユーザーのデフォルトスタイルを「{speaker_name} {style_name}」(ID: {style_id})に設定しました。"
+                    f"ユーザーのデフォルトスタイルを「{speaker_name} {style_name}」(スタイルID: {style_id})に設定しました。"
                 )
             else:
                 await ctx.send(f"スタイルID {style_id} は無効です。")
@@ -99,7 +99,7 @@ def setup_commands(bot):
             user_speaker, user_default_style_name = get_style_details(
                 current_default, "デフォルト"
             )
-            response = f"**ユーザーのデフォルトスタイル:** {user_speaker} {user_default_style_name} (ID: {current_default})"
+            response = f"**ユーザーのデフォルトスタイル:** {user_speaker} {user_default_style_name} (スタイルID: {current_default})"
             await ctx.send(response)
 
     @bot.command(
@@ -122,7 +122,7 @@ def setup_commands(bot):
                 speaker_settings[guild_id]["notify"] = style_id
                 save_style_settings()
                 await ctx.send(
-                    f"入退室通知スタイルを {style_id} 「{speaker_name} {style_name}」(ID: {style_id})に設定しました。"
+                    f"入退室通知スタイルを {style_id} 「{speaker_name} {style_name}」(スタイルID: {style_id})に設定しました。"
                 )
                 return
             else:
@@ -137,7 +137,7 @@ def setup_commands(bot):
             notify_style_id, "デフォルト"
         )
 
-        response = f"**{ctx.guild.name}の通知スタイル:** {notify_speaker} {notify_default_name} (ID: {notify_style_id})\n"
+        response = f"**{ctx.guild.name}の通知スタイル:** {notify_speaker} {notify_default_name} (スタイルID: {notify_style_id})\n"
         await ctx.send(response)
 
     @bot.command(
@@ -158,7 +158,7 @@ def setup_commands(bot):
                 speaker_settings[user_id] = style_id
                 save_style_settings()
                 await ctx.send(
-                    f"{ctx.author.mention}さんのスタイルを「{speaker_name} {style_name}」(ID: {style_id})に設定しました。"
+                    f"{ctx.author.mention}さんのスタイルを「{speaker_name} {style_name}」(スタイルID: {style_id})に設定しました。"
                 )
                 return
             else:
@@ -169,7 +169,7 @@ def setup_commands(bot):
         user_style_id = speaker_settings.get(user_id, USER_DEFAULT_STYLE_ID)
         user_speaker, user_style_name = get_style_details(user_style_id, "デフォルト")
 
-        response = f"**{ctx.author.display_name}さんのスタイル:** {user_speaker} {user_style_name} (ID: {user_style_id})"
+        response = f"**{ctx.author.display_name}さんのスタイル:** {user_speaker} {user_style_name} (スタイルID: {user_style_id})"
         await ctx.send(response)
 
     @bot.command(name="join", help="ボットをボイスチャンネルに接続し、読み上げを開始します。")
@@ -224,13 +224,15 @@ def setup_commands(bot):
 
     @bot.command(name="list_styles", aliases=["ls"], help="利用可能なスタイルIDの一覧を表示します。")
     async def list_styles(ctx):
-        # 各キャラクターとスタイルの情報をフォーマット
         message_lines = ["```"]  # コードブロックの開始
+        # メッセージの説明を追加
+        message_lines.append("以下のリストにおいて、カッコ内の数字はスタイルIDを表します。")
         for speaker in speakers:
             name = speaker["name"]
-            styles = ", ".join(f"{style['name']}({style['id']})" for style in speaker["styles"])
+            styles = ", ".join(
+                f"{style['name']}({style['id']})" for style in speaker["styles"]
+            )
             message_lines.append(f"{name}: {styles}")
         message_lines.append("```")  # コードブロックの終了
         # メッセージを送信
         await ctx.send("\n".join(message_lines))
-
