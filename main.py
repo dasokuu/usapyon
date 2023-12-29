@@ -249,7 +249,7 @@ async def on_message(message):
     style_id = speaker_settings.get(str(message.author.id), user_default_style_id)
 
     # メッセージ内容を置換
-    message_content = replace_content(message.content, message)
+    message_content = await replace_content(message.content, message)
     # テキストメッセージがある場合、それに対する音声合成を行います。
     if message_content.strip():
         await text_to_speech(voice_client, message_content, style_id, guild_id)
