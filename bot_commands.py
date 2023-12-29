@@ -254,20 +254,31 @@ def setup_commands(bot):
         app_commands.Choice(name="user", value=type_description["user"]),
     ]
     # Dynamically generate style ID choices based on the speakers data
-    style_id_choices = []
+    # スピーカーごとに選択肢を作成
+    speaker_choices = []
+    style_choices = []
     for speaker in speakers:
+        speaker_choice = app_commands.Choice(
+            name=speaker["name"], value=speaker["name"]
+        )
+        speaker_choices.append(speaker_choice)
+
+        # 各スピーカーのスタイルから選択肢を作成
         for style in speaker["styles"]:
-            style_id_choices.append(
-                app_commands.Choice(
-                    name=f"{speaker['name']} - {style['name']}", value=style["id"]
-                )
+            style_id_choice = app_commands.Choice(
+                name=f"{speaker['name']} - {style['name']}", value=style["id"]
             )
-    print(style_id_choices)
+            style_id_choice.append(style_id_choice)
 
     @bot.tree.command(guild=TEST_GUILD_ID, description="スタイルを表示または設定します。")
-    @app_commands.choices(type=type_choices, style_id=style_id_choices)
+    @app_commands.choices(
+        type=type_choices, speaker=speaker_choices, style_id=style_id_choice
+    )
     async def style(
-        interaction: discord.Interaction, type: str = None, style_id: int = None
+        interaction: discord.Interaction,
+        type: str = None,
+        speaker: str = None,
+        style_id: int = None,
     ):
         valid_types = ["user_default", "notify", "user", None]
         # Check if the type is valid
