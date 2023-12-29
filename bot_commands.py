@@ -254,7 +254,35 @@ def setup_commands(bot):
         app_commands.Choice(name="user", value=type_description["user"]),
     ]
     # Dynamically generate style ID choices based on the speakers data
-    
+    gender_categories = {
+        '男性': ['玄野武宏', '白上虎太郎', '青山龍星', '剣崎雌雄','ちび式じい','†聖騎士 紅桜†','雀松朱司','麒ヶ島宗麟','栗田まろん'],
+        '女性': ['四国めたん', 'ずんだもん', '春日部つむぎ', '雨晴はう', '波音リツ', '冥鳴ひまり', '九州そら', 'もち子さん','WhiteCUL','後鬼','No.7','櫻歌ミコ','小夜/SAYO','ナースロボ＿タイプＴ','春歌ナナ','猫使アル','猫使ビィ','中国うさぎ','あいえるたん','満別花丸','琴詠ニア'],
+    }
+    first_persons = {
+        'わたくし': ['四国めたん'],
+        'ずんだもん': ['ずんだもん'],
+        '僕': ['ずんだもん','雨晴はう', '剣崎雌雄','No.7','雀松朱司','栗田まろん'],
+        'あーし': ['春日部つむぎ'],
+        'あたし': ['波音リツ'],
+        '俺': ['玄野武宏'],
+        'おれ': ['白上虎太郎','猫使アル'],
+        'オレ': ['青山龍星'],
+        '私': ['冥鳴ひまり', 'もち子さん','No.7','櫻歌ミコ','麒ヶ島宗麟','猫使ビィ','琴詠ニア'],
+        'まーくつー': ['九州そら'],
+        'もち子さん': ['もち子さん'],
+        'わたし': ['WhiteCUL','後鬼','ナースロボ＿タイプＴ','春歌ナナ','中国うさぎ','あいえるたん'],
+        'ワテ': ['後鬼'],
+        'わし': ['ちび式じい'],
+        'ミコ': ['櫻歌ミコ'],
+        '小夜':['小夜/SAYO'],
+        '我':['†聖騎士 紅桜†'],
+        'ナナ': ['春歌ナナ'],
+        'アル':['猫使アル'],
+        'ボク':['猫使アル','猫使ビィ'],
+        'ビィ':['猫使ビィ'],
+        'あいえるたん':['あいえるたん'],
+        'ぼく': ['満別花丸']
+    }
     # スピーカーごとに選択肢を作成
     speaker_choices = []
     style_id_choices = []
@@ -269,11 +297,21 @@ def setup_commands(bot):
                 name=f"{_style['name']}", value=_style["id"]
             )
             style_id_choices.append(style_choice)  # 修正された行
-            # # 選択肢が25を超えた場合はブレイク
-            # if len(style_id_choices) >= 25:
-            #     break
     print(len(speaker_choices))
     print(len(style_id_choices))
+    @bot.tree.command(guild=TEST_GUILD_ID, description='スタイルを選択します。')
+    async def choose_style(interaction: discord.Interaction):
+        # Create first person selection options
+        options = [discord.SelectOption(label=fp, value=fp) for fp in first_persons.keys()]
+        # Prompt the user to select a first person
+        await interaction.response.send_message('一人称を選択してください。', view=FirstPersonView(options))
+    @bot.tree.command(guild=TEST_GUILD_ID, description='一人称を選択します。')
+    async def choose_first_person(interaction: discord.Interaction):
+        # 一人称の選択肢を作成
+        options = [discord.SelectOption(label=fp, value=fp) for fp in first_persons.keys()]
+        
+        # ユーザーに一人称を選択させる
+        await interaction.response.send_message('一人称を選択してください。', view=FirstPersonView(options))        
     @bot.tree.command(guild=TEST_GUILD_ID, description="スタイルを表示または設定します。")
     @app_commands.choices(
         type=type_choices, speaker=speaker_choices, style_id=style_id_choices
@@ -332,3 +370,52 @@ def setup_commands(bot):
             f"✅ スタイルが更新されました。スタイルID: {style_id if style_id else 'Default'}",
             ephemeral=True,
         )
+    class FirstPersonView(discord.ui.View):
+        def __init__(self, options):
+            super().__init__()
+            self.add_item(FirstPersonSelect(options))
+
+    class FirstPersonSelect(discord.ui.Select):
+        def __init__(self, options):
+            super().__init__(placeholder='一人称を選択...', min_values=1, max_values=1, options=options)
+
+        async def callback(self, interaction: discord.Interaction):
+            # Filter the characters based on the selected first person
+            selected_fp = self.values[0]
+            characters = first_persons[selected_fp]
+            # Prompt the user to select a character next
+            await interaction.response.send_message(f'{selected_fp}に対応するキャラクターを選んでください。', view=CharacterView(characters))
+
+    class CharacterView(discord.ui.View):
+        def __init__(self, characters):
+            super().__init__()
+            self.add_item(CharacterSelect(characters))
+
+    class CharacterSelect(discord.ui.Select):
+        def __init__(self, characters):
+            options = [discord.SelectOption(label=char, value=char) for char in characters]
+            super().__init__(placeholder='キャラクターを選択...', min_values=1, max_values=1, options=options)
+
+        async def callback(self, interaction: discord.Interaction):
+            # Filter the styles based on the selected character
+            selected_char = self.values[0]
+            styles = [style for speaker in speakers if speaker["name"] == selected_char for style in speaker["styles"]]
+            # Prompt the user to select a style next
+            await interaction.response.send_message(f'{selected_char}のスタイルを選んでください。', view=StyleView(styles))
+
+    class StyleView(discord.ui.View):
+        def __init__(self, styles):
+            super().__init__()
+            self.add_item(StyleSelect(styles))
+
+    class StyleSelect(discord.ui.Select):
+        def __init__(self, styles):
+            options = [discord.SelectOption(label=style['name'], value=style['id']) for style in styles]
+            super().__init__(placeholder='スタイルを選択...', min_values=1, max_values=1, options=options)
+
+        async def callback(self, interaction: discord.Interaction):
+            # Set the selected style for the user
+            selected_style = self.values[0]
+            # Implement your logic to update the user's style preference
+            await interaction.response.send_message(f'スタイルID {selected_style} が選択されました。', ephemeral=True)
+
