@@ -353,23 +353,6 @@ def setup_commands(bot):
         sorted(first_persons.items(), key=lambda item: len(item[1]), reverse=True)
     )
 
-    # スピーカーごとに選択肢を作成
-    speaker_choices = []
-    style_id_choices = []
-    for speaker in speakers:
-        speaker_choice = app_commands.Choice(
-            name=speaker["name"], value=speaker["name"]
-        )
-        speaker_choices.append(speaker_choice)
-        # 各スピーカーのスタイルから選択肢を作成
-        for _style in speaker["styles"]:
-            style_choice = app_commands.Choice(  # 修正された変数名
-                name=f"{_style['name']}", value=_style["id"]
-            )
-            style_id_choices.append(style_choice)  # 修正された行
-    print(len(speaker_choices))
-    print(len(style_id_choices))
-
     @bot.tree.command(
         name="choose_style", guild=TEST_GUILD_ID, description="スタイルを選択します。"
     )
@@ -466,6 +449,7 @@ def setup_commands(bot):
 
     class StyleSelect(discord.ui.Select):
         def __init__(self, styles):
+            self.styles = styles  # ここでスタイル情報を保存します
             options = [
                 discord.SelectOption(label=style["name"], value=style["id"])
                 for style in styles
@@ -474,10 +458,14 @@ def setup_commands(bot):
                 placeholder="スタイルを選択...", min_values=1, max_values=1, options=options
             )
 
-    async def callback(self, interaction: discord.Interaction):
-        selected_style = self.values[0]
-        style_name = next((style['name'] for style in styles if style['id'] == selected_style), "不明なスタイル")
-        # ユーザーのスタイル選択を更新するロジックをここに実装
-        await interaction.response.send_message(
-            f"スタイル「{style_name}」(ID: {selected_style})が選択されました。", ephemeral=True
-        )
+        async def callback(self, interaction: discord.Interaction):
+            selected_style = self.values[0]
+            # 保存されたスタイル情報からスタイル名を取得します
+            style_name = next(
+                (style["name"] for style in self.styles if style["id"] == selected_style),
+                "不明なスタイル",
+            )
+            # ユーザーのスタイル選択を更新するロジックをここに実装
+            await interaction.response.send_message(
+                f"スタイル「{style_name}」(ID: {selected_style})が選択されました。", ephemeral=True
+            )
