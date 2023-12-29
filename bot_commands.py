@@ -376,23 +376,6 @@ def setup_commands(bot):
     )
     @app_commands.choices(first_person=[app_commands.Choice(name=fp, value=fp) for fp in first_persons.keys()])
     async def choose_first_person(interaction: discord.Interaction, first_person: str):
-
-        # ユーザーに一人称を選択させる
-        await interaction.response.send_message(
-            "一人称を選択してください。", view=FirstPersonView(first_person)
-        )
-
-    class FirstPersonView(discord.ui.View):
-        def __init__(self, options):
-            super().__init__()
-            self.add_item(FirstPersonSelect(options))
-
-    class FirstPersonSelect(discord.ui.Select):
-        def __init__(self, options):
-            super().__init__(
-                placeholder="一人称を選択...", min_values=1, max_values=1, options=options
-            )
-
         async def callback(self, interaction: discord.Interaction):
             selected_fp = self.values[0]
             characters = first_persons[selected_fp]
