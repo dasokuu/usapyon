@@ -373,7 +373,7 @@ def setup_commands(bot):
     async def choose_first_person(interaction: discord.Interaction):
         # 一人称の選択肢を作成
         options = [
-            discord.SelectOption(label=fp, value=fp) for fp in first_persons.keys()
+            discord.SelectOption(label=fp, value=fp) for fp in sorted_first_persons.keys()
         ]
 
         # ユーザーに一人称を選択させる
