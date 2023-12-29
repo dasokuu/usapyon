@@ -272,7 +272,7 @@ def setup_commands(bot):
             )
             style_id_choices.append(style_choice)  # 修正された行
             # 選択肢が25を超えた場合はブレイク
-            if len(style_id_choices) >= 15:
+            if len(style_id_choices) >= 5:
                 break
     print(len(speaker_choices))
     print(len(style_id_choices))
