@@ -15,17 +15,22 @@ class CustomHelpCommand(commands.HelpCommand):
 
     async def send_bot_help(self, mapping):
         embed = discord.Embed(title="ヘルプ", description="利用可能なコマンド一覧:", color=0x00FF00)
+        embed.set_footer(text="---------------------------------------")  # 区切り線をフッターに設定
         for cog, commands in mapping.items():
             filtered_commands = await self.filter_commands(commands, sort=True)
             for command in filtered_commands:
-                # コマンド名とその説明を追加
                 command_name = f"!{command.name}" + (
-                    f" [{'|'.join(command.aliases)}]" if command.aliases else ""
+                    f" [{', '.join(command.aliases)}]" if command.aliases else ""
                 )
                 command_desc = (
-                    f"{command.help}\n使用方法: `{self.get_command_signature(command)}`"
+                    f"{command.help}\n例: `{self.get_command_signature(command)}`"
                 )
                 embed.add_field(name=command_name, value=command_desc, inline=False)
+                embed.add_field(
+                    name="\u200b",
+                    value="---------------------------------------",
+                    inline=False,
+                )  # 区切り線
 
         channel = self.get_destination()
         await channel.send(embed=embed)
@@ -38,7 +43,7 @@ class CustomHelpCommand(commands.HelpCommand):
             color=0x00FF00,
         )
         embed.add_field(
-            name="使用方法", value=f"`{self.get_command_signature(command)}`", inline=False
+            name="使用法", value=f"`{self.get_command_signature(command)}`", inline=False
         )
         channel = self.get_destination()
         await channel.send(embed=embed)
