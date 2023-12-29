@@ -5,6 +5,7 @@ from utils import handle_message, handle_voice_state_update
 from voice import process_playback_queue
 from bot_commands import setup_commands, CustomHelpCommand
 from settings import BOT_PREFIX, GAME_NAME
+from discord import app_commands
 
 
 if __name__ == "__main__":
@@ -18,13 +19,16 @@ if __name__ == "__main__":
         command_prefix=BOT_PREFIX, intents=intents, help_command=CustomHelpCommand()
     )
     setup_commands(bot)
-
+    tree = app_commands.CommandTree(bot)
+    # Define a slash command
+    @tree.command(name='hello', description='Say hello!')
+    async def slash_hello(interaction: discord.Interaction):
+        await interaction.response.send_message(f'Hello {interaction.user.mention}!')
     @bot.event
     async def on_ready():
         print(f"Logged in as {bot.user.name}")
         await bot.change_presence(activity=discord.Game(name=GAME_NAME))
-        for guild in bot.guilds:
-            await bot.tree.sync(guild=discord.Object(id=guild.id))
+        await tree.sync()
         for guild in bot.guilds:
             bot.loop.create_task(process_playback_queue(str(guild.id)))
 
