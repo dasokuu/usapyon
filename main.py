@@ -3,7 +3,6 @@ from discord.ext import commands
 import os
 from settings import USER_DEFAULT_STYLE_ID, NOTIFY_STYLE_ID, MAX_MESSAGE_LENGTH
 from utils import (
-    get_guild_playback_queue,
     fetch_speakers,
     get_style_details,
     save_style_settings,
@@ -12,10 +11,7 @@ from utils import (
 )
 from voice import (
     process_playback_queue,
-    audio_query,
-    synthesis,
     text_to_speech,
-    speak_line,
     clear_playback_queue,
 )
 
