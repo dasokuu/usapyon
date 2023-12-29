@@ -71,10 +71,16 @@ class CustomHelpCommand(commands.HelpCommand):
 
 async def handle_style_command(ctx, style_id: int, type: str = None):
     guild_id = str(ctx.guild.id)
+    guild_name = ctx.guild.name  # ギルド名を取得
     user_id = str(ctx.author.id)
+    user_name = ctx.author.name  # ユーザー名を取得
 
     # スタイルタイプに応じた説明を定義
-    type_description = {"default": "デフォルト", "notify": "通知", "user": "ユーザー"}
+    type_description = {
+        "default": f"現在の{guild_name}のユーザーデフォルト読み上げスタイル",
+        "notify": f"現在の{guild_name}の入退室時の読み上げスタイル",
+        "user": f"現在の{user_name}の読み上げスタイル"
+    }
 
     # スタイルIDが指定されていない場合、全ての設定を表示
     if style_id is None and type is None:
@@ -84,7 +90,7 @@ async def handle_style_command(ctx, style_id: int, type: str = None):
                 guild_id, user_id, t
             )
             messages.append(
-                f"現在の{type_description[t]}スタイル: {speaker_name} {style_name} (スタイルID: {style_id})"
+                f"{type_description[t]}: {speaker_name} {style_name} (スタイルID: {style_id})"
             )
         await ctx.send("\n".join(messages))
         return
