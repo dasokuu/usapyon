@@ -44,19 +44,27 @@ class CustomHelpCommand(commands.HelpCommand):
         await channel.send(embed=embed)
 
     async def send_command_help(self, command):
-        alias_text = (
-            f" (エイリアス: {'|'.join(f'!{a}' for a in command.aliases)})"
-            if command.aliases
-            else ""
-        )
-        embed = discord.Embed(
-            title=f"!{command.name}{alias_text}",
-            color=0x00FF00,
-        )
-        embed.add_field(name="説明", value=command.help or "説明が設定されていません。", inline=False)
-        embed.add_field(
-            name="使用法", value=f"`{self.get_command_signature(command)}`", inline=False
-        )
+        embed = discord.Embed(title=f"!{command.name}", color=0x00FF00)
+
+        if command.name == "style":
+            embed.description = (
+                "`!style`コマンドの使用法:\n"
+                "`!style [type] [style_id]`\n\n"
+                "- `type`: 設定するスタイルのタイプ。`user_default`, `notify`, または `user` から選択。\n"
+                "- `style_id`: 使用したいスタイルのID。\n\n"
+                "例:\n"
+                "- ユーザーデフォルトスタイルをID 1に設定: `!style user_default 1`\n"
+                "- 入退室通知スタイルをID 2に設定: `!style notify 2`\n"
+                "- 個人スタイルをID 3に設定: `!style user 3`\n\n"
+                "`style_id`の詳細や一覧は `!list_styles` で確認できます。"
+            )
+        else:
+            embed.add_field(name="説明", value=command.help, inline=False)
+            embed.add_field(
+                name="使用法",
+                value=f"`{self.get_command_signature(command)}`",
+                inline=False,
+            )
 
         channel = self.get_destination()
         await channel.send(embed=embed)
