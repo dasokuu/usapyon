@@ -78,8 +78,8 @@ async def handle_style_command(ctx, style_id: int, type: str = None):
 
     # スタイルタイプに応じた説明を定義
     type_description = {
-        "user_default": f"{guild_name}のユーザーデフォルト",
-        "notify": f"{guild_name}VC入退室時",
+        "user_default": f"ユーザーデフォルト",
+        "notify": f"VC入退室時",
         "user": f"{user_display_namename}",
     }
 
