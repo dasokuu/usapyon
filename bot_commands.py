@@ -222,5 +222,5 @@ def setup_commands(bot):
             )
             embed.add_field(name=name, value=styles, inline=True)
 
-        ctx = ctx.get_destination()
+        # Use ctx.send directly to send the message
         await ctx.send(embed=embed)
