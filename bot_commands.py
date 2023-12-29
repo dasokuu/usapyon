@@ -265,7 +265,7 @@ def setup_commands(bot):
     print(style_id_choices)
     @bot.tree.command(guild=TEST_GUILD_ID, description="スタイルを表示または設定します。")
     @app_commands.choices(type=type_choices, style_id=style_id_choices)
-    async def style(interaction: discord.Interaction, type: str, style_id: app_commands.Transform[Optional[int], int] = None):
+    async def style(interaction: discord.Interaction, type: str = None, style_id: int = None):
         # Check if the type is valid
         if type not in valid_types:
             await interaction.response.send_message(f"⚠️ 指定されたタイプが無効です。", ephemeral=True)
