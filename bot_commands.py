@@ -265,10 +265,10 @@ def setup_commands(bot):
 
         # 各スピーカーのスタイルから選択肢を作成
         for _style in speaker["styles"]:
-            style_id_choices = app_commands.Choice(
+            style_choice = app_commands.Choice(  # 修正された変数名
                 name=f"{_style['name']}", value=_style["id"]
             )
-            style_id_choices.append(style_id_choices)
+            style_id_choices.append(style_choice)  # 修正された行
 
     @bot.tree.command(guild=TEST_GUILD_ID, description="スタイルを表示または設定します。")
     @app_commands.choices(
