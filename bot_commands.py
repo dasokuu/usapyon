@@ -24,7 +24,7 @@ class CustomHelpCommand(commands.HelpCommand):
         for cog, commands in mapping.items():
             filtered_commands = await self.filter_commands(commands, sort=True)
             command_entries = [
-                f"- !{command.name}: {command.short_doc}"
+                f"- `!{command.name}`: {command.short_doc}"
                 for command in filtered_commands
             ]
             if command_entries:
@@ -49,7 +49,7 @@ class CustomHelpCommand(commands.HelpCommand):
                 "- ユーザーデフォルトスタイルをID 1に設定: !style user_default 1\n"
                 "- 入退室通知スタイルをID 2に設定: !style notify 2\n"
                 "- 個人スタイルをID 3に設定: !style user 3\n\n"
-                "style_idの詳細や一覧は '!list_styles' で確認できます。"
+                "style_idの詳細や一覧は `!list_styles` で確認できます。"
             )
         else:
             embed.add_field(name="説明", value=command.help, inline=False)
