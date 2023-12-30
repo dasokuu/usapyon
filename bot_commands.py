@@ -1,7 +1,11 @@
 import asyncio
 import discord
-from discord.ext import commands
-from settings import TEST_GUILD_ID, USER_DEFAULT_STYLE_ID, NOTIFY_DEFAULT_STYLE_ID
+from settings import (
+    FIRST_PERSON_DICTIONARY,
+    TEST_GUILD_ID,
+    USER_DEFAULT_STYLE_ID,
+    NOTIFY_DEFAULT_STYLE_ID,
+)
 from utils import (
     speakers,
     speaker_settings,
@@ -11,10 +15,6 @@ from utils import (
 )
 from voice import clear_playback_queue, text_to_speech
 from discord import app_commands
-
-
-import discord
-from discord.ext import commands
 
 
 async def handle_style_command(interaction, style_id: int, type: str = None):
@@ -107,7 +107,9 @@ def setup_commands(bot):
         interaction, style_type: str = None, style_id: int = None
     ):
         # コードを共通化し、異なるスタイルタイプに対応
-        await handle_style_command(interaction, style_id, style_type)  # 'type' を 'style_type' に修正
+        await handle_style_command(
+            interaction, style_id, style_type
+        )  # 'type' を 'style_type' に修正
 
     @bot.command(name="remove_command")
     async def remove_command(ctx, command_name: str):
@@ -237,102 +239,6 @@ def setup_commands(bot):
         for embed in embeds:
             await interaction.followup.send(embed=embed)
 
-    # gender_categories = {
-    #     "男性": [
-    #         "玄野武宏",
-    #         "白上虎太郎",
-    #         "青山龍星",
-    #         "剣崎雌雄",
-    #         "ちび式じい",
-    #         "†聖騎士 紅桜†",
-    #         "雀松朱司",
-    #         "麒ヶ島宗麟",
-    #         "栗田まろん",
-    #     ],
-    #     "女性": [
-    #         "四国めたん",
-    #         "ずんだもん",
-    #         "春日部つむぎ",
-    #         "雨晴はう",
-    #         "波音リツ",
-    #         "冥鳴ひまり",
-    #         "九州そら",
-    #         "もち子さん",
-    #         "WhiteCUL",
-    #         "後鬼",
-    #         "No.7",
-    #         "櫻歌ミコ",
-    #         "小夜/SAYO",
-    #         "ナースロボ＿タイプＴ",
-    #         "春歌ナナ",
-    #         "猫使アル",
-    #         "猫使ビィ",
-    #         "中国うさぎ",
-    #         "あいえるたん",
-    #         "満別花丸",
-    #         "琴詠ニア",
-    #     ],
-    # }
-    # first_persons = {
-    #     "わたくし": ["四国めたん"],
-    #     "ずんだもん": ["ずんだもん"],
-    #     "僕": ["ずんだもん", "雨晴はう", "剣崎雌雄", "No.7", "雀松朱司", "栗田まろん", "猫使アル", "猫使ビィ", "満別花丸"],
-    #     "あーし": ["春日部つむぎ"],
-    #     "あたし": ["波音リツ"],
-    #     "おれ": ["白上虎太郎", "猫使アル", "玄野武宏", "青山龍星"],
-    #     "私": [
-    #         "冥鳴ひまり",
-    #         "もち子さん",
-    #         "No.7",
-    #         "櫻歌ミコ",
-    #         "麒ヶ島宗麟",
-    #         "猫使ビィ",
-    #         "琴詠ニア",
-    #         "WhiteCUL",
-    #         "後鬼",
-    #         "ナースロボ＿タイプＴ",
-    #         "春歌ナナ",
-    #         "中国うさぎ",
-    #         "あいえるたん",
-    #     ],
-    #     "まーくつー": ["九州そら"],
-    #     "もち子さん": ["もち子さん"],
-    #     "ワテ": ["後鬼"],
-    #     "わし": ["ちび式じい"],
-    #     "ミコ": ["櫻歌ミコ"],
-    #     "小夜": ["小夜/SAYO"],
-    #     "我": ["†聖騎士 紅桜†"],
-    #     "ナナ": ["春歌ナナ"],
-    #     "アル": ["猫使アル"],
-    #     "ビィ": ["猫使ビィ"],
-    #     "あいえるたん": ["あいえるたん"],
-    # }
-    first_persons = {
-        "私": ["冥鳴ひまり", "もち子さん", "No.7", "櫻歌ミコ", "麒ヶ島宗麟", "猫使ビィ", "琴詠ニア"],
-        "わたし": ["WhiteCUL", "後鬼", "ナースロボ＿タイプＴ", "春歌ナナ", "中国うさぎ", "あいえるたん"],
-        "わたくし": ["四国めたん"],
-        "あーし": ["春日部つむぎ"],
-        "あたし": ["波音リツ"],
-        "僕": ["ずんだもん", "雨晴はう", "剣崎雌雄", "No.7", "雀松朱司", "栗田まろん"],
-        "ぼく": ["満別花丸"],
-        "ボク": ["猫使アル", "猫使ビィ"],
-        "おれ": ["白上虎太郎", "猫使アル"],
-        "俺": ["玄野武宏"],
-        "オレ": ["青山龍星"],
-        "ワテ": ["後鬼"],
-        "我": ["†聖騎士 紅桜†"],
-        "わし": ["ちび式じい"],
-        "ずんだもん": ["ずんだもん"],
-        "まーくつー": ["九州そら"],
-        "もち子さん": ["もち子さん"],
-        "ミコ": ["櫻歌ミコ"],
-        "小夜": ["小夜/SAYO"],
-        "ナナ": ["春歌ナナ"],
-        "アル": ["猫使アル"],
-        "ビィ": ["猫使ビィ"],
-        "あいえるたん": ["あいえるたん"],
-    }
-
     @bot.tree.command(
         name="set_first_person_style",
         guild=TEST_GUILD_ID,
@@ -345,7 +251,8 @@ def setup_commands(bot):
             app_commands.Choice(name="ユーザー", value="user"),
         ],
         first_person=[
-            app_commands.Choice(name=fp, value=fp) for fp in first_persons.keys()
+            app_commands.Choice(name=fp, value=fp)
+            for fp in FIRST_PERSON_DICTIONARY.keys()
         ],
     )
     async def set_first_person_style(
@@ -354,7 +261,7 @@ def setup_commands(bot):
         first_person: str = None,
     ):
         selected_fp = first_person
-        characters = first_persons[selected_fp]
+        characters = FIRST_PERSON_DICTIONARY[selected_fp]
 
         # キャラクターが一つだけの場合、自動的に選択
         if len(characters) == 1:
