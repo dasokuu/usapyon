@@ -189,7 +189,7 @@ def setup_commands(bot):
             characters = FIRST_PERSON_DICTIONARY[first_person]
             character_message = "\n".join(characters)
             await interaction.response.send_message(
-                f"一人称「{first_person}」のキャラクター:\n{character_message}\n読み上げキャラクターを変更するには、その対象を指定してください。"
+                f"一人称「{first_person}」のキャラクター:\n{character_message}\n読み上げキャラクターを変更するには、その音声設定対象を指定してください。"
             )
             return
 
