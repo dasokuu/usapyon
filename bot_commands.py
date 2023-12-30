@@ -153,15 +153,15 @@ def setup_commands(bot):
             app_commands.Choice(name="ユーザーデフォルト", value="user_default"),
         ]
     )
-    async def configure_style_id(
-        interaction, style_type: str, style_id: int
-    ):
+    async def configure_style_id(interaction, style_type: str, style_id: int):
         if style_type and not style_id:
             # If only style_type is provided, display the current settings for that type.
             update_message = await handle_style_command(interaction, None, style_type)
         else:
             # handle_style_command from the response
-            update_message = await handle_style_command(interaction, style_id, style_type)
+            update_message = await handle_style_command(
+                interaction, style_id, style_type
+            )
 
         # Sending the response or follow-up message
         if update_message:
@@ -278,6 +278,7 @@ def setup_commands(bot):
                 f"{selected_fp}に対応するキャラクターを選んでください。",
                 view=CharacterView(characters, style_type),
             )
+
     @bot.tree.command(
         name="display_current_settings",
         guild=TEST_GUILD_ID,
@@ -289,9 +290,9 @@ def setup_commands(bot):
 
         # Dictionary to map style types to more user-friendly descriptions
         style_type_descriptions = {
-            "user_default": "ユーザーデフォルト",
+            "user": "ユーザー特有のスタイル",
             "notify": "VC入退室時の通知",
-            "user": "ユーザー特有のスタイル"
+            "user_default": "ユーザーデフォルト",
         }
 
         # Prepare messages for each style type
