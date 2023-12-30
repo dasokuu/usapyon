@@ -96,7 +96,14 @@ def setup_commands(bot):
         guild=TEST_GUILD_ID,
         description="スタイルを表示または設定します。",
     )
-    async def select_style_id(interaction, type: str = None, style_id: int = None):
+    @app_commands.choices(
+        style_type=[
+            app_commands.Choice(name="ユーザーデフォルト", value="user_default"),
+            app_commands.Choice(name="VC入退室時", value="notify"),
+            app_commands.Choice(name="ユーザー", value="user"),
+        ]
+    )
+    async def select_style_id(interaction, style_type: str = None, style_id: int = None):
         valid_types = ["user_default", "notify", "user", None]
         if type not in valid_types:
             await interaction.response.send_message(
