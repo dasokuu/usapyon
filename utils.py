@@ -102,7 +102,7 @@ async def replace_content(text, message):
     text = role_mention_pattern.sub(replace_role_mention, text)
     text = channel_pattern.sub(replace_channel_mention, text)
     text = replace_emoji_name_to_kana(text)
-    text = custom_emoji_pattern.sub(replace_custom_emoji_name_to_kana, text)
+    # text = custom_emoji_pattern.sub(replace_custom_emoji_name_to_kana, text)
     text = url_pattern.sub("URL省略", text)
 
     return text
