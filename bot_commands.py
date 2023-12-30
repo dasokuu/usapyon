@@ -163,7 +163,7 @@ def setup_commands(bot):
     @bot.tree.command(
         name="style",
         guild=TEST_GUILD_ID,
-        description="一人称を選択し、スタイルを表示または設定します。",
+        description="現在のスタイル設定を表示、または一人称を選択しスタイルを設定します。",
     )
     @app_commands.choices(
         style_type=[
