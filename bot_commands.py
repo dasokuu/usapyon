@@ -153,19 +153,16 @@ def setup_commands(bot):
             app_commands.Choice(name="ユーザー", value="user"),
         ]
     )
-    async def configure_style_id(interaction, style_type: str = None, style_id: int = None):
-        # 応答が時間かかる可能性があるため、遅延を伝えます
-        await interaction.response.defer()
-        
+    async def configure_style_id(interaction, style_type: str = None, style_id: int = None):   
         # handle_style_commandからの応答を取得
         update_message = await handle_style_command(interaction, style_id, style_type)
         
         # 応答を送信
         if update_message:
-            await interaction.followup.send(update_message)
+            await interaction.response.send_message(update_message)
         else:
             # 何らかの理由でupdate_messageがNoneの場合はユーザーに伝える
-            await interaction.followup.send("スタイルの更新に失敗しました。")
+            await interaction.response.send_message("スタイルの更新に失敗しました。")
 
 
     @bot.tree.command(
