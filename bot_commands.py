@@ -102,8 +102,8 @@ async def handle_style_command(interaction, style_id: int, type: str = None):
                 f"**{type_description[t]}**: {speaker_name} {style_name} (スタイルID: {style_id})"
             )
         await interaction.response.send_message(
-            "🔊 以下は現在のスタイル設定です:\n" + "\n".join(messages
-        ))
+            "🔊 以下は現在のスタイル設定です:\n" + "\n".join(message)
+        )
         return
     # スタイルIDが指定されている場合は設定を更新
     if style_id is not None:
@@ -185,9 +185,7 @@ def setup_commands(bot):
                 welcome_message = "読み上げを開始します。"
 
                 guild_id = str(interaction.guild_id)
-                text_channel_id = str(
-                    interaction.channel_id
-                )  # このコマンドを使用したテキストチャンネルID
+                text_channel_id = str(interaction.channel_id)  # このコマンドを使用したテキストチャンネルID
 
                 # サーバー設定が存在しない場合は初期化
                 if guild_id not in speaker_settings:
@@ -209,7 +207,9 @@ def setup_commands(bot):
                 )
                 await interaction.followup.send("ボイスチャンネルに接続し、読み上げを開始しました。")
             else:
-                await interaction.followup.send("ボイスチャンネルに接続できませんでした。ユーザーがボイスチャンネルにいることを確認してください。")
+                await interaction.followup.send(
+                    "ボイスチャンネルに接続できませんでした。ユーザーがボイスチャンネルにいることを確認してください。"
+                )
         except Exception as e:
             # エラーメッセージをユーザーに通知
             await interaction.followup.send(f"接続中にエラーが発生しました: {e}")

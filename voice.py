@@ -77,16 +77,13 @@ async def text_to_speech(voice_client, text, style_id, guild_id):
         lines = text.split("\n")
         for line in lines:
             if line.strip():
-                # Check again before processing each line.
-                if not voice_client or not voice_client.is_connected():
-                    return  # Stop processing if not connected.
+                # Process each line and wait for it to finish before continuing.
                 await speak_line(voice_client, line, style_id, guild_id)
     except Exception as e:
         print(f"Error in text_to_speech: {e}")
 
 
 async def speak_line(voice_client, line, style_id, guild_id):
-    # The rest of your logic for processing each line
     if not voice_client or not voice_client.is_connected():
         return  # Stop processing if not connected.
 
@@ -96,13 +93,13 @@ async def speak_line(voice_client, line, style_id, guild_id):
         if voice_data:
             audio_source = discord.FFmpegPCMAudio(io.BytesIO(voice_data), pipe=True)
             guild_queue = get_guild_playback_queue(guild_id)
-            try:
-                # Check one last time before putting the item in the queue.
-                if voice_client and voice_client.is_connected():
-                    # Add audio source to the guild-specific queue
-                    await guild_queue.put((voice_client, audio_source))
-            except Exception as e:
-                print(f"An error occurred while playing audio: {e}")
+
+            # Add audio source to the guild-specific queue and play it
+            await guild_queue.put((voice_client, audio_source))
+
+            # Wait for the current audio to finish playing before returning
+            while voice_client.is_playing():
+                await asyncio.sleep(0.1)
 
 
 async def clear_playback_queue(guild_id):
