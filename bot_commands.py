@@ -204,9 +204,9 @@ def setup_commands(bot):
             await interaction.response.send_message("ボイスチャンネルから切断しました。")
 
     @bot.tree.command(
-        name="list_styles", guild=TEST_GUILD_ID, description="利用可能なスタイルIDの一覧を表示します。"
+        name="list_style_ids", guild=TEST_GUILD_ID, description="利用可能なスタイルIDの一覧を表示します。"
     )
-    async def list_styles(interaction: discord.Interaction):
+    async def list_style_ids(interaction: discord.Interaction):
         # 応答を遅延させる
         await interaction.response.defer()
 
