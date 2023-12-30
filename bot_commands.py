@@ -173,10 +173,13 @@ def setup_commands(bot):
         name="join", guild=TEST_GUILD_ID, description="ボットをボイスチャンネルに接続し、読み上げを開始します。"
     )
     async def join(interaction: discord.Interaction):
+        # defer the response to keep the interaction alive
+        await interaction.response.defer()
+
         if interaction.user.voice.channel:
-            channel = interaction.user.voice.channel
-            voice_client = await channel.connect(self_deaf=True)
             try:
+                channel = interaction.user.voice.channel
+                voice_client = await channel.connect(self_deaf=True)
                 if interaction.user.voice.channel:
                     # 接続成功時の処理
                     # 接続メッセージの読み上げ
@@ -205,9 +208,12 @@ def setup_commands(bot):
                     await text_to_speech(
                         voice_client, welcome_message, notify_style_id, guild_id
                     )
-                    await interaction.response.send_message("ボイスチャンネルに接続しました。")
             except Exception as e:
-                await interaction.response.send_message(f"接続中にエラーが発生しました: {e}")
+                # エラーをログに記録し、ユーザーに通知
+                print(f"接続中にエラーが発生しました: {e}")
+                await interaction.followup.send(f"接続中にエラーが発生しました: {e}")
+        else:
+            await interaction.followup.send("ボイスチャンネルにいないため、接続できませんでした。")
 
     @bot.tree.command(
         name="leave", guild=TEST_GUILD_ID, description="ボットをボイスチャンネルから切断します。"
