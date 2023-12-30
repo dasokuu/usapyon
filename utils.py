@@ -1,3 +1,4 @@
+import emoji
 import requests
 import json
 import jaconv
@@ -88,7 +89,10 @@ async def replace_content(text, message):
         channel = message.guild.get_channel(channel_id)
         return channel.name + "チャンネル" if channel else match.group(0)
 
-    def replace_emoji_name_to_kana(match):
+    def replace_emoji_name_to_kana(text):
+        emoji.demojize(text, language="ja")
+
+    def replace_custom_emoji_name_to_kana(match):
         emoji_name = match.group(1)
         return jaconv.alphabet2kana(emoji_name) + " "
 
@@ -97,7 +101,8 @@ async def replace_content(text, message):
     # ロールメンションを「○○役職」に置き換え
     text = role_mention_pattern.sub(replace_role_mention, text)
     text = channel_pattern.sub(replace_channel_mention, text)
-    text = custom_emoji_pattern.sub(replace_emoji_name_to_kana, text)
+    text = replace_emoji_name_to_kana(text)
+    # text = custom_emoji_pattern.sub(replace_custom_emoji_name_to_kana, text)
     text = url_pattern.sub("URL省略", text)
 
     return text
@@ -133,9 +138,7 @@ async def handle_message(bot, message):
         speaker_settings[guild_id] = {"default": USER_DEFAULT_STYLE_ID}
 
     # Use get to safely access 'default' key
-    default_style_id = speaker_settings[guild_id].get(
-        "default", USER_DEFAULT_STYLE_ID
-    )
+    default_style_id = speaker_settings[guild_id].get("default", USER_DEFAULT_STYLE_ID)
 
     style_id = speaker_settings.get(str(message.author.id), default_style_id)
 

@@ -17,6 +17,78 @@ from voice import clear_playback_queue, text_to_speech
 from discord import app_commands
 
 
+class CharacterView(discord.ui.View):
+    def __init__(self, characters):
+        super().__init__()
+        self.add_item(CharacterSelect(characters))
+
+
+class CharacterSelect(discord.ui.Select):
+    def __init__(self, characters):
+        options = [discord.SelectOption(label=char, value=char) for char in characters]
+        super().__init__(
+            placeholder="キャラクターを選択...", min_values=1, max_values=1, options=options
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        selected_char = self.values[0]
+        styles = [
+            style
+            for speaker in speakers
+            if speaker["name"] == selected_char
+            for style in speaker["styles"]
+        ]
+
+        # スタイルが一つだけの場合、自動的に選択
+        if len(styles) == 1:
+            selected_style = styles[0]
+            await interaction.response.send_message(
+                f"{selected_char}のスタイル「{selected_style['name']}」(ID: {selected_style['id']})が自動的に選択されました。",
+            )
+        else:
+            await interaction.response.send_message(
+                f"{selected_char}のスタイルを選んでください。", view=StyleView(styles)
+            )
+
+
+class StyleView(discord.ui.View):
+    def __init__(self, styles):
+        super().__init__()
+        self.add_item(StyleSelect(styles))
+
+
+class StyleSelect(discord.ui.Select):
+    def __init__(self, styles):
+        self.styles = styles  # ここでスタイル情報を保存します
+        options = [
+            discord.SelectOption(label=style["name"], value=style["id"])
+            for style in styles
+        ]
+        super().__init__(
+            placeholder="スタイルを選択...", min_values=1, max_values=1, options=options
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        selected_style = self.values[0]
+        # データ型を確認し、必要に応じて変換
+        selected_style = int(selected_style)  # これでselected_styleを整数に変換
+
+        # 保存されたスタイル情報からスタイル名を取得
+        style_name = next(
+            (
+                style["name"]
+                for style in self.styles
+                if int(style["id"]) == selected_style  # ここでstyle["id"]も整数に変換
+            ),
+            f"不明なスタイル (ID: {selected_style})",
+        )
+
+        # ユーザーのスタイル選択を更新するロジックをここに実装
+        await interaction.response.send_message(
+            f"スタイル「{style_name}」(ID: {selected_style})が選択されました。"
+        )
+
+
 async def handle_style_command(interaction, style_id: int, style_type: str = None):
     guild_id = str(interaction.guild_id)
     user_id = str(interaction.user.id)
@@ -92,7 +164,7 @@ def get_current_style_details(guild_id, user_id, style_type):
 
 def setup_commands(bot):
     @bot.tree.command(
-        name="select_style_id",
+        name="configure_style_id",
         guild=TEST_GUILD_ID,
         description="スタイルを表示または設定します。",
     )
@@ -103,48 +175,11 @@ def setup_commands(bot):
             app_commands.Choice(name="ユーザー", value="user"),
         ]
     )
-    async def select_style_id(
+    async def configure_style_id(
         interaction, style_type: str = None, style_id: int = None
     ):
         # コードを共通化し、異なるスタイルタイプに対応
         await handle_style_command(interaction, style_id, style_type)
-
-    @bot.command(name="remove_command")
-    async def remove_command(ctx, command_name: str):
-        # このコマンドを使用すると、指定されたコマンド名のスラッシュコマンドを削除します。
-        guild_id = ctx.guild.id  # コマンドを削除したいギルドのID
-        guild = discord.Object(id=guild_id)
-        for cmd in await bot.tree.fetch_commands(guild=guild):
-            if cmd.name == command_name:
-                await bot.tree.remove_command(cmd.name, guild=guild)
-                await ctx.send(f"コマンド {command_name} を削除しました。")
-                break
-        else:
-            await ctx.send(f"コマンド {command_name} が見つかりませんでした。")
-
-    @bot.command(name="remove_global_command")
-    async def remove_global_command(ctx, command_name: str):
-        try:
-            commands = await bot.tree.fetch_commands()  # Fetch all global commands
-            for cmd in commands:
-                if cmd.name == command_name:
-                    if cmd is None:
-                        await ctx.send("Error: Command object is None.")
-                        return
-
-                    # Attempt to remove the command
-                    removal_result = bot.tree.remove_command(cmd)
-                    if asyncio.iscoroutine(removal_result):
-                        await removal_result
-                    else:
-                        # If it's not a coroutine, it's possible that the command was removed without needing to await anything
-                        pass
-
-                    await ctx.send(f"グローバルコマンド {command_name} を削除しました。")
-                    return
-            await ctx.send(f"グローバルコマンド {command_name} が見つかりませんでした。")
-        except Exception as e:
-            await ctx.send(f"コマンドを削除中にエラーが発生しました: {e}")
 
     @bot.tree.command(
         name="join", guild=TEST_GUILD_ID, description="ボットをボイスチャンネルに接続し、読み上げを開始します。"
@@ -204,9 +239,11 @@ def setup_commands(bot):
             await interaction.response.send_message("ボイスチャンネルから切断しました。")
 
     @bot.tree.command(
-        name="list_style_ids", guild=TEST_GUILD_ID, description="利用可能なスタイルIDの一覧を表示します。"
+        name="display_available_styles",
+        guild=TEST_GUILD_ID,
+        description="利用可能なスタイルIDの一覧を表示します。",
     )
-    async def list_style_ids(interaction: discord.Interaction):
+    async def display_available_styles(interaction: discord.Interaction):
         # 応答を遅延させる
         await interaction.response.defer()
 
@@ -238,7 +275,7 @@ def setup_commands(bot):
             await interaction.followup.send(embed=embed)
 
     @bot.tree.command(
-        name="set_first_person_style",
+        name="configure_style",
         guild=TEST_GUILD_ID,
         description="一人称を選択し、スタイルを表示または設定します。",
     )
@@ -253,7 +290,7 @@ def setup_commands(bot):
             for fp in FIRST_PERSON_DICTIONARY.keys()
         ],
     )
-    async def set_first_person_style(
+    async def configure_style(
         interaction: discord.Interaction,
         style_type: str = None,
         first_person: str = None,
@@ -290,72 +327,39 @@ def setup_commands(bot):
                 f"{selected_fp}に対応するキャラクターを選んでください。", view=CharacterView(characters)
             )
 
-    class CharacterView(discord.ui.View):
-        def __init__(self, characters):
-            super().__init__()
-            self.add_item(CharacterSelect(characters))
+    # @bot.command(name="remove_command")
+    # async def remove_command(ctx, command_name: str):
+    #     # このコマンドを使用すると、指定されたコマンド名のスラッシュコマンドを削除します。
+    #     guild_id = ctx.guild.id  # コマンドを削除したいギルドのID
+    #     guild = discord.Object(id=guild_id)
+    #     for cmd in await bot.tree.fetch_commands(guild=guild):
+    #         if cmd.name == command_name:
+    #             await bot.tree.remove_command(cmd.name, guild=guild)
+    #             await ctx.send(f"コマンド {command_name} を削除しました。")
+    #             break
+    #     else:
+    #         await ctx.send(f"コマンド {command_name} が見つかりませんでした。")
 
-    class CharacterSelect(discord.ui.Select):
-        def __init__(self, characters):
-            options = [
-                discord.SelectOption(label=char, value=char) for char in characters
-            ]
-            super().__init__(
-                placeholder="キャラクターを選択...", min_values=1, max_values=1, options=options
-            )
+    # @bot.command(name="remove_global_command")
+    # async def remove_global_command(ctx, command_name: str):
+    #     try:
+    #         commands = await bot.tree.fetch_commands()  # Fetch all global commands
+    #         for cmd in commands:
+    #             if cmd.name == command_name:
+    #                 if cmd is None:
+    #                     await ctx.send("Error: Command object is None.")
+    #                     return
 
-        async def callback(self, interaction: discord.Interaction):
-            selected_char = self.values[0]
-            styles = [
-                style
-                for speaker in speakers
-                if speaker["name"] == selected_char
-                for style in speaker["styles"]
-            ]
+    #                 # Attempt to remove the command
+    #                 removal_result = bot.tree.remove_command(cmd)
+    #                 if asyncio.iscoroutine(removal_result):
+    #                     await removal_result
+    #                 else:
+    #                     # If it's not a coroutine, it's possible that the command was removed without needing to await anything
+    #                     pass
 
-            # スタイルが一つだけの場合、自動的に選択
-            if len(styles) == 1:
-                selected_style = styles[0]
-                await interaction.response.send_message(
-                    f"{selected_char}のスタイル「{selected_style['name']}」(ID: {selected_style['id']})が自動的に選択されました。",
-                )
-            else:
-                await interaction.response.send_message(
-                    f"{selected_char}のスタイルを選んでください。", view=StyleView(styles)
-                )
-
-    class StyleView(discord.ui.View):
-        def __init__(self, styles):
-            super().__init__()
-            self.add_item(StyleSelect(styles))
-
-    class StyleSelect(discord.ui.Select):
-        def __init__(self, styles):
-            self.styles = styles  # ここでスタイル情報を保存します
-            options = [
-                discord.SelectOption(label=style["name"], value=style["id"])
-                for style in styles
-            ]
-            super().__init__(
-                placeholder="スタイルを選択...", min_values=1, max_values=1, options=options
-            )
-
-        async def callback(self, interaction: discord.Interaction):
-            selected_style = self.values[0]
-            # データ型を確認し、必要に応じて変換
-            selected_style = int(selected_style)  # これでselected_styleを整数に変換
-
-            # 保存されたスタイル情報からスタイル名を取得
-            style_name = next(
-                (
-                    style["name"]
-                    for style in self.styles
-                    if int(style["id"]) == selected_style  # ここでstyle["id"]も整数に変換
-                ),
-                f"不明なスタイル (ID: {selected_style})",
-            )
-
-            # ユーザーのスタイル選択を更新するロジックをここに実装
-            await interaction.response.send_message(
-                f"スタイル「{style_name}」(ID: {selected_style})が選択されました。"
-            )
+    #                 await ctx.send(f"グローバルコマンド {command_name} を削除しました。")
+    #                 return
+    #         await ctx.send(f"グローバルコマンド {command_name} が見つかりませんでした。")
+    #     except Exception as e:
+    #         await ctx.send(f"コマンドを削除中にエラーが発生しました: {e}")
