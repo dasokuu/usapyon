@@ -90,7 +90,7 @@ async def replace_content(text, message):
         return channel.name + "チャンネル" if channel else match.group(0)
 
     def replace_emoji_name_to_kana(text):
-        emoji.demojize(text, language="ja")
+        return emoji.demojize(text, language="ja")
 
     def replace_custom_emoji_name_to_kana(match):
         emoji_name = match.group(1)
@@ -101,8 +101,8 @@ async def replace_content(text, message):
     # ロールメンションを「○○役職」に置き換え
     text = role_mention_pattern.sub(replace_role_mention, text)
     text = channel_pattern.sub(replace_channel_mention, text)
-    # text = replace_emoji_name_to_kana(text)
-    # text = custom_emoji_pattern.sub(replace_custom_emoji_name_to_kana, text)
+    text = replace_emoji_name_to_kana(text)
+    text = custom_emoji_pattern.sub(replace_custom_emoji_name_to_kana, text)
     text = url_pattern.sub("URL省略", text)
 
     return text
