@@ -212,25 +212,6 @@ def setup_commands(bot):
             await interaction.guild.voice_client.disconnect()
             await interaction.response.send_message("ボイスチャンネルから切断しました。")
     
-    @bot.tree.command(name="clear", guild=TEST_GUILD_ID,description="ボットをボイスチャンネルから切断します。")
-    async def clear(interaction: discord.Interaction):
-        guild_id = str(interaction.guild_id)
-        voice_client = interaction.guild.voice_client
-        if voice_client and voice_client.is_playing():
-            voice_client.stop()
-            await interaction.response.send_message("現在の読み上げをスキップしました。")
-        else:
-            await interaction.response.send_message("再生中の音声はありません。")
-        clear_playback_queue(guild_id)
-
-    @bot.tree.command(name="skip", guild=TEST_GUILD_ID,description="現在再生中の音声をスキップします。")
-    async def skip(interaction: discord.Interaction):
-        voice_client = interaction.guild.voice_client
-        if voice_client and voice_client.is_playing():
-            voice_client.stop()
-            await interaction.response.send_message("現在の読み上げをスキップしました。")
-        else:
-            await interaction.response.send_message("再生中の音声はありません。")
 
     @bot.tree.command(name="list_styles", guild=TEST_GUILD_ID,description="利用可能なスタイルIDの一覧を表示します。")
     async def list_styles(interaction: discord.Interaction):
