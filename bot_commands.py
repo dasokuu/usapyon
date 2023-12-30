@@ -103,7 +103,9 @@ def setup_commands(bot):
             app_commands.Choice(name="ユーザー", value="user"),
         ]
     )
-    async def select_style_id(interaction, style_type: str, style_id: int):
+    async def select_style_id(
+        interaction, style_type: str = None, style_id: int = None
+    ):
         # コードを共通化し、異なるスタイルタイプに対応
         await handle_style_command(interaction, style_id, type)
 
@@ -343,7 +345,9 @@ def setup_commands(bot):
         ],
     )
     async def set_first_person_style(
-        interaction: discord.Interaction, style_type: str, first_person: str
+        interaction: discord.Interaction,
+        style_type: str = None,
+        first_person: str = None,
     ):
         selected_fp = first_person
         characters = first_persons[selected_fp]
