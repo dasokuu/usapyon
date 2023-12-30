@@ -14,7 +14,9 @@ if __name__ == "__main__":
     intents.guilds = True
     intents.voice_states = True
     intents.message_content = True
-    bot = commands.Bot(intents=intents)
+    bot = commands.Bot(
+        command_prefix=None, intents=intents
+    )
     setup_commands(bot)
 
     @bot.event
