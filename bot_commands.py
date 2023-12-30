@@ -360,7 +360,6 @@ def setup_commands(bot):
                 selected_style = styles[0]
                 await interaction.response.send_message(
                     f"{selected_char}のスタイル「{selected_style['name']}」(ID: {selected_style['id']})が自動的に選択されました。",
-                    ephemeral=True,
                 )
             else:
                 await interaction.response.send_message(
@@ -400,7 +399,6 @@ def setup_commands(bot):
                 selected_style = styles[0]
                 await interaction.response.send_message(
                     f"{selected_char}のスタイル「{selected_style['name']}」(ID: {selected_style['id']})が自動的に選択されました。",
-                    ephemeral=True,
                 )
             else:
                 await interaction.response.send_message(
