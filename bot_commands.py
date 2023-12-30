@@ -78,11 +78,6 @@ class StyleSelect(discord.ui.Select):
             f"不明なスタイル (ID: {selected_style_id})",
         )
 
-        # ユーザーのスタイル選択を更新
-        await interaction.response.send_message(
-            f"スタイル「{style_name}」(ID: {selected_style_id})が選択されました。"
-        )
-
         # handle_style_command を呼び出してスタイルを設定
         await handle_style_command(interaction, selected_style_id, self.style_type)
         # Call handle_style_command and capture the return message
@@ -140,7 +135,6 @@ async def handle_style_command(interaction, style_id: int, style_type: str = Non
         f"現在の{style_type_description[style_type]}のスタイルは「{speaker_name} {style_name}」(スタイルID: {current_style_id})です。"
     )
     return "\n".join(messages)
-
 
 
 def update_style_setting(guild_id, user_id, style_id, style_type):
@@ -307,11 +301,18 @@ def setup_commands(bot):
 
         if len(characters) == 1:
             selected_char = characters[0]
-            styles = [style for speaker in speakers if speaker["name"] == selected_char for style in speaker["styles"]]
+            styles = [
+                style
+                for speaker in speakers
+                if speaker["name"] == selected_char
+                for style in speaker["styles"]
+            ]
 
             if len(styles) == 1:
                 selected_style_id = styles[0]["id"]
-                update_message = await handle_style_command(interaction, selected_style_id, style_type)
+                update_message = await handle_style_command(
+                    interaction, selected_style_id, style_type
+                )
                 await interaction.followup.send(update_message)
             else:
                 # If there are multiple styles to choose from, let the user select
@@ -325,7 +326,6 @@ def setup_commands(bot):
                 f"{selected_fp}に対応するキャラクターを選んでください。",
                 view=CharacterView(characters, style_type),
             )
-
 
     # @bot.command(name="remove_command")
     # async def remove_command(ctx, command_name: str):
