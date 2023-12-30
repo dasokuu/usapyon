@@ -85,6 +85,13 @@ class StyleSelect(discord.ui.Select):
 
         # handle_style_command を呼び出してスタイルを設定
         await handle_style_command(interaction, selected_style_id, self.style_type)
+        # Call handle_style_command and capture the return message
+        update_message = await handle_style_command(
+            interaction, selected_style_id, self.style_type
+        )
+
+        # Send the message indicating what was updated
+        await interaction.followup.send(update_message)
 
 
 async def handle_style_command(interaction, style_id: int, style_type: str = None):
@@ -122,12 +129,8 @@ async def handle_style_command(interaction, style_id: int, style_type: str = Non
             )
             return
 
-        # スタイルを更新
         update_style_setting(guild_id, user_id, style_id, style_type)
-        await interaction.response.send_message(
-            f"{style_type_description[style_type]}のスタイルが「{speaker_name} {style_name}」(スタイルID: {style_id})に更新されました。"
-        )
-        return
+        return f"{style_type_description[style_type]}のスタイルが「{speaker_name} {style_name}」(スタイルID: {style_id})に更新されました。"
 
     # 現在のスタイル設定を表示
     current_style_id, speaker_name, style_name = get_current_style_details(
@@ -136,6 +139,8 @@ async def handle_style_command(interaction, style_id: int, style_type: str = Non
     await interaction.response.send_message(
         f"現在の{style_type_description[style_type]}のスタイルは「{speaker_name} {style_name}」(スタイルID: {current_style_id})です。"
     )
+    return "\n".join(messages)
+
 
 
 def update_style_setting(guild_id, user_id, style_id, style_type):
@@ -297,37 +302,30 @@ def setup_commands(bot):
             await handle_style_command(interaction, None, style_type)
             return
 
-        # ユーザーが選択した一人称に対応するキャラクターを取得
         selected_fp = first_person
         characters = FIRST_PERSON_DICTIONARY[selected_fp]
 
-        # キャラクターとスタイルをユーザーが選択したタイプに基づいて設定
         if len(characters) == 1:
-            selected_char = characters[0]  # ここで selected_char を定義しています
-            styles = [
-                style
-                for speaker in speakers
-                if speaker["name"] == selected_char
-                for style in speaker["styles"]
-            ]  # ここで styles を定義しています
+            selected_char = characters[0]
+            styles = [style for speaker in speakers if speaker["name"] == selected_char for style in speaker["styles"]]
 
-            # スタイルIDが一つだけの場合、自動的に選択
             if len(styles) == 1:
                 selected_style_id = styles[0]["id"]
-                # handle_style_commandを呼び出してスタイルを設定
-                await handle_style_command(interaction, selected_style_id, style_type)
+                update_message = await handle_style_command(interaction, selected_style_id, style_type)
+                await interaction.followup.send(update_message)
             else:
-                # 複数のスタイルがある場合はユーザーに選択させる
+                # If there are multiple styles to choose from, let the user select
                 await interaction.response.send_message(
                     f"一人称「{first_person}」には{selected_char}が該当します。スタイルを選んでください。",
                     view=StyleView(styles, style_type),
                 )
         else:
-            # Pass style_type to CharacterView when instantiated
+            # If there are multiple characters to choose from, let the user select
             await interaction.response.send_message(
                 f"{selected_fp}に対応するキャラクターを選んでください。",
                 view=CharacterView(characters, style_type),
             )
+
 
     # @bot.command(name="remove_command")
     # async def remove_command(ctx, command_name: str):
