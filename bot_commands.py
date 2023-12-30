@@ -156,10 +156,16 @@ def setup_commands(bot):
     async def configure_style_id(
         interaction, style_type: str = None, style_id: int = None
     ):
-        # handle_style_commandからの応答を取得
-        update_message = await handle_style_command(interaction, style_id, style_type)
+        if style_type and not style_id:
+            # If only style_type is provided, display the current settings for that type.
+            update_message = await handle_style_command(interaction, None, style_type)
+        else:
+            # handle_style_command from the response
+            update_message = await handle_style_command(
+                interaction, style_id, style_type
+            )
 
-        # Inside handle_style_command function
+        # Sending the response or follow-up message
         if update_message:
             if interaction.response.is_done():
                 await interaction.followup.send(update_message)
@@ -235,12 +241,20 @@ def setup_commands(bot):
         style_type: str = None,
         first_person: str = None,
     ):
-        if first_person is None or first_person not in FIRST_PERSON_DICTIONARY:
-            await handle_style_command(interaction, None, style_type)
-            return
+        if first_person and not style_type:
+            # If only first_person is provided, display the associated characters.
+            selected_fp = first_person
+            characters = FIRST_PERSON_DICTIONARY[selected_fp]
 
-        selected_fp = first_person
-        characters = FIRST_PERSON_DICTIONARY[selected_fp]
+            if len(characters) > 0:
+                # Prompt the user to select a character if multiple are available.
+                await interaction.response.send_message(
+                    f"{selected_fp}に対応するキャラクターを選んでください。",
+                    view=CharacterView(characters, style_type),
+                )
+            else:
+                # Handle the case where no characters are associated with the first person.
+                await interaction.response.send_message("選択した一人称に対応するキャラクターはありません。")
 
         if len(characters) == 1:
             selected_char = characters[0]
