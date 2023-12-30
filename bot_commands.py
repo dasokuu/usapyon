@@ -123,12 +123,13 @@ def setup_commands(bot):
             commands = await bot.tree.fetch_commands()  # Fetch all global commands
             for cmd in commands:
                 if cmd.name == command_name:
-                    await bot.tree.remove_command(command=cmd, guild=None)  # Remove global command
+                    await bot.tree.remove_command(cmd, None)  # Remove global command positionally
                     await ctx.send(f"グローバルコマンド {command_name} を削除しました。")
                     return
             await ctx.send(f"グローバルコマンド {command_name} が見つかりませんでした。")
         except Exception as e:
             await ctx.send(f"コマンドを削除中にエラーが発生しました: {e}")
+
 
 
     @bot.tree.command(
