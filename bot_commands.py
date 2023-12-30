@@ -8,7 +8,7 @@ from utils import (
     get_style_details,
     validate_style_id,
 )
-from voice import clear_playback_queue, text_to_speech
+from voice import text_to_speech
 from discord import app_commands
 
 

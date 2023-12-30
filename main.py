@@ -5,7 +5,6 @@ from utils import handle_message, handle_voice_state_update
 from voice import process_playback_queue
 from bot_commands import setup_commands, CustomHelpCommand
 from settings import BOT_PREFIX, GAME_NAME, TEST_GUILD_ID
-from discord import app_commands
 
 
 if __name__ == "__main__":
