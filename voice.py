@@ -21,17 +21,15 @@ def get_guild_playback_queue(guild_id):
 async def process_playback_queue(guild_id):
     guild_queue = get_guild_playback_queue(guild_id)
     while True:
-        item = await guild_queue.get()
+        voice_client, line, style_id = await guild_queue.get()
         try:
-            if isinstance(item, tuple) and len(item) == 2:
-                voice_client, audio_source = item
-                if voice_client and not voice_client.is_playing():
-                    voice_client.play(audio_source)
-                    while voice_client.is_playing():
-                        await asyncio.sleep(0.1)
-            else:
-                raise ValueError(f"Unexpected item format in queue: {item}")
-        except ValueError as e:
+            if (
+                voice_client
+                and voice_client.is_connected()
+                and not voice_client.is_playing()
+            ):
+                await speak_line(voice_client, line, style_id, guild_id)
+        except Exception as e:
             print(e)  # Log the error or handle it as needed.
         finally:
             guild_queue.task_done()
@@ -70,32 +68,26 @@ async def synthesis(speaker, query_data):
 
 async def text_to_speech(voice_client, text, style_id, guild_id):
     try:
-        # Check if the bot is still connected to the voice channel.
         if not voice_client or not voice_client.is_connected():
             return  # Stop processing if not connected.
 
         lines = text.split("\n")
         for line in lines:
             if line.strip():
-                # Process each line and wait for it to finish before continuing.
-                await speak_line(voice_client, line, style_id, guild_id)
+                guild_queue = get_guild_playback_queue(guild_id)
+                # Add text lines to the guild-specific queue
+                await guild_queue.put((voice_client, line, style_id))
     except Exception as e:
         print(f"Error in text_to_speech: {e}")
 
 
 async def speak_line(voice_client, line, style_id, guild_id):
-    if not voice_client or not voice_client.is_connected():
-        return  # Stop processing if not connected.
-
     query_data = await audio_query(line, style_id)
     if query_data:
         voice_data = await synthesis(style_id, query_data)
         if voice_data:
             audio_source = discord.FFmpegPCMAudio(io.BytesIO(voice_data), pipe=True)
-            guild_queue = get_guild_playback_queue(guild_id)
-
-            # Add audio source to the guild-specific queue and play it
-            await guild_queue.put((voice_client, audio_source))
+            voice_client.play(audio_source)
 
             # Wait for the current audio to finish playing before returning
             while voice_client.is_playing():
