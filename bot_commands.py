@@ -201,14 +201,6 @@ def setup_commands(bot):
             if "text_channel" in speaker_settings.get(guild_id, {}):
                 del speaker_settings[guild_id]["text_channel"]
                 save_style_settings()  # 変更を保存
-            voice_client = interaction.guild.voice_client
-            if voice_client and voice_client.is_playing():
-                voice_client.stop()
-                await interaction.response.send_message("現在の読み上げをスキップしました。")
-            else:
-                await interaction.response.send_message("再生中の音声はありません。")
-            await interaction.response.send_message("再生中の音声はありません。")
-            clear_playback_queue(interaction.guild_id)
             await interaction.guild.voice_client.disconnect()
             await interaction.response.send_message("ボイスチャンネルから切断しました。")
     

@@ -91,3 +91,13 @@ async def speak_line(voice_client, line, style_id, guild_id):
                 await guild_queue.put((voice_client, audio_source))
             except Exception as e:
                 print(f"An error occurred while playing audio: {e}")
+
+
+async def clear_playback_queue(guild_id):
+    guild_queue = get_guild_playback_queue(guild_id)
+    while not guild_queue.empty():
+        try:
+            guild_queue.get_nowait()
+        except asyncio.QueueEmpty:
+            continue
+        guild_queue.task_done()

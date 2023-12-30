@@ -10,7 +10,7 @@ from settings import (
     SPEAKERS_URL,
     STYLE_SETTINGS_FILE,
 )
-from voice import text_to_speech
+from voice import clear_playback_queue, text_to_speech
 
 current_voice_client = None
 
