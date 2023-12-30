@@ -1,5 +1,5 @@
-import asyncio
 import discord
+from discord import app_commands
 from settings import (
     FIRST_PERSON_DICTIONARY,
     TEST_GUILD_ID,
