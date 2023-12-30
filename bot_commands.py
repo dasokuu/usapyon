@@ -112,14 +112,14 @@ async def handle_style_command(interaction, style_id: int, voice_style_scope: st
             if not valid:
                 return f"スタイルID {style_id} は無効です。正しいIDを入力してください。"
             update_style_setting(guild_id, user_id, style_id, voice_style_scope)
-            return f"{voice_style_scope_description[voice_style_scope]}のスタイルが「{speaker_name} {style_name}」に更新されました。"
+            return f"{voice_style_scope_description[voice_style_scope]}の読み上げ音声が「{speaker_name} {style_name}」に更新されました。"
 
         # Display current style settings
         current_style_id, speaker_name, style_name = get_current_style_details(
             guild_id, user_id, voice_style_scope
         )
         await interaction.response.send_message(
-            f"現在の{voice_style_scope_description[voice_style_scope]}のスタイルは「{speaker_name} {style_name}」です。"
+            f"現在の{voice_style_scope_description[voice_style_scope]}の読み上げ音声は「{speaker_name} {style_name}」です。"
         )
     except Exception as e:
         await interaction.response.send_message(f"エラーが発生しました: {e}")
@@ -162,9 +162,9 @@ def setup_commands(bot):
             await interaction.response.send_message("ボイスチャンネルから切断しました。")
 
     @bot.tree.command(
-        name="style",
+        name="voice_config",
         guild=TEST_GUILD_ID,
-        description="現在のスタイル設定を表示、または一人称を選択しスタイルを設定します。",
+        description="現在の読み上げキャラクターを表示、または一人称を選択し設定します。",
     )
     @app_commands.choices(
         voice_style_scope=[
@@ -177,7 +177,7 @@ def setup_commands(bot):
             for fp in FIRST_PERSON_DICTIONARY.keys()
         ],
     )
-    async def style(
+    async def voice_config(
         interaction: discord.Interaction,
         voice_style_scope: str = None,
         first_person: str = None,
@@ -189,7 +189,7 @@ def setup_commands(bot):
             characters = FIRST_PERSON_DICTIONARY[first_person]
             character_message = "\n".join(characters)
             await interaction.response.send_message(
-                f"一人称「{first_person}」のキャラクター:\n{character_message}\nスタイルを変更するには、音声スタイルの対象を指定してください。"
+                f"一人称「{first_person}」のキャラクター:\n{character_message}\n読み上げキャラクターを変更するには、その対象を指定してください。"
             )
             return
 
