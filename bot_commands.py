@@ -444,5 +444,5 @@ def setup_commands(bot):
 
             # ユーザーのスタイル選択を更新するロジックをここに実装
             await interaction.response.send_message(
-                f"スタイル「{style_name}」(ID: {selected_style})が選択されました。", ephemeral=True
+                f"スタイル「{style_name}」(ID: {selected_style})が選択されました。"
             )
