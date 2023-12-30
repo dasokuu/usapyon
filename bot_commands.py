@@ -8,7 +8,7 @@ from utils import (
     get_style_details,
     validate_style_id,
 )
-from voice import text_to_speech
+from voice import clear_playback_queue, text_to_speech
 from discord import app_commands
 
 
@@ -101,13 +101,17 @@ async def handle_style_command(interaction, style_id: int, type: str = None):
             messages.append(
                 f"**{type_description[t]}**: {speaker_name} {style_name} (スタイルID: {style_id})"
             )
-        await interaction.response.send_message("🔊 以下は現在のスタイル設定です:\n" + "\n".join(messages))
+        await interaction.response.send_message(
+            "🔊 以下は現在のスタイル設定です:\n" + "\n".join(messages
+        ))
         return
     # スタイルIDが指定されている場合は設定を更新
     if style_id is not None:
         valid, speaker_name, style_name = validate_style_id(style_id)
         if not valid:
-            await interaction.response.send_message(f"⚠️ スタイルID {style_id} は無効です。正しいIDを入力してください。")
+            await interaction.response.send_message(
+                f"⚠️ スタイルID {style_id} は無効です。正しいIDを入力してください。"
+            )
             return
 
         # スタイルを更新
@@ -149,7 +153,11 @@ def get_current_style_details(guild_id, user_id, type):
 
 
 def setup_commands(bot):
-    @bot.tree.command(name="style", guild=TEST_GUILD_ID,description="スタイルを表示または設定します。詳細は `!help style` で確認。")
+    @bot.tree.command(
+        name="style",
+        guild=TEST_GUILD_ID,
+        description="スタイルを表示または設定します。詳細は `!help style` で確認。",
+    )
     async def style(interaction, type: str = None, style_id: int = None):
         valid_types = ["user_default", "notify", "user", None]
         if type not in valid_types:
@@ -161,51 +169,63 @@ def setup_commands(bot):
         # コードを共通化し、異なるスタイルタイプに対応
         await handle_style_command(interaction, style_id, type)
 
-    @bot.tree.command(name='join', guild=TEST_GUILD_ID,description='ボットをボイスチャンネルに接続し、読み上げを開始します。')
-    async def join_slash(interaction: discord.Interaction):
+    @bot.tree.command(
+        name="join", guild=TEST_GUILD_ID, description="ボットをボイスチャンネルに接続し、読み上げを開始します。"
+    )
+    async def join(interaction: discord.Interaction):
         if interaction.user.voice.channel:
             channel = interaction.user.voice.channel
             voice_client = await channel.connect(self_deaf=True)
-            # 接続メッセージの読み上げ
-            welcome_message = "読み上げを開始します。"
+            try:
+                if interaction.user.voice.channel:
+                    channel = interaction.user.voice.channel
+                    voice_client = await channel.connect(self_deaf=True)
+                    # 接続成功時の処理
+                    # 接続メッセージの読み上げ
+                    welcome_message = "読み上げを開始します。"
 
-            guild_id = str(interaction.guild_id)
-            text_channel_id = str(interaction.channel_id)  # このコマンドを使用したテキストチャンネルID
+                    guild_id = str(interaction.guild_id)
+                    text_channel_id = str(
+                        interaction.channel_id
+                    )  # このコマンドを使用したテキストチャンネルID
 
-            # サーバー設定が存在しない場合は初期化
-            if guild_id not in speaker_settings:
-                speaker_settings[guild_id] = {"text_channel": text_channel_id}
-            else:
-                # 既にサーバー設定が存在する場合はテキストチャンネルIDを更新
-                speaker_settings[guild_id]["text_channel"] = text_channel_id
+                    # サーバー設定が存在しない場合は初期化
+                    if guild_id not in speaker_settings:
+                        speaker_settings[guild_id] = {"text_channel": text_channel_id}
+                    else:
+                        # 既にサーバー設定が存在する場合はテキストチャンネルIDを更新
+                        speaker_settings[guild_id]["text_channel"] = text_channel_id
 
-            save_style_settings()  # 変更を保存
+                    save_style_settings()  # 変更を保存
 
-            # 通知スタイルIDを取得
-            notify_style_id = speaker_settings.get(guild_id, {}).get(
-                "notify", NOTIFY_DEFAULT_STYLE_ID
-            )
+                    # 通知スタイルIDを取得
+                    notify_style_id = speaker_settings.get(guild_id, {}).get(
+                        "notify", NOTIFY_DEFAULT_STYLE_ID
+                    )
 
-            # メッセージとスタイルIDをキューに追加
-            await text_to_speech(
-                voice_client, welcome_message, notify_style_id, guild_id
-            )
-            await interaction.response.send_message("ボイスチャンネルに接続しました。")
+                    # メッセージとスタイルIDをキューに追加
+                    await text_to_speech(
+                        voice_client, welcome_message, notify_style_id, guild_id
+                    )
+                    await interaction.response.send_message("ボイスチャンネルに接続しました。")
+            except Exception as e:
+                await interaction.response.send_message(f"接続中にエラーが発生しました: {e}")
 
-
-    @bot.tree.command(name="leave", guild=TEST_GUILD_ID,description="ボットをボイスチャンネルから切断します。")
+    @bot.tree.command(
+        name="leave", guild=TEST_GUILD_ID, description="ボットをボイスチャンネルから切断します。"
+    )
     async def leave(interaction: discord.Interaction):
         if interaction.guild.voice_client:
             guild_id = str(interaction.guild_id)
-            # テキストチャンネルIDの設定をクリア
+            await clear_playback_queue(guild_id)  # キューをクリア
             if "text_channel" in speaker_settings.get(guild_id, {}):
                 del speaker_settings[guild_id]["text_channel"]
-                save_style_settings()  # 変更を保存
-            await interaction.guild.voice_client.disconnect()
+            await interaction.guild.voice_client.disconnect()  # 切断
             await interaction.response.send_message("ボイスチャンネルから切断しました。")
-    
 
-    @bot.tree.command(name="list_styles", guild=TEST_GUILD_ID,description="利用可能なスタイルIDの一覧を表示します。")
+    @bot.tree.command(
+        name="list_styles", guild=TEST_GUILD_ID, description="利用可能なスタイルIDの一覧を表示します。"
+    )
     async def list_styles(interaction: discord.Interaction):
         embeds = []
         embed = discord.Embed(title="利用可能なスタイルIDの一覧", color=0x00FF00)
