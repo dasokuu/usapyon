@@ -119,14 +119,17 @@ def setup_commands(bot):
             await ctx.send(f"コマンド {command_name} が見つかりませんでした。")
     @bot.command(name="remove_global_command")
     async def remove_global_command(ctx, command_name: str):
-        # このコマンドを使用すると、グローバルスコープで指定されたコマンド名のスラッシュコマンドを削除します。
-        for cmd in await bot.tree.fetch_commands():
-            if cmd.name == command_name:
-                await bot.tree.remove_command(cmd.name)
-                await ctx.send(f"グローバルコマンド {command_name} を削除しました。")
-                break
-        else:
+        try:
+            commands = await bot.tree.fetch_commands()  # Fetch all global commands
+            for cmd in commands:
+                if cmd.name == command_name:
+                    await bot.tree.remove_command(command=cmd, guild=None)  # Remove global command
+                    await ctx.send(f"グローバルコマンド {command_name} を削除しました。")
+                    return
             await ctx.send(f"グローバルコマンド {command_name} が見つかりませんでした。")
+        except Exception as e:
+            await ctx.send(f"コマンドを削除中にエラーが発生しました: {e}")
+
 
     @bot.tree.command(
         name="join", guild=TEST_GUILD_ID, description="ボットをボイスチャンネルに接続し、読み上げを開始します。"
