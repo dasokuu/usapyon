@@ -178,8 +178,6 @@ def setup_commands(bot):
             voice_client = await channel.connect(self_deaf=True)
             try:
                 if interaction.user.voice.channel:
-                    channel = interaction.user.voice.channel
-                    voice_client = await channel.connect(self_deaf=True)
                     # 接続成功時の処理
                     # 接続メッセージの読み上げ
                     welcome_message = "読み上げを開始します。"
