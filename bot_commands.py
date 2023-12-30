@@ -43,7 +43,8 @@ class CharacterSelect(discord.ui.Select):
 
         # Pass voice_style_scope to StyleView when instantiated
         await interaction.response.send_message(
-            f"{selected_char}のスタイルを選んでください。", view=StyleView(styles, self.voice_style_scope)
+            f"{selected_char}のスタイルを選んでください。",
+            view=StyleView(styles, self.voice_style_scope),
         )
 
 
@@ -56,7 +57,9 @@ class StyleView(discord.ui.View):
 class StyleSelect(discord.ui.Select):
     def __init__(self, styles, voice_style_scope):
         self.styles = styles  # ここでスタイル情報を保存します
-        self.voice_style_scope = voice_style_scope  # スタイルのタイプ（user_default, notify, user）
+        self.voice_style_scope = (
+            voice_style_scope  # スタイルのタイプ（user_default, notify, user）
+        )
         options = [
             discord.SelectOption(label=style["name"], value=style["id"])
             for style in styles
@@ -80,49 +83,48 @@ class StyleSelect(discord.ui.Select):
 async def handle_style_command(interaction, style_id: int, voice_style_scope: str):
     guild_id = str(interaction.guild_id)
     user_id = str(interaction.user.id)
-    user_display_namename = interaction.user.display_name  # ユーザー名を取得
+    user_display_name = interaction.user.display_name  # Corrected variable name
 
-    # スタイルタイプに応じた説明を定義
+    # Define descriptions for each voice style scope
     voice_style_scope_description = {
-        "user": f"{user_display_namename}",
-        "notify": f"VC入退室時",
-        "user_default": f"ユーザーデフォルト",
+        "user": f"{user_display_name}",  # Corrected variable name
+        "notify": "VC入退室時",
+        "user_default": "ユーザーデフォルト",
     }
 
-    # スタイルIDが指定されていない場合、全ての設定を表示
-    if style_id is None and voice_style_scope is None:
-        messages = []
-        for t in voice_style_scope_description.keys():
-            style_id, speaker_name, style_name = get_current_style_details(
-                guild_id, user_id, t
-            )
-            messages.append(
-                f"**{voice_style_scope_description[t]}**: {speaker_name} {style_name} (スタイルID: {style_id})"
-            )
-        await interaction.response.send_message(
-            "以下は現在のスタイル設定です:\n" + "\n".join(messages)
-        )
-        return
-    # スタイルIDが指定されている場合は設定を更新
-    if style_id is not None:
-        valid, speaker_name, style_name = validate_style_id(style_id)
-        if not valid:
-            return f"スタイルID {style_id} は無効です。正しいIDを入力してください。"
-        update_style_setting(guild_id, user_id, style_id, voice_style_scope)
-        return f"{voice_style_scope_description[voice_style_scope]}のスタイルが「{speaker_name} {style_name}」(スタイルID: {style_id})に更新されました。"
+    try:
+        # If style_id and voice_style_scope are None, display all settings
+        if style_id is None and voice_style_scope is None:
+            messages = []
+            for t in voice_style_scope_description:
+                style_id, speaker_name, style_name = get_current_style_details(
+                    guild_id, user_id, t
+                )
+                messages.append(
+                    f"**{voice_style_scope_description[t]}**: {speaker_name} {style_name} (スタイルID: {style_id})"
+                )
+            await interaction.response.send_message("\n".join(messages))
+            return
 
-    # 現在のスタイル設定を表示
-    current_style_id, speaker_name, style_name = get_current_style_details(
-        guild_id, user_id, voice_style_scope
-    )
-    # 現在のスタイル設定を表示
-    current_style_id, speaker_name, style_name = get_current_style_details(
-        guild_id, user_id, voice_style_scope
-    )
-    await interaction.response.send_message(
-        f"現在の{voice_style_scope_description[voice_style_scope]}のスタイルは「{speaker_name} {style_name}」(スタイルID: {current_style_id})です。"
-    )
-    return None  # 応答がない場合はNoneを返す
+        # Update settings if style_id is provided
+        if style_id is not None:
+            valid, speaker_name, style_name = validate_style_id(style_id)
+            if not valid:
+                return f"スタイルID {style_id} は無効です。正しいIDを入力してください。"
+            update_style_setting(guild_id, user_id, style_id, voice_style_scope)
+            return f"{voice_style_scope_description[voice_style_scope]}のスタイルが「{speaker_name} {style_name}」(スタイルID: {style_id})に更新されました。"
+
+        # Display current style settings
+        current_style_id, speaker_name, style_name = get_current_style_details(
+            guild_id, user_id, voice_style_scope
+        )
+        await interaction.response.send_message(
+            f"現在の{voice_style_scope_description[voice_style_scope]}のスタイルは「{speaker_name} {style_name}」(スタイルID: {current_style_id})です。"
+        )
+    except Exception as e:
+        await interaction.response.send_message(f"エラーが発生しました: {e}")
+    return None  # Return None if there's no response
+
 
 
 def update_style_setting(guild_id, user_id, style_id, voice_style_scope):
