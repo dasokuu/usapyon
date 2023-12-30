@@ -16,66 +16,6 @@ import discord
 from discord.ext import commands
 
 
-class CustomHelpCommand(commands.HelpCommand):
-    def __init__(self):
-        super().__init__(command_attrs={"help": "コマンドリストと説明を表示します。"})
-
-    async def send_bot_help(self, mapping):
-        embed = discord.Embed(title="利用可能なコマンド", color=0x00FF00)
-        for cog, commands in mapping.items():
-            filtered_commands = await self.filter_commands(commands, sort=True)
-            command_entries = []
-            for command in filtered_commands:
-                command_name = f"`!{command.name}`"
-                alias_text = (
-                    f" (または: {'|'.join(f'`!{a}`' for a in command.aliases)})"
-                    if command.aliases
-                    else ""
-                )
-                command_entries.append(
-                    f"- {command_name}{alias_text}: {command.short_doc}"
-                )
-            if command_entries:
-                cog_name = cog.qualified_name if cog else "一般コマンド"
-                embed.add_field(
-                    name=cog_name, value="\n".join(command_entries), inline=False
-                )
-
-        channel = self.get_destination()
-        await channel.send(embed=embed)
-
-    async def send_command_help(self, command):
-        embed = discord.Embed(title=f"!{command.name}", color=0x00FF00)
-
-        if command.name == "style":
-            embed.description = (
-                "`!style`コマンドの使用法:\n"
-                "`!style [type] [style_id]`\n\n"
-                "- `type`: 設定するスタイルのタイプ。`user_default`, `notify`, または `user` から選択。\n"
-                "- `style_id`: 使用したいスタイルのID。省略すると現在の設定が表示されます。\n\n"
-                "例:\n"
-                "- サーバーのユーザーデフォルトスタイルをID 1に設定: `!style user_default 1`\n"
-                "- サーバーの入退室通知スタイルをID 2に設定: `!style notify 2`\n"
-                "- あなたのスタイルをID 3に設定: `!style user 3`\n\n"
-                "`style_id`の詳細や一覧は `!list_styles` で確認できます。"
-            )
-        else:
-            embed.add_field(name="説明", value=command.help, inline=False)
-            embed.add_field(
-                name="使用法",
-                value=f"`{self.get_command_signature(command)}`",
-                inline=False,
-            )
-
-        channel = self.get_destination()
-        await channel.send(embed=embed)
-
-    async def command_not_found(self, string):
-        return f'"{string}"というコマンドは見つかりませんでした。'
-
-    async def send_error_message(self, error):
-        channel = self.get_destination()
-        await channel.send(error)
 
 
 async def handle_style_command(interaction, style_id: int, type: str = None):
@@ -156,7 +96,7 @@ def setup_commands(bot):
     @bot.tree.command(
         name="style",
         guild=TEST_GUILD_ID,
-        description="スタイルを表示または設定します。詳細は `!help style` で確認。",
+        description="スタイルを表示または設定します。",
     )
     async def style(interaction, type: str = None, style_id: int = None):
         valid_types = ["user_default", "notify", "user", None]
