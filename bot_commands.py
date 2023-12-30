@@ -115,7 +115,15 @@ async def handle_style_command(interaction, style_id: int, style_type: str):
     current_style_id, speaker_name, style_name = get_current_style_details(
         guild_id, user_id, style_type
     )
+    # 現在のスタイル設定を表示
+    current_style_id, speaker_name, style_name = get_current_style_details(
+        guild_id, user_id, style_type
+    )
+    await interaction.response.send_message(
+        f"現在の{style_type_description[style_type]}のスタイルは「{speaker_name} {style_name}」(スタイルID: {current_style_id})です。"
+    )
     return None  # 応答がない場合はNoneを返す
+
 
 
 def update_style_setting(guild_id, user_id, style_id, style_type):
