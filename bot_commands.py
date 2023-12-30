@@ -20,7 +20,6 @@ from discord.ext import commands
 
 async def handle_style_command(interaction, style_id: int, type: str = None):
     guild_id = str(interaction.guild_id)
-    guild_name = interaction.guild.name  # ギルド名を取得
     user_id = str(interaction.user.id)
     user_display_namename = interaction.user.display_name  # ユーザー名を取得
 
@@ -414,3 +413,48 @@ def setup_commands(bot):
             await interaction.response.send_message(
                 f"スタイル「{style_name}」(ID: {selected_style})が選択されました。", ephemeral=True
             )
+
+    class SpeakerSelect(discord.ui.Select):
+        def __init__(self, speakers):
+            options = [
+                discord.SelectOption(label=speaker["name"], value=speaker["name"])
+                for speaker in speakers
+            ]
+            super().__init__(placeholder="スピーカーを選択...", min_values=1, max_values=1, options=options)
+
+        async def callback(self, interaction: discord.Interaction):
+            selected_speaker = self.values[0]
+            styles = next((speaker["styles"] for speaker in speakers if speaker["name"] == selected_speaker), [])
+            self.view.clear_items()
+            self.view.add_item(StyleSelect(styles))
+            await interaction.response.edit_message(view=self.view)
+
+    class StyleSelect(discord.ui.Select):
+        def __init__(self, styles):
+            options = [
+                discord.SelectOption(label=style["name"], value=str(style["id"]))
+                for style in styles
+            ]
+            super().__init__(placeholder="スタイルを選択...", min_values=1, max_values=1, options=options)
+
+        async def callback(self, interaction: discord.Interaction):
+            selected_style_id = int(self.values[0])
+            # Update user's settings here with the selected style ID
+            await interaction.response.send_message(f"スタイルが更新されました。ID: {selected_style_id}", ephemeral=True)
+
+    class StyleView(discord.ui.View):
+        def __init__(self, speakers):
+            super().__init__()
+            self.add_item(SpeakerSelect(speakers))
+
+    @bot.tree.command(name="style", description="スタイルを表示または設定します。")
+    @app_commands.choices(style_type=[
+        app_commands.Choice(name="ユーザーデフォルト", value="user_default"),
+        app_commands.Choice(name="VC入退室時", value="notify"),
+        app_commands.Choice(name="ユーザー", value="user"),
+    ])
+    async def style(interaction: discord.Interaction, style_type: str):
+        # Here, you can handle the initial response based on the style_type selected
+        # For instance, fetch the current setting for the user or provide additional instructions
+        # ...
+        await interaction.response.send_message(f"{style_type}のスピーカーを選択してください。", view=StyleView(speakers))
