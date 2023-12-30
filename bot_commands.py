@@ -40,7 +40,7 @@ async def handle_style_command(interaction, style_id: int, style_type: str = Non
                 f"**{style_type_description[t]}**: {speaker_name} {style_name} (スタイルID: {style_id})"
             )
         await interaction.response.send_message(
-            "🔊 以下は現在のスタイル設定です:\n" + "\n".join(messages)
+            "以下は現在のスタイル設定です:\n" + "\n".join(messages)
         )
         return
     # スタイルIDが指定されている場合は設定を更新
@@ -64,7 +64,7 @@ async def handle_style_command(interaction, style_id: int, style_type: str = Non
         guild_id, user_id, style_type
     )
     await interaction.response.send_message(
-        f"ℹ️ 現在の{style_type_description[style_type]}のスタイルは「{speaker_name} {style_name}」(スタイルID: {current_style_id})です。"
+        f"現在の{style_type_description[style_type]}のスタイルは「{speaker_name} {style_name}」(スタイルID: {current_style_id})です。"
     )
 
 
