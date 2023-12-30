@@ -117,10 +117,7 @@ async def handle_style_command(interaction, style_id: int, style_type: str = Non
     current_style_id, speaker_name, style_name = get_current_style_details(
         guild_id, user_id, style_type
     )
-    await interaction.response.send_message(
-        f"現在の{style_type_description[style_type]}のスタイルは「{speaker_name} {style_name}」(スタイルID: {current_style_id})です。"
-    )
-    return None  # ここでNoneを返して、呼び出し元で条件によってメッセージを表示する
+    return None  # 応答がない場合はNoneを返す
 
 
 def update_style_setting(guild_id, user_id, style_id, style_type):
@@ -287,7 +284,7 @@ def setup_commands(bot):
 
         if len(characters) == 1:
             selected_char = characters[0]
-            styles = [
+            styles = [  # stylesをここで定義
                 style
                 for speaker in speakers
                 if speaker["name"] == selected_char
@@ -299,7 +296,11 @@ def setup_commands(bot):
                 update_message = await handle_style_command(
                     interaction, selected_style_id, style_type
                 )
-                await interaction.followup.send(update_message)
+                # 初めての応答ならresponse.send_messageを、そうでなければfollowup.sendを使う
+                if interaction.response.is_done():
+                    await interaction.followup.send(update_message)
+                else:
+                    await interaction.response.send_message(update_message)
             else:
                 # If there are multiple styles to choose from, let the user select
                 await interaction.response.send_message(
@@ -312,6 +313,7 @@ def setup_commands(bot):
                 f"{selected_fp}に対応するキャラクターを選んでください。",
                 view=CharacterView(characters, style_type),
             )
+
 
     # @bot.command(name="remove_command")
     # async def remove_command(ctx, command_name: str):
