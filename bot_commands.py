@@ -42,7 +42,7 @@ async def handle_style_command(interaction, style_id: int, type: str = None):
                 f"**{type_description[t]}**: {speaker_name} {style_name} (スタイルID: {style_id})"
             )
         await interaction.response.send_message(
-            "🔊 以下は現在のスタイル設定です:\n" + "\n".join(message)
+            "🔊 以下は現在のスタイル設定です:\n" + "\n".join(messages)
         )
         return
     # スタイルIDが指定されている場合は設定を更新
