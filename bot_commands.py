@@ -157,12 +157,12 @@ def setup_commands(bot):
         # handle_style_commandからの応答を取得
         update_message = await handle_style_command(interaction, style_id, style_type)
         
-        # 応答を送信
+        # Inside handle_style_command function
         if update_message:
-            await interaction.response.send_message(update_message)
-        else:
-            # 何らかの理由でupdate_messageがNoneの場合はユーザーに伝える
-            await interaction.response.send_message("スタイルの更新に失敗しました。")
+            if interaction.response.is_done():
+                await interaction.followup.send(update_message)
+            else:
+                await interaction.response.send_message(update_message)
 
 
     @bot.tree.command(
