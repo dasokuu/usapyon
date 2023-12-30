@@ -142,7 +142,7 @@ def get_current_style_details(guild_id, user_id, style_type):
 
 def setup_commands(bot):
     @bot.tree.command(
-        name="configure_style_id",
+        name="style_id",
         guild=TEST_GUILD_ID,
         description="スタイルを表示または設定します。",
     )
@@ -153,7 +153,7 @@ def setup_commands(bot):
             app_commands.Choice(name="ユーザーデフォルト", value="user_default"),
         ]
     )
-    async def configure_style_id(interaction, style_type: str, style_id: int):
+    async def style_id(interaction, style_type: str, style_id: int=None):
         if style_type and not style_id:
             # If only style_type is provided, display the current settings for that type.
             update_message = await handle_style_command(interaction, None, style_type)
@@ -219,7 +219,7 @@ def setup_commands(bot):
             await interaction.followup.send(embed=embed)
 
     @bot.tree.command(
-        name="configure_style",
+        name="style",
         guild=TEST_GUILD_ID,
         description="一人称を選択し、スタイルを表示または設定します。",
     )
@@ -234,10 +234,10 @@ def setup_commands(bot):
             for fp in FIRST_PERSON_DICTIONARY.keys()
         ],
     )
-    async def configure_style(
+    async def style(
         interaction: discord.Interaction,
-        style_type: str,
-        first_person: str,
+        style_type: str=None,
+        first_person: str=None,
     ):
         if first_person is None or first_person not in FIRST_PERSON_DICTIONARY:
             await handle_style_command(interaction, None, style_type)
@@ -394,3 +394,39 @@ def setup_commands(bot):
         except Exception as e:
             # エラーメッセージをユーザーに通知
             await interaction.followup.send(f"接続中にエラーが発生しました: {e}")
+    # @bot.command(name="remove_command")
+    # async def remove_command(ctx, command_name: str):
+    #     # このコマンドを使用すると、指定されたコマンド名のスラッシュコマンドを削除します。
+    #     guild_id = ctx.guild.id  # コマンドを削除したいギルドのID
+    #     guild = discord.Object(id=guild_id)
+    #     for cmd in await bot.tree.fetch_commands(guild=guild):
+    #         if cmd.name == command_name:
+    #             await bot.tree.remove_command(cmd.name, guild=guild)
+    #             await ctx.send(f"コマンド {command_name} を削除しました。")
+    #             break
+    #     else:
+    #         await ctx.send(f"コマンド {command_name} が見つかりませんでした。")
+
+    # @bot.command(name="remove_global_command")
+    # async def remove_global_command(ctx, command_name: str):
+    #     try:
+    #         commands = await bot.tree.fetch_commands()  # Fetch all global commands
+    #         for cmd in commands:
+    #             if cmd.name == command_name:
+    #                 if cmd is None:
+    #                     await ctx.send("Error: Command object is None.")
+    #                     return
+
+    #                 # Attempt to remove the command
+    #                 removal_result = bot.tree.remove_command(cmd)
+    #                 if asyncio.iscoroutine(removal_result):
+    #                     await removal_result
+    #                 else:
+    #                     # If it's not a coroutine, it's possible that the command was removed without needing to await anything
+    #                     pass
+
+    #                 await ctx.send(f"グローバルコマンド {command_name} を削除しました。")
+    #                 return
+    #         await ctx.send(f"グローバルコマンド {command_name} が見つかりませんでした。")
+    #     except Exception as e:
+    #         await ctx.send(f"コマンドを削除中にエラーが発生しました: {e}")
