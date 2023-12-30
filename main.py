@@ -4,7 +4,7 @@ import os
 from utils import handle_message, handle_voice_state_update
 from voice import process_playback_queue
 from bot_commands import setup_commands
-from settings import BOT_PREFIX, GAME_NAME, TEST_GUILD_ID
+from settings import GAME_NAME, TEST_GUILD_ID
 
 
 if __name__ == "__main__":
@@ -14,9 +14,7 @@ if __name__ == "__main__":
     intents.guilds = True
     intents.voice_states = True
     intents.message_content = True
-    bot = commands.Bot(
-        command_prefix=BOT_PREFIX, intents=intents
-    )
+    bot = commands.Bot(intents=intents)
     setup_commands(bot)
 
     @bot.event
