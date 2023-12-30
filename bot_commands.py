@@ -125,7 +125,6 @@ async def handle_style_command(interaction, style_id: int, style_type: str):
     return None  # 応答がない場合はNoneを返す
 
 
-
 def update_style_setting(guild_id, user_id, style_id, style_type):
     if style_type == "user_default":
         speaker_settings[guild_id]["user_default"] = style_id
@@ -149,34 +148,34 @@ def get_current_style_details(guild_id, user_id, style_type):
 
 
 def setup_commands(bot):
-    @bot.tree.command(
-        name="style_id",
-        guild=TEST_GUILD_ID,
-        description="スタイルを表示または設定します。",
-    )
-    @app_commands.choices(
-        style_type=[
-            app_commands.Choice(name="ユーザー", value="user"),
-            app_commands.Choice(name="VC入退室時", value="notify"),
-            app_commands.Choice(name="ユーザーデフォルト", value="user_default"),
-        ]
-    )
-    async def style_id(interaction, style_type: str, style_id: int = None):
-        if style_type and not style_id:
-            # If only style_type is provided, display the current settings for that type.
-            update_message = await handle_style_command(interaction, None, style_type)
-        else:
-            # handle_style_command from the response
-            update_message = await handle_style_command(
-                interaction, style_id, style_type
-            )
+    # @bot.tree.command(
+    #     name="style_id",
+    #     guild=TEST_GUILD_ID,
+    #     description="スタイルを表示または設定します。",
+    # )
+    # @app_commands.choices(
+    #     style_type=[
+    #         app_commands.Choice(name="ユーザー", value="user"),
+    #         app_commands.Choice(name="VC入退室時", value="notify"),
+    #         app_commands.Choice(name="ユーザーデフォルト", value="user_default"),
+    #     ]
+    # )
+    # async def style_id(interaction, style_type: str, style_id: int = None):
+    #     if style_type and not style_id:
+    #         # If only style_type is provided, display the current settings for that type.
+    #         update_message = await handle_style_command(interaction, None, style_type)
+    #     else:
+    #         # handle_style_command from the response
+    #         update_message = await handle_style_command(
+    #             interaction, style_id, style_type
+    #         )
 
-        # Sending the response or follow-up message
-        if update_message:
-            if interaction.response.is_done():
-                await interaction.followup.send(update_message)
-            else:
-                await interaction.response.send_message(update_message)
+    #     # Sending the response or follow-up message
+    #     if update_message:
+    #         if interaction.response.is_done():
+    #             await interaction.followup.send(update_message)
+    #         else:
+    #             await interaction.response.send_message(update_message)
 
     @bot.tree.command(
         name="leave", guild=TEST_GUILD_ID, description="ボットをボイスチャンネルから切断します。"
@@ -190,41 +189,41 @@ def setup_commands(bot):
             await interaction.guild.voice_client.disconnect()  # 切断
             await interaction.response.send_message("ボイスチャンネルから切断しました。")
 
-    @bot.tree.command(
-        name="list_style_ids",
-        guild=TEST_GUILD_ID,
-        description="利用可能なスタイルIDの一覧を表示します。",
-    )
-    async def list_style_ids(interaction: discord.Interaction):
-        # 応答を遅延させる
-        await interaction.response.defer()
+    # @bot.tree.command(
+    #     name="list_style_ids",
+    #     guild=TEST_GUILD_ID,
+    #     description="利用可能なスタイルIDの一覧を表示します。",
+    # )
+    # async def list_style_ids(interaction: discord.Interaction):
+    #     # 応答を遅延させる
+    #     await interaction.response.defer()
 
-        embeds = []
-        embed = discord.Embed(title="利用可能なスタイルIDの一覧", color=0x00FF00)
-        embed.description = "各スピーカーと利用可能なスタイルのIDです。"
-        field_count = 0
+    #     embeds = []
+    #     embed = discord.Embed(title="利用可能なスタイルIDの一覧", color=0x00FF00)
+    #     embed.description = "各スピーカーと利用可能なスタイルのIDです。"
+    #     field_count = 0
 
-        for speaker in speakers:
-            name = speaker["name"]
-            styles = "\n".join(
-                f"- {style['name']} `{style['id']}`" for style in speaker["styles"]
-            )
+    #     for speaker in speakers:
+    #         name = speaker["name"]
+    #         styles = "\n".join(
+    #             f"- {style['name']} `{style['id']}`" for style in speaker["styles"]
+    #         )
 
-            if field_count < 25:
-                embed.add_field(name=name, value=styles, inline=True)
-                field_count += 1
-            else:
-                embeds.append(embed)
-                embed = discord.Embed(title="利用可能なスタイルIDの一覧 (続き)", color=0x00FF00)
-                embed.add_field(name=name, value=styles, inline=True)
-                field_count = 1  # Reset for the new embed
+    #         if field_count < 25:
+    #             embed.add_field(name=name, value=styles, inline=True)
+    #             field_count += 1
+    #         else:
+    #             embeds.append(embed)
+    #             embed = discord.Embed(title="利用可能なスタイルIDの一覧 (続き)", color=0x00FF00)
+    #             embed.add_field(name=name, value=styles, inline=True)
+    #             field_count = 1  # Reset for the new embed
 
-        # Add the last embed
-        embeds.append(embed)
+    #     # Add the last embed
+    #     embeds.append(embed)
 
-        # フォローアップメッセージを使用して複数の埋め込みを送信
-        for embed in embeds:
-            await interaction.followup.send(embed=embed)
+    #     # フォローアップメッセージを使用して複数の埋め込みを送信
+    #     for embed in embeds:
+    #         await interaction.followup.send(embed=embed)
 
     @bot.tree.command(
         name="style",
