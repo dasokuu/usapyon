@@ -107,9 +107,7 @@ def setup_commands(bot):
         interaction, style_type: str = None, style_id: int = None
     ):
         # コードを共通化し、異なるスタイルタイプに対応
-        await handle_style_command(
-            interaction, style_id, style_type
-        )  # 'type' を 'style_type' に修正
+        await handle_style_command(interaction, style_id, style_type)
 
     @bot.command(name="remove_command")
     async def remove_command(ctx, command_name: str):
@@ -263,7 +261,9 @@ def setup_commands(bot):
         # ユーザーが選択した一人称に対応するキャラクターを取得
         selected_fp = first_person
         characters = FIRST_PERSON_DICTIONARY[selected_fp]
-
+        # first_personがNoneか、ディクショナリに存在しない場合はエラーメッセージを送信
+        if first_person is None or first_person not in FIRST_PERSON_DICTIONARY:
+            await handle_style_command(interaction, None, style_type)
         # キャラクターとスタイルをユーザーが選択したタイプに基づいて設定
         if len(characters) == 1:
             selected_char = characters[0]
