@@ -368,36 +368,36 @@ def setup_commands(bot):
     #         await ctx.send(f"グローバルコマンド {command_name} が見つかりませんでした。")
     #     except Exception as e:
     #         await ctx.send(f"コマンドを削除中にエラーが発生しました: {e}")
-    @bot.tree.command(
-        name="display_current_settings",
-        guild=TEST_GUILD_ID,
-        description="現在のスタイル設定を表示します。",
-    )
-    async def display_current_settings(interaction: discord.Interaction):
-        guild_id = str(interaction.guild_id)
-        user_id = str(interaction.user.id)
+    # @bot.tree.command(
+    #     name="display_current_settings",
+    #     guild=TEST_GUILD_ID,
+    #     description="現在のスタイル設定を表示します。",
+    # )
+    # async def display_current_settings(interaction: discord.Interaction):
+    #     guild_id = str(interaction.guild_id)
+    #     user_id = str(interaction.user.id)
 
-        # Dictionary to map style types to more user-friendly descriptions
-        style_type_descriptions = {
-            "user": "ユーザー特有のスタイル",
-            "notify": "VC入退室時の通知",
-            "user_default": "ユーザーデフォルト",
-        }
+    #     # Dictionary to map style types to more user-friendly descriptions
+    #     style_type_descriptions = {
+    #         "user": "ユーザー特有のスタイル",
+    #         "notify": "VC入退室時の通知",
+    #         "user_default": "ユーザーデフォルト",
+    #     }
 
-        # Prepare messages for each style type
-        messages = []
-        for style_type, description in style_type_descriptions.items():
-            style_id, speaker_name, style_name = get_current_style_details(
-                guild_id, user_id, style_type
-            )
-            messages.append(
-                f"**{description}**: {speaker_name} {style_name} (スタイルID: {style_id})"
-            )
+    #     # Prepare messages for each style type
+    #     messages = []
+    #     for style_type, description in style_type_descriptions.items():
+    #         style_id, speaker_name, style_name = get_current_style_details(
+    #             guild_id, user_id, style_type
+    #         )
+    #         messages.append(
+    #             f"**{description}**: {speaker_name} {style_name} (スタイルID: {style_id})"
+    #         )
 
-        # Send the compiled message
-        if messages:
-            await interaction.response.send_message(
-                "以下は現在のスタイル設定です:\n" + "\n".join(messages)
-            )
-        else:
-            await interaction.response.send_message("現在のスタイル設定はありません。")
+    #     # Send the compiled message
+    #     if messages:
+    #         await interaction.response.send_message(
+    #             "以下は現在のスタイル設定です:\n" + "\n".join(messages)
+    #         )
+    #     else:
+    #         await interaction.response.send_message("現在のスタイル設定はありません。")
