@@ -237,7 +237,6 @@ def setup_commands(bot):
         for embed in embeds:
             await interaction.followup.send(embed=embed)
 
-
     # gender_categories = {
     #     "男性": [
     #         "玄野武宏",
