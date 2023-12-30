@@ -176,11 +176,10 @@ def setup_commands(bot):
         # defer the response to keep the interaction alive
         await interaction.response.defer()
 
-        if interaction.user.voice.channel:
-            try:
+        try:
+            if interaction.user.voice and interaction.user.voice.channel:
                 channel = interaction.user.voice.channel
                 voice_client = await channel.connect(self_deaf=True)
-                if interaction.user.voice.channel:
                     # 接続成功時の処理
                     # 接続メッセージの読み上げ
                     welcome_message = "読み上げを開始します。"
@@ -208,12 +207,12 @@ def setup_commands(bot):
                     await text_to_speech(
                         voice_client, welcome_message, notify_style_id, guild_id
                     )
-            except Exception as e:
-                # エラーをログに記録し、ユーザーに通知
-                print(f"接続中にエラーが発生しました: {e}")
-                await interaction.followup.send(f"接続中にエラーが発生しました: {e}")
-        else:
-            await interaction.followup.send("ボイスチャンネルにいないため、接続できませんでした。")
+                await interaction.followup.send("ボイスチャンネルに接続し、読み上げを開始しました。")
+            else:
+                await interaction.followup.send("ボイスチャンネルに接続できませんでした。ユーザーがボイスチャンネルにいることを確認してください。")
+        except Exception as e:
+            # エラーメッセージをユーザーに通知
+            await interaction.followup.send(f"接続中にエラーが発生しました: {e}")
 
     @bot.tree.command(
         name="leave", guild=TEST_GUILD_ID, description="ボットをボイスチャンネルから切断します。"
