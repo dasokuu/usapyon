@@ -168,7 +168,7 @@ def setup_commands(bot):
     )
     @app_commands.choices(
         voice_scope=[
-            app_commands.Choice(name="ユーザー", value="user"),
+            app_commands.Choice(name="あなた", value="user"),
             app_commands.Choice(name="VC入退室時", value="notify"),
             app_commands.Choice(name="ユーザーデフォルト", value="user_default"),
         ],
