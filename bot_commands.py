@@ -17,27 +17,27 @@ from voice import clear_playback_queue, text_to_speech
 from discord import app_commands
 
 
-async def handle_style_command(interaction, style_id: int, type: str = None):
+async def handle_style_command(interaction, style_id: int, style_type: str = None):
     guild_id = str(interaction.guild_id)
     user_id = str(interaction.user.id)
     user_display_namename = interaction.user.display_name  # ユーザー名を取得
 
     # スタイルタイプに応じた説明を定義
-    type_description = {
+    style_type_description = {
         "user_default": f"ユーザーデフォルト",
         "notify": f"VC入退室時",
         "user": f"{user_display_namename}",
     }
 
     # スタイルIDが指定されていない場合、全ての設定を表示
-    if style_id is None and type is None:
+    if style_id is None and style_type is None:
         messages = []
-        for t in type_description.keys():
+        for t in style_type_description.keys():
             style_id, speaker_name, style_name = get_current_style_details(
                 guild_id, user_id, t
             )
             messages.append(
-                f"**{type_description[t]}**: {speaker_name} {style_name} (スタイルID: {style_id})"
+                f"**{style_type_description[t]}**: {speaker_name} {style_name} (スタイルID: {style_id})"
             )
         await interaction.response.send_message(
             "🔊 以下は現在のスタイル設定です:\n" + "\n".join(messages)
@@ -53,37 +53,37 @@ async def handle_style_command(interaction, style_id: int, type: str = None):
             return
 
         # スタイルを更新
-        update_style_setting(guild_id, user_id, style_id, type)
+        update_style_setting(guild_id, user_id, style_id, style_type)
         await interaction.response.send_message(
-            f"✅ {type_description[type]}のスタイルが「{speaker_name} {style_name}」(スタイルID: {style_id})に更新されました。"
+            f"✅ {style_type_description[style_type]}のスタイルが「{speaker_name} {style_name}」(スタイルID: {style_id})に更新されました。"
         )
         return
 
     # 現在のスタイル設定を表示
     current_style_id, speaker_name, style_name = get_current_style_details(
-        guild_id, user_id, type
+        guild_id, user_id, style_type
     )
     await interaction.response.send_message(
-        f"ℹ️ 現在の{type_description[type]}のスタイルは「{speaker_name} {style_name}」(スタイルID: {current_style_id})です。"
+        f"ℹ️ 現在の{style_type_description[style_type]}のスタイルは「{speaker_name} {style_name}」(スタイルID: {current_style_id})です。"
     )
 
 
-def update_style_setting(guild_id, user_id, style_id, type):
-    if type == "user_default":
+def update_style_setting(guild_id, user_id, style_id, style_type):
+    if style_type == "user_default":
         speaker_settings[guild_id]["user_default"] = style_id
-    elif type == "notify":
+    elif style_type == "notify":
         speaker_settings[guild_id]["notify"] = style_id
-    elif type == "user":
+    elif style_type == "user":
         speaker_settings[user_id] = style_id
     save_style_settings()
 
 
-def get_current_style_details(guild_id, user_id, type):
-    if type == "user_default":
+def get_current_style_details(guild_id, user_id, style_type):
+    if style_type == "user_default":
         style_id = speaker_settings[guild_id].get("user_default", USER_DEFAULT_STYLE_ID)
-    elif type == "notify":
+    elif style_type == "notify":
         style_id = speaker_settings[guild_id].get("notify", NOTIFY_DEFAULT_STYLE_ID)
-    elif type == "user":
+    elif style_type == "user":
         style_id = speaker_settings.get(user_id, USER_DEFAULT_STYLE_ID)
 
     speaker_name, style_name = get_style_details(style_id)
