@@ -52,14 +52,14 @@ class CharacterSelect(discord.ui.Select):
 
 
 class StyleView(discord.ui.View):
-    def __init__(self, styles):
+    def __init__(self, styles, style_type):
         super().__init__()
-        self.add_item(StyleSelect(styles))
-
+        self.add_item(StyleSelect(styles, style_type))
 
 class StyleSelect(discord.ui.Select):
-    def __init__(self, styles):
+    def __init__(self, styles, style_type):
         self.styles = styles  # ここでスタイル情報を保存します
+        self.style_type = style_type  # スタイルのタイプ（user_default, notify, user）
         options = [
             discord.SelectOption(label=style["name"], value=style["id"])
             for style in styles
@@ -69,24 +69,25 @@ class StyleSelect(discord.ui.Select):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        selected_style = self.values[0]
-        # データ型を確認し、必要に応じて変換
-        selected_style = int(selected_style)  # これでselected_styleを整数に変換
+        selected_style_id = int(self.values[0])  # 選択されたスタイルID
 
         # 保存されたスタイル情報からスタイル名を取得
         style_name = next(
             (
                 style["name"]
                 for style in self.styles
-                if int(style["id"]) == selected_style  # ここでstyle["id"]も整数に変換
+                if int(style["id"]) == selected_style_id
             ),
-            f"不明なスタイル (ID: {selected_style})",
+            f"不明なスタイル (ID: {selected_style_id})",
         )
 
-        # ユーザーのスタイル選択を更新するロジックをここに実装
+        # ユーザーのスタイル選択を更新
         await interaction.response.send_message(
-            f"スタイル「{style_name}」(ID: {selected_style})が選択されました。"
+            f"スタイル「{style_name}」(ID: {selected_style_id})が選択されました。"
         )
+
+        # handle_style_command を呼び出してスタイルを設定
+        await handle_style_command(interaction, selected_style_id, self.style_type)
 
 
 async def handle_style_command(interaction, style_id: int, style_type: str = None):
@@ -295,20 +296,23 @@ def setup_commands(bot):
         style_type: str = None,
         first_person: str = None,
     ):
+        if first_person is None or first_person not in FIRST_PERSON_DICTIONARY:
+            await handle_style_command(interaction, None, style_type)
+            return
+
         # ユーザーが選択した一人称に対応するキャラクターを取得
         selected_fp = first_person
         characters = FIRST_PERSON_DICTIONARY[selected_fp]
-        if first_person is None:
-            await handle_style_command(interaction, None, style_type)
+
         # キャラクターとスタイルをユーザーが選択したタイプに基づいて設定
         if len(characters) == 1:
-            selected_char = characters[0]
+            selected_char = characters[0]  # ここで selected_char を定義しています
             styles = [
                 style
                 for speaker in speakers
                 if speaker["name"] == selected_char
                 for style in speaker["styles"]
-            ]
+            ]  # ここで styles を定義しています
 
             # スタイルIDが一つだけの場合、自動的に選択
             if len(styles) == 1:
@@ -319,13 +323,14 @@ def setup_commands(bot):
                 # 複数のスタイルがある場合はユーザーに選択させる
                 await interaction.response.send_message(
                     f"一人称「{first_person}」には{selected_char}が該当します。スタイルを選んでください。",
-                    view=StyleView(styles),
+                    view=StyleView(styles, style_type)
                 )
         else:
             # 複数のキャラクターがある場合はユーザーに選択させる
             await interaction.response.send_message(
                 f"{selected_fp}に対応するキャラクターを選んでください。", view=CharacterView(characters)
             )
+
 
     # @bot.command(name="remove_command")
     # async def remove_command(ctx, command_name: str):
