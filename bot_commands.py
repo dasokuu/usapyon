@@ -108,6 +108,9 @@ async def handle_style_command(interaction, style_id: int, voice_style_scope: st
 
         # Update settings if style_id is provided
         if style_id is not None:
+            valid, speaker_name, style_name = validate_style_id(style_id)
+            if not valid:
+                return f"スタイルID {style_id} は無効です。正しいIDを入力してください。"
             update_style_setting(guild_id, user_id, style_id, voice_style_scope)
             return f"{voice_style_scope_description[voice_style_scope]}のスタイルが「{speaker_name} {style_name}」に更新されました。"
 
