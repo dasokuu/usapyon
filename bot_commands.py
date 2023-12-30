@@ -181,11 +181,14 @@ def setup_commands(bot):
         style_type: str = None,
         first_person: str = None,
     ):
-        if style_type is None and first_person in FIRST_PERSON_DICTIONARY:
+        if first_person is None:
+            await handle_style_command(interaction, None, style_type)
+            return
+        if style_type is None:
             characters = FIRST_PERSON_DICTIONARY[first_person]
             character_message = "\n".join(characters)
             await interaction.response.send_message(
-                f"一人称「{first_person}」に対応するキャラクター:\n{character_message}\nスタイルを変更するには、スタイルタイプを指定してください。"
+                f"スタイルを変更するには、スタイルタイプを指定してください。"
             )
             return
 
