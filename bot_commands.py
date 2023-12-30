@@ -225,7 +225,7 @@ def setup_commands(bot):
         else:
             # If there are multiple characters to choose from, let the user select
             await interaction.response.send_message(
-                f"一人称「{selected_fp}」に絞り込みました。キャラクターを選んでください。",
+                f"一人称「{selected_fp}」のキャラクターに絞り込みました。キャラクターを選んでください。",
                 view=CharacterView(characters, voice_style_scope),
             )
 
