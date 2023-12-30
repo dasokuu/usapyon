@@ -70,9 +70,16 @@ async def synthesis(speaker, query_data):
 
 async def text_to_speech(voice_client, text, style_id, guild_id):
     try:
+        # Check if the bot is still connected to the voice channel.
+        if not voice_client or not voice_client.is_connected():
+            return  # Stop processing if not connected.
+
         lines = text.split("\n")
         for line in lines:
             if line.strip():
+                # Check again before processing each line.
+                if not voice_client or not voice_client.is_connected():
+                    return  # Stop processing if not connected.
                 await speak_line(voice_client, line, style_id, guild_id)
     except Exception as e:
         print(f"Error in text_to_speech: {e}")
@@ -80,6 +87,9 @@ async def text_to_speech(voice_client, text, style_id, guild_id):
 
 async def speak_line(voice_client, line, style_id, guild_id):
     # The rest of your logic for processing each line
+    if not voice_client or not voice_client.is_connected():
+        return  # Stop processing if not connected.
+
     query_data = await audio_query(line, style_id)
     if query_data:
         voice_data = await synthesis(style_id, query_data)
@@ -87,8 +97,10 @@ async def speak_line(voice_client, line, style_id, guild_id):
             audio_source = discord.FFmpegPCMAudio(io.BytesIO(voice_data), pipe=True)
             guild_queue = get_guild_playback_queue(guild_id)
             try:
-                # Add audio source to the guild-specific queue
-                await guild_queue.put((voice_client, audio_source))
+                # Check one last time before putting the item in the queue.
+                if voice_client and voice_client.is_connected():
+                    # Add audio source to the guild-specific queue
+                    await guild_queue.put((voice_client, audio_source))
             except Exception as e:
                 print(f"An error occurred while playing audio: {e}")
 
