@@ -1,3 +1,4 @@
+import asyncio
 import discord
 from discord.ext import commands
 from settings import TEST_GUILD_ID, USER_DEFAULT_STYLE_ID, NOTIFY_DEFAULT_STYLE_ID
