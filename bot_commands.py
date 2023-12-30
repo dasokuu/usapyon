@@ -77,7 +77,7 @@ class StyleSelect(discord.ui.Select):
                 await interaction.response.send_message(update_message)
 
 
-async def handle_style_command(interaction, style_id: int, style_type: str = None):
+async def handle_style_command(interaction, style_id: int, style_type: str):
     guild_id = str(interaction.guild_id)
     user_id = str(interaction.user.id)
     user_display_namename = interaction.user.display_name  # ユーザー名を取得
@@ -154,7 +154,7 @@ def setup_commands(bot):
         ]
     )
     async def configure_style_id(
-        interaction, style_type: str = None, style_id: int = None
+        interaction, style_type: str, style_id: int
     ):
         if style_type and not style_id:
             # If only style_type is provided, display the current settings for that type.
@@ -236,8 +236,8 @@ def setup_commands(bot):
     )
     async def configure_style(
         interaction: discord.Interaction,
-        style_type: str = None,
-        first_person: str = None,
+        style_type: str,
+        first_person: str,
     ):
         if first_person is None or first_person not in FIRST_PERSON_DICTIONARY:
             await handle_style_command(interaction, None, style_type)
