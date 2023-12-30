@@ -260,10 +260,11 @@ def setup_commands(bot):
         style_type: str = None,
         first_person: str = None,
     ):
+        # ユーザーが選択した一人称に対応するキャラクターを取得
         selected_fp = first_person
         characters = FIRST_PERSON_DICTIONARY[selected_fp]
 
-        # キャラクターが一つだけの場合、自動的に選択
+        # キャラクターとスタイルをユーザーが選択したタイプに基づいて設定
         if len(characters) == 1:
             selected_char = characters[0]
             styles = [
@@ -272,18 +273,20 @@ def setup_commands(bot):
                 if speaker["name"] == selected_char
                 for style in speaker["styles"]
             ]
-            # スタイルも一つだけならそれも自動選択
+
+            # スタイルIDが一つだけの場合、自動的に選択
             if len(styles) == 1:
-                selected_style = styles[0]
-                await interaction.response.send_message(
-                    f"{selected_char}のスタイル「{selected_style['name']}」(ID: {selected_style['id']})が自動的に選択されました。",
-                )
+                selected_style_id = styles[0]["id"]
+                # handle_style_commandを呼び出してスタイルを設定
+                await handle_style_command(interaction, selected_style_id, style_type)
             else:
+                # 複数のスタイルがある場合はユーザーに選択させる
                 await interaction.response.send_message(
                     f"一人称「{first_person}」には{selected_char}が該当します。スタイルを選んでください。",
                     view=StyleView(styles),
                 )
         else:
+            # 複数のキャラクターがある場合はユーザーに選択させる
             await interaction.response.send_message(
                 f"{selected_fp}に対応するキャラクターを選んでください。", view=CharacterView(characters)
             )
