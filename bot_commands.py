@@ -148,22 +148,23 @@ def setup_commands(bot):
     )
     @app_commands.choices(
         style_type=[
-            app_commands.Choice(name="ユーザーデフォルト", value="user_default"),
-            app_commands.Choice(name="VC入退室時", value="notify"),
             app_commands.Choice(name="ユーザー", value="user"),
+            app_commands.Choice(name="VC入退室時", value="notify"),
+            app_commands.Choice(name="ユーザーデフォルト", value="user_default"),
         ]
     )
-    async def configure_style_id(interaction, style_type: str = None, style_id: int = None):   
+    async def configure_style_id(
+        interaction, style_type: str = None, style_id: int = None
+    ):
         # handle_style_commandからの応答を取得
         update_message = await handle_style_command(interaction, style_id, style_type)
-        
+
         # Inside handle_style_command function
         if update_message:
             if interaction.response.is_done():
                 await interaction.followup.send(update_message)
             else:
                 await interaction.response.send_message(update_message)
-
 
     @bot.tree.command(
         name="leave", guild=TEST_GUILD_ID, description="ボットをボイスチャンネルから切断します。"
