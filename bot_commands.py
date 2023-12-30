@@ -349,3 +349,48 @@ def setup_commands(bot):
             await ctx.send(f"グローバルコマンド {command_name} が見つかりませんでした。")
         except Exception as e:
             await ctx.send(f"コマンドを削除中にエラーが発生しました: {e}")
+
+    @bot.tree.command(
+        name="join", guild=TEST_GUILD_ID, description="ボットをボイスチャンネルに接続し、読み上げを開始します。"
+    )
+    async def join(interaction: discord.Interaction):
+        # defer the response to keep the interaction alive
+        await interaction.response.defer()
+
+        try:
+            if interaction.user.voice and interaction.user.voice.channel:
+                channel = interaction.user.voice.channel
+                voice_client = await channel.connect(self_deaf=True)
+                # 接続成功時の処理
+                # 接続メッセージの読み上げ
+                welcome_message = "読み上げを開始します。"
+
+                guild_id = str(interaction.guild_id)
+                text_channel_id = str(interaction.channel_id)  # このコマンドを使用したテキストチャンネルID
+
+                # サーバー設定が存在しない場合は初期化
+                if guild_id not in speaker_settings:
+                    speaker_settings[guild_id] = {"text_channel": text_channel_id}
+                else:
+                    # 既にサーバー設定が存在する場合はテキストチャンネルIDを更新
+                    speaker_settings[guild_id]["text_channel"] = text_channel_id
+
+                save_style_settings()  # 変更を保存
+
+                # 通知スタイルIDを取得
+                notify_style_id = speaker_settings.get(guild_id, {}).get(
+                    "notify", NOTIFY_DEFAULT_STYLE_ID
+                )
+
+                # メッセージとスタイルIDをキューに追加
+                await text_to_speech(
+                    voice_client, welcome_message, notify_style_id, guild_id
+                )
+                await interaction.followup.send("ボイスチャンネルに接続し、読み上げを開始しました。")
+            else:
+                await interaction.followup.send(
+                    "ボイスチャンネルに接続できませんでした。ユーザーがボイスチャンネルにいることを確認してください。"
+                )
+        except Exception as e:
+            # エラーメッセージをユーザーに通知
+            await interaction.followup.send(f"接続中にエラーが発生しました: {e}")
