@@ -313,39 +313,39 @@ def setup_commands(bot):
         else:
             await interaction.response.send_message("現在のスタイル設定はありません。")
 
-    # @bot.command(name="remove_command")
-    # async def remove_command(ctx, command_name: str):
-    #     # このコマンドを使用すると、指定されたコマンド名のスラッシュコマンドを削除します。
-    #     guild_id = ctx.guild.id  # コマンドを削除したいギルドのID
-    #     guild = discord.Object(id=guild_id)
-    #     for cmd in await bot.tree.fetch_commands(guild=guild):
-    #         if cmd.name == command_name:
-    #             await bot.tree.remove_command(cmd.name, guild=guild)
-    #             await ctx.send(f"コマンド {command_name} を削除しました。")
-    #             break
-    #     else:
-    #         await ctx.send(f"コマンド {command_name} が見つかりませんでした。")
+    @bot.command(name="remove_command")
+    async def remove_command(ctx, command_name: str):
+        # このコマンドを使用すると、指定されたコマンド名のスラッシュコマンドを削除します。
+        guild_id = ctx.guild.id  # コマンドを削除したいギルドのID
+        guild = discord.Object(id=guild_id)
+        for cmd in await bot.tree.fetch_commands(guild=guild):
+            if cmd.name == command_name:
+                await bot.tree.remove_command(cmd.name, guild=guild)
+                await ctx.send(f"コマンド {command_name} を削除しました。")
+                break
+        else:
+            await ctx.send(f"コマンド {command_name} が見つかりませんでした。")
 
-    # @bot.command(name="remove_global_command")
-    # async def remove_global_command(ctx, command_name: str):
-    #     try:
-    #         commands = await bot.tree.fetch_commands()  # Fetch all global commands
-    #         for cmd in commands:
-    #             if cmd.name == command_name:
-    #                 if cmd is None:
-    #                     await ctx.send("Error: Command object is None.")
-    #                     return
+    @bot.command(name="remove_global_command")
+    async def remove_global_command(ctx, command_name: str):
+        try:
+            commands = await bot.tree.fetch_commands()  # Fetch all global commands
+            for cmd in commands:
+                if cmd.name == command_name:
+                    if cmd is None:
+                        await ctx.send("Error: Command object is None.")
+                        return
 
-    #                 # Attempt to remove the command
-    #                 removal_result = bot.tree.remove_command(cmd)
-    #                 if asyncio.iscoroutine(removal_result):
-    #                     await removal_result
-    #                 else:
-    #                     # If it's not a coroutine, it's possible that the command was removed without needing to await anything
-    #                     pass
+                    # Attempt to remove the command
+                    removal_result = bot.tree.remove_command(cmd)
+                    if asyncio.iscoroutine(removal_result):
+                        await removal_result
+                    else:
+                        # If it's not a coroutine, it's possible that the command was removed without needing to await anything
+                        pass
 
-    #                 await ctx.send(f"グローバルコマンド {command_name} を削除しました。")
-    #                 return
-    #         await ctx.send(f"グローバルコマンド {command_name} が見つかりませんでした。")
-    #     except Exception as e:
-    #         await ctx.send(f"コマンドを削除中にエラーが発生しました: {e}")
+                    await ctx.send(f"グローバルコマンド {command_name} を削除しました。")
+                    return
+            await ctx.send(f"グローバルコマンド {command_name} が見つかりませんでした。")
+        except Exception as e:
+            await ctx.send(f"コマンドを削除中にエラーが発生しました: {e}")
