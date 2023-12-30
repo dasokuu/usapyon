@@ -117,24 +117,30 @@ def setup_commands(bot):
                 break
         else:
             await ctx.send(f"コマンド {command_name} が見つかりませんでした。")
+
     @bot.command(name="remove_global_command")
     async def remove_global_command(ctx, command_name: str):
         try:
-            # Fetch all global commands
-            commands = await bot.tree.fetch_commands()  
+            commands = await bot.tree.fetch_commands()  # Fetch all global commands
             for cmd in commands:
                 if cmd.name == command_name:
-                    # Remove the command
-                    await bot.tree.remove_command(cmd)  
+                    if cmd is None:
+                        await ctx.send("Error: Command object is None.")
+                        return
+
+                    # Attempt to remove the command
+                    removal_result = bot.tree.remove_command(cmd)
+                    if asyncio.iscoroutine(removal_result):
+                        await removal_result
+                    else:
+                        # If it's not a coroutine, it's possible that the command was removed without needing to await anything
+                        pass
+
                     await ctx.send(f"グローバルコマンド {command_name} を削除しました。")
                     return
-            # If the command wasn't found
             await ctx.send(f"グローバルコマンド {command_name} が見つかりませんでした。")
         except Exception as e:
-            # If there was an error during the process
             await ctx.send(f"コマンドを削除中にエラーが発生しました: {e}")
-
-
 
 
     @bot.tree.command(
