@@ -68,24 +68,12 @@ class StyleSelect(discord.ui.Select):
     async def callback(self, interaction: discord.Interaction):
         selected_style_id = int(self.values[0])  # 選択されたスタイルID
 
-        # 保存されたスタイル情報からスタイル名を取得
-        style_name = next(
-            (
-                style["name"]
-                for style in self.styles
-                if int(style["id"]) == selected_style_id
-            ),
-            f"不明なスタイル (ID: {selected_style_id})",
-        )
-
-        # handle_style_command を呼び出してスタイルを設定
-        await handle_style_command(interaction, selected_style_id, self.style_type)
-        # Call handle_style_command and capture the return message
+        # handle_style_command を呼び出してスタイルを設定し、更新メッセージを取得
         update_message = await handle_style_command(
             interaction, selected_style_id, self.style_type
         )
 
-        # Send the message indicating what was updated
+        # 更新メッセージを送信
         await interaction.followup.send(update_message)
 
 
@@ -119,13 +107,14 @@ async def handle_style_command(interaction, style_id: int, style_type: str = Non
     if style_id is not None:
         valid, speaker_name, style_name = validate_style_id(style_id)
         if not valid:
-            await interaction.response.send_message(
-                f"スタイルID {style_id} は無効です。正しいIDを入力してください。"
-            )
-            return
+            response = f"スタイルID {style_id} は無効です。正しいIDを入力してください。"
+            await interaction.response.send_message(response)
+            return response
 
         update_style_setting(guild_id, user_id, style_id, style_type)
-        return f"{style_type_description[style_type]}のスタイルが「{speaker_name} {style_name}」(スタイルID: {style_id})に更新されました。"
+        response = f"{style_type_description[style_type]}のスタイルが「{speaker_name} {style_name}」(スタイルID: {style_id})に更新されました。"
+        await interaction.response.send_message(response)
+        return response
 
     # 現在のスタイル設定を表示
     current_style_id, speaker_name, style_name = get_current_style_details(
