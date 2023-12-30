@@ -153,56 +153,20 @@ def setup_commands(bot):
             app_commands.Choice(name="ユーザー", value="user"),
         ]
     )
-    async def configure_style_id(
-        interaction, style_type: str = None, style_id: int = None
-    ):
-        # コードを共通化し、異なるスタイルタイプに対応
-        await handle_style_command(interaction, style_id, style_type)
-
-    @bot.tree.command(
-        name="join", guild=TEST_GUILD_ID, description="ボットをボイスチャンネルに接続し、読み上げを開始します。"
-    )
-    async def join(interaction: discord.Interaction):
-        # defer the response to keep the interaction alive
+    async def configure_style_id(interaction, style_type: str = None, style_id: int = None):
+        # 応答が時間かかる可能性があるため、遅延を伝えます
         await interaction.response.defer()
+        
+        # handle_style_commandからの応答を取得
+        update_message = await handle_style_command(interaction, style_id, style_type)
+        
+        # 応答を送信
+        if update_message:
+            await interaction.followup.send(update_message)
+        else:
+            # 何らかの理由でupdate_messageがNoneの場合はユーザーに伝える
+            await interaction.followup.send("スタイルの更新に失敗しました。")
 
-        try:
-            if interaction.user.voice and interaction.user.voice.channel:
-                channel = interaction.user.voice.channel
-                voice_client = await channel.connect(self_deaf=True)
-                # 接続成功時の処理
-                # 接続メッセージの読み上げ
-                welcome_message = "読み上げを開始します。"
-
-                guild_id = str(interaction.guild_id)
-                text_channel_id = str(interaction.channel_id)  # このコマンドを使用したテキストチャンネルID
-
-                # サーバー設定が存在しない場合は初期化
-                if guild_id not in speaker_settings:
-                    speaker_settings[guild_id] = {"text_channel": text_channel_id}
-                else:
-                    # 既にサーバー設定が存在する場合はテキストチャンネルIDを更新
-                    speaker_settings[guild_id]["text_channel"] = text_channel_id
-
-                save_style_settings()  # 変更を保存
-
-                # 通知スタイルIDを取得
-                notify_style_id = speaker_settings.get(guild_id, {}).get(
-                    "notify", NOTIFY_DEFAULT_STYLE_ID
-                )
-
-                # メッセージとスタイルIDをキューに追加
-                await text_to_speech(
-                    voice_client, welcome_message, notify_style_id, guild_id
-                )
-                await interaction.followup.send("ボイスチャンネルに接続し、読み上げを開始しました。")
-            else:
-                await interaction.followup.send(
-                    "ボイスチャンネルに接続できませんでした。ユーザーがボイスチャンネルにいることを確認してください。"
-                )
-        except Exception as e:
-            # エラーメッセージをユーザーに通知
-            await interaction.followup.send(f"接続中にエラーが発生しました: {e}")
 
     @bot.tree.command(
         name="leave", guild=TEST_GUILD_ID, description="ボットをボイスチャンネルから切断します。"
