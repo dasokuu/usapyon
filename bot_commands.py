@@ -101,30 +101,26 @@ async def handle_style_command(interaction, style_id: int, voice_style_scope: st
                     guild_id, user_id, t
                 )
                 messages.append(
-                    f"**{voice_style_scope_description[t]}**: {speaker_name} {style_name} (スタイルID: {style_id})"
+                    f"**{voice_style_scope_description[t]}**: {speaker_name} {style_name}"
                 )
             await interaction.response.send_message("\n".join(messages))
             return
 
         # Update settings if style_id is provided
         if style_id is not None:
-            valid, speaker_name, style_name = validate_style_id(style_id)
-            if not valid:
-                return f"スタイルID {style_id} は無効です。正しいIDを入力してください。"
             update_style_setting(guild_id, user_id, style_id, voice_style_scope)
-            return f"{voice_style_scope_description[voice_style_scope]}のスタイルが「{speaker_name} {style_name}」(スタイルID: {style_id})に更新されました。"
+            return f"{voice_style_scope_description[voice_style_scope]}のスタイルが「{speaker_name} {style_name}」に更新されました。"
 
         # Display current style settings
         current_style_id, speaker_name, style_name = get_current_style_details(
             guild_id, user_id, voice_style_scope
         )
         await interaction.response.send_message(
-            f"現在の{voice_style_scope_description[voice_style_scope]}のスタイルは「{speaker_name} {style_name}」(スタイルID: {current_style_id})です。"
+            f"現在の{voice_style_scope_description[voice_style_scope]}のスタイルは「{speaker_name} {style_name}」です。"
         )
     except Exception as e:
         await interaction.response.send_message(f"エラーが発生しました: {e}")
     return None  # Return None if there's no response
-
 
 
 def update_style_setting(guild_id, user_id, style_id, voice_style_scope):
