@@ -107,7 +107,7 @@ def setup_commands(bot):
         interaction, style_type: str = None, style_id: int = None
     ):
         # コードを共通化し、異なるスタイルタイプに対応
-        await handle_style_command(interaction, style_id, type)
+        await handle_style_command(interaction, style_id, style_type)  # 'type' を 'style_type' に修正
 
     @bot.command(name="remove_command")
     async def remove_command(ctx, command_name: str):
