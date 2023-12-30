@@ -189,7 +189,7 @@ def setup_commands(bot):
             characters = FIRST_PERSON_DICTIONARY[first_person]
             character_message = "\n".join(characters)
             await interaction.response.send_message(
-                f"一人称「{first_person}」のキャラクター:\n{character_message}\nスタイルを変更するには、スタイルタイプを指定してください。"
+                f"一人称「{first_person}」のキャラクター:\n{character_message}\nスタイルを変更するには、音声スタイルの対象を指定してください。"
             )
             return
 
