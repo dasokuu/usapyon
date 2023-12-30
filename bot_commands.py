@@ -48,14 +48,14 @@ async def handle_style_command(interaction, style_id: int, style_type: str = Non
         valid, speaker_name, style_name = validate_style_id(style_id)
         if not valid:
             await interaction.response.send_message(
-                f"⚠️ スタイルID {style_id} は無効です。正しいIDを入力してください。"
+                f"スタイルID {style_id} は無効です。正しいIDを入力してください。"
             )
             return
 
         # スタイルを更新
         update_style_setting(guild_id, user_id, style_id, style_type)
         await interaction.response.send_message(
-            f"✅ {style_type_description[style_type]}のスタイルが「{speaker_name} {style_name}」(スタイルID: {style_id})に更新されました。"
+            f"{style_type_description[style_type]}のスタイルが「{speaker_name} {style_name}」(スタイルID: {style_id})に更新されました。"
         )
         return
 
@@ -261,8 +261,7 @@ def setup_commands(bot):
         # ユーザーが選択した一人称に対応するキャラクターを取得
         selected_fp = first_person
         characters = FIRST_PERSON_DICTIONARY[selected_fp]
-        # first_personがNoneか、ディクショナリに存在しない場合はエラーメッセージを送信
-        if first_person is None or first_person not in FIRST_PERSON_DICTIONARY:
+        if first_person is None:
             await handle_style_command(interaction, None, style_type)
         # キャラクターとスタイルをユーザーが選択したタイプに基づいて設定
         if len(characters) == 1:
