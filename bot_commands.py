@@ -18,13 +18,15 @@ from discord import app_commands
 
 
 class CharacterView(discord.ui.View):
-    def __init__(self, characters):
+    def __init__(self, characters, style_type):
         super().__init__()
-        self.add_item(CharacterSelect(characters))
+        # Pass style_type to CharacterSelect
+        self.add_item(CharacterSelect(characters, style_type))
 
 
 class CharacterSelect(discord.ui.Select):
-    def __init__(self, characters):
+    def __init__(self, characters, style_type):
+        self.style_type = style_type  # Store style_type
         options = [discord.SelectOption(label=char, value=char) for char in characters]
         super().__init__(
             placeholder="キャラクターを選択...", min_values=1, max_values=1, options=options
@@ -39,22 +41,17 @@ class CharacterSelect(discord.ui.Select):
             for style in speaker["styles"]
         ]
 
-        # スタイルが一つだけの場合、自動的に選択
-        if len(styles) == 1:
-            selected_style = styles[0]
-            await interaction.response.send_message(
-                f"{selected_char}のスタイル「{selected_style['name']}」(ID: {selected_style['id']})が自動的に選択されました。",
-            )
-        else:
-            await interaction.response.send_message(
-                f"{selected_char}のスタイルを選んでください。", view=StyleView(styles)
-            )
+        # Pass style_type to StyleView when instantiated
+        await interaction.response.send_message(
+            f"{selected_char}のスタイルを選んでください。", view=StyleView(styles, self.style_type)
+        )
 
 
 class StyleView(discord.ui.View):
     def __init__(self, styles, style_type):
         super().__init__()
         self.add_item(StyleSelect(styles, style_type))
+
 
 class StyleSelect(discord.ui.Select):
     def __init__(self, styles, style_type):
@@ -323,14 +320,14 @@ def setup_commands(bot):
                 # 複数のスタイルがある場合はユーザーに選択させる
                 await interaction.response.send_message(
                     f"一人称「{first_person}」には{selected_char}が該当します。スタイルを選んでください。",
-                    view=StyleView(styles, style_type)
+                    view=StyleView(styles, style_type),
                 )
         else:
-            # 複数のキャラクターがある場合はユーザーに選択させる
+            # Pass style_type to CharacterView when instantiated
             await interaction.response.send_message(
-                f"{selected_fp}に対応するキャラクターを選んでください。", view=CharacterView(characters)
+                f"{selected_fp}に対応するキャラクターを選んでください。",
+                view=CharacterView(characters, style_type),
             )
-
 
     # @bot.command(name="remove_command")
     # async def remove_command(ctx, command_name: str):
