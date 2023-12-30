@@ -340,7 +340,9 @@ def setup_commands(bot):
             app_commands.Choice(name=fp, value=fp) for fp in first_persons.keys()
         ],
     )
-    async def style(interaction: discord.Interaction, first_person: str):
+    async def style(
+        interaction: discord.Interaction, style_type: str, first_person: str
+    ):
         selected_fp = first_person
         characters = first_persons[selected_fp]
 
