@@ -74,7 +74,8 @@ class StyleSelect(discord.ui.Select):
         )
 
         # 更新メッセージを送信
-        await interaction.followup.send(update_message)
+        if update_message:
+            await interaction.followup.send(update_message)
 
 
 async def handle_style_command(interaction, style_id: int, style_type: str = None):
@@ -107,14 +108,10 @@ async def handle_style_command(interaction, style_id: int, style_type: str = Non
     if style_id is not None:
         valid, speaker_name, style_name = validate_style_id(style_id)
         if not valid:
-            response = f"スタイルID {style_id} は無効です。正しいIDを入力してください。"
-            await interaction.response.send_message(response)
-            return response
+            return f"スタイルID {style_id} は無効です。正しいIDを入力してください。"
 
         update_style_setting(guild_id, user_id, style_id, style_type)
-        response = f"{style_type_description[style_type]}のスタイルが「{speaker_name} {style_name}」(スタイルID: {style_id})に更新されました。"
-        await interaction.response.send_message(response)
-        return response
+        return f"{style_type_description[style_type]}のスタイルが「{speaker_name} {style_name}」(スタイルID: {style_id})に更新されました。"
 
     # 現在のスタイル設定を表示
     current_style_id, speaker_name, style_name = get_current_style_details(
