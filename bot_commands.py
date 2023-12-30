@@ -189,7 +189,7 @@ def setup_commands(bot):
             characters = FIRST_PERSON_DICTIONARY[first_person]
             character_message = "\n".join(characters)
             await interaction.response.send_message(
-                f"一人称「{first_person}」に対応するキャラクター:\n{character_message}\nスタイルを変更するには、スタイルタイプを指定してください。"
+                f"一人称「{first_person}」のキャラクター:\n{character_message}\nスタイルを変更するには、スタイルタイプを指定してください。"
             )
             return
 
@@ -219,13 +219,13 @@ def setup_commands(bot):
             else:
                 # If there are multiple styles to choose from, let the user select
                 await interaction.response.send_message(
-                    f"一人称「{first_person}」には{selected_char}が該当します。スタイルを選んでください。",
+                    f"一人称「{first_person}」のキャラクターは{selected_char}が該当します。スタイルを選んでください。",
                     view=StyleView(styles, voice_style_scope),
                 )
         else:
             # If there are multiple characters to choose from, let the user select
             await interaction.response.send_message(
-                f"{selected_fp}に対応するキャラクターを選んでください。",
+                f"一人称「{selected_fp}」に絞り込みました。キャラクターを選んでください。",
                 view=CharacterView(characters, voice_style_scope),
             )
 
