@@ -104,13 +104,6 @@ def setup_commands(bot):
         ]
     )
     async def select_style_id(interaction, style_type: str = None, style_id: int = None):
-        valid_types = ["user_default", "notify", "user", None]
-        if type not in valid_types:
-            await interaction.response.send_message(
-                f"⚠️ 指定されたタイプが無効です。有効なタイプは以下の通りです: {', '.join(valid_types[:-1])}"
-            )
-            return
-
         # コードを共通化し、異なるスタイルタイプに対応
         await handle_style_command(interaction, style_id, type)
 
