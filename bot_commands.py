@@ -207,6 +207,9 @@ def setup_commands(bot):
         name="list_styles", guild=TEST_GUILD_ID, description="利用可能なスタイルIDの一覧を表示します。"
     )
     async def list_styles(interaction: discord.Interaction):
+        # 応答を遅延させる
+        await interaction.response.defer()
+
         embeds = []
         embed = discord.Embed(title="利用可能なスタイルIDの一覧", color=0x00FF00)
         embed.description = "各スピーカーと利用可能なスタイルのIDです。"
@@ -230,8 +233,10 @@ def setup_commands(bot):
         # Add the last embed
         embeds.append(embed)
 
+        # フォローアップメッセージを使用して複数の埋め込みを送信
         for embed in embeds:
-            await interaction.response.send_message(embed=embed)
+            await interaction.followup.send(embed=embed)
+
 
     # gender_categories = {
     #     "男性": [
