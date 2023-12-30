@@ -93,7 +93,7 @@ def get_current_style_details(guild_id, user_id, type):
 
 
 def setup_commands(bot):
-    discord.app_commands.tree.command(
+    @bot.tree.command(
         name="style",
         guild=TEST_GUILD_ID,
         description="スタイルを表示または設定します。",
@@ -109,7 +109,7 @@ def setup_commands(bot):
         # コードを共通化し、異なるスタイルタイプに対応
         await handle_style_command(interaction, style_id, type)
 
-    discord.app_commands.tree.command(
+    @bot.tree.command(
         name="join", guild=TEST_GUILD_ID, description="ボットをボイスチャンネルに接続し、読み上げを開始します。"
     )
     async def join(interaction: discord.Interaction):
@@ -154,7 +154,7 @@ def setup_commands(bot):
             # エラーメッセージをユーザーに通知
             await interaction.followup.send(f"接続中にエラーが発生しました: {e}")
 
-    discord.app_commands.tree.command(
+    @bot.tree.command(
         name="leave", guild=TEST_GUILD_ID, description="ボットをボイスチャンネルから切断します。"
     )
     async def leave(interaction: discord.Interaction):
@@ -166,7 +166,7 @@ def setup_commands(bot):
             await interaction.guild.voice_client.disconnect()  # 切断
             await interaction.response.send_message("ボイスチャンネルから切断しました。")
 
-    discord.app_commands.tree.command(
+    @bot.tree.command(
         name="list_styles", guild=TEST_GUILD_ID, description="利用可能なスタイルIDの一覧を表示します。"
     )
     async def list_styles(interaction: discord.Interaction):
@@ -306,7 +306,7 @@ def setup_commands(bot):
         "あいえるたん": ["あいえるたん"],
     }
 
-    discord.app_commands.tree.command(
+    @bot.tree.command(
         name="choose_first_person", guild=TEST_GUILD_ID, description="一人称を選択します。"
     )
     @app_commands.choices(
