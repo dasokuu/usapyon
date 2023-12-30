@@ -96,9 +96,9 @@ async def handle_style_command(interaction, style_id: int, style_type: str = Non
 
     # スタイルタイプに応じた説明を定義
     style_type_description = {
-        "user_default": f"ユーザーデフォルト",
-        "notify": f"VC入退室時",
         "user": f"{user_display_namename}",
+        "notify": f"VC入退室時",
+        "user_default": f"ユーザーデフォルト",
     }
 
     # スタイルIDが指定されていない場合、全ての設定を表示
@@ -278,9 +278,9 @@ def setup_commands(bot):
     )
     @app_commands.choices(
         style_type=[
-            app_commands.Choice(name="ユーザーデフォルト", value="user_default"),
-            app_commands.Choice(name="VC入退室時", value="notify"),
             app_commands.Choice(name="ユーザー", value="user"),
+            app_commands.Choice(name="VC入退室時", value="notify"),
+            app_commands.Choice(name="ユーザーデフォルト", value="user_default"),
         ],
         first_person=[
             app_commands.Choice(name=fp, value=fp)
