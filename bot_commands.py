@@ -67,15 +67,14 @@ class StyleSelect(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         selected_style_id = int(self.values[0])  # 選択されたスタイルID
-
-        # handle_style_command を呼び出してスタイルを設定し、更新メッセージを取得
         update_message = await handle_style_command(
             interaction, selected_style_id, self.style_type
         )
-
-        # 更新メッセージを送信
         if update_message:
-            await interaction.followup.send(update_message)
+            if interaction.response.is_done():
+                await interaction.followup.send(update_message)
+            else:
+                await interaction.response.send_message(update_message)
 
 
 async def handle_style_command(interaction, style_id: int, style_type: str = None):
@@ -109,7 +108,6 @@ async def handle_style_command(interaction, style_id: int, style_type: str = Non
         valid, speaker_name, style_name = validate_style_id(style_id)
         if not valid:
             return f"スタイルID {style_id} は無効です。正しいIDを入力してください。"
-
         update_style_setting(guild_id, user_id, style_id, style_type)
         return f"{style_type_description[style_type]}のスタイルが「{speaker_name} {style_name}」(スタイルID: {style_id})に更新されました。"
 
@@ -296,11 +294,12 @@ def setup_commands(bot):
                 update_message = await handle_style_command(
                     interaction, selected_style_id, style_type
                 )
-                # 初めての応答ならresponse.send_messageを、そうでなければfollowup.sendを使う
-                if interaction.response.is_done():
-                    await interaction.followup.send(update_message)
-                else:
-                    await interaction.response.send_message(update_message)
+                if update_message:
+                    if interaction.response.is_done():
+                        await interaction.followup.send(update_message)
+                    else:
+                        await interaction.response.send_message(update_message)
+
             else:
                 # If there are multiple styles to choose from, let the user select
                 await interaction.response.send_message(
@@ -313,7 +312,6 @@ def setup_commands(bot):
                 f"{selected_fp}に対応するキャラクターを選んでください。",
                 view=CharacterView(characters, style_type),
             )
-
 
     # @bot.command(name="remove_command")
     # async def remove_command(ctx, command_name: str):
