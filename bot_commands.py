@@ -153,7 +153,7 @@ def setup_commands(bot):
             app_commands.Choice(name="ユーザーデフォルト", value="user_default"),
         ]
     )
-    async def style_id(interaction, style_type: str, style_id: int=None):
+    async def style_id(interaction, style_type: str, style_id: int = None):
         if style_type and not style_id:
             # If only style_type is provided, display the current settings for that type.
             update_message = await handle_style_command(interaction, None, style_type)
@@ -183,11 +183,11 @@ def setup_commands(bot):
             await interaction.response.send_message("ボイスチャンネルから切断しました。")
 
     @bot.tree.command(
-        name="display_available_styles",
+        name="list_style_ids",
         guild=TEST_GUILD_ID,
         description="利用可能なスタイルIDの一覧を表示します。",
     )
-    async def display_available_styles(interaction: discord.Interaction):
+    async def list_style_ids(interaction: discord.Interaction):
         # 応答を遅延させる
         await interaction.response.defer()
 
@@ -236,8 +236,8 @@ def setup_commands(bot):
     )
     async def style(
         interaction: discord.Interaction,
-        style_type: str=None,
-        first_person: str=None,
+        style_type: str = None,
+        first_person: str = None,
     ):
         if first_person is None or first_person not in FIRST_PERSON_DICTIONARY:
             await handle_style_command(interaction, None, style_type)
@@ -278,77 +278,6 @@ def setup_commands(bot):
                 f"{selected_fp}に対応するキャラクターを選んでください。",
                 view=CharacterView(characters, style_type),
             )
-
-    @bot.tree.command(
-        name="display_current_settings",
-        guild=TEST_GUILD_ID,
-        description="現在のスタイル設定を表示します。",
-    )
-    async def display_current_settings(interaction: discord.Interaction):
-        guild_id = str(interaction.guild_id)
-        user_id = str(interaction.user.id)
-
-        # Dictionary to map style types to more user-friendly descriptions
-        style_type_descriptions = {
-            "user": "ユーザー特有のスタイル",
-            "notify": "VC入退室時の通知",
-            "user_default": "ユーザーデフォルト",
-        }
-
-        # Prepare messages for each style type
-        messages = []
-        for style_type, description in style_type_descriptions.items():
-            style_id, speaker_name, style_name = get_current_style_details(
-                guild_id, user_id, style_type
-            )
-            messages.append(
-                f"**{description}**: {speaker_name} {style_name} (スタイルID: {style_id})"
-            )
-
-        # Send the compiled message
-        if messages:
-            await interaction.response.send_message(
-                "以下は現在のスタイル設定です:\n" + "\n".join(messages)
-            )
-        else:
-            await interaction.response.send_message("現在のスタイル設定はありません。")
-
-    @bot.command(name="remove_command")
-    async def remove_command(ctx, command_name: str):
-        # このコマンドを使用すると、指定されたコマンド名のスラッシュコマンドを削除します。
-        guild_id = ctx.guild.id  # コマンドを削除したいギルドのID
-        guild = discord.Object(id=guild_id)
-        for cmd in await bot.tree.fetch_commands(guild=guild):
-            if cmd.name == command_name:
-                await bot.tree.remove_command(cmd.name, guild=guild)
-                await ctx.send(f"コマンド {command_name} を削除しました。")
-                break
-        else:
-            await ctx.send(f"コマンド {command_name} が見つかりませんでした。")
-
-    @bot.command(name="remove_global_command")
-    async def remove_global_command(ctx, command_name: str):
-        try:
-            commands = await bot.tree.fetch_commands()  # Fetch all global commands
-            for cmd in commands:
-                if cmd.name == command_name:
-                    if cmd is None:
-                        await ctx.send("Error: Command object is None.")
-                        return
-
-                    # Attempt to remove the command
-                    removal_result = bot.tree.remove_command(cmd)
-                    if asyncio.iscoroutine(removal_result):
-                        await removal_result
-                    else:
-                        # If it's not a coroutine, it's possible that the command was removed without needing to await anything
-                        pass
-
-                    await ctx.send(f"グローバルコマンド {command_name} を削除しました。")
-                    return
-            await ctx.send(f"グローバルコマンド {command_name} が見つかりませんでした。")
-        except Exception as e:
-            await ctx.send(f"コマンドを削除中にエラーが発生しました: {e}")
 
     @bot.tree.command(
         name="join", guild=TEST_GUILD_ID, description="ボットをボイスチャンネルに接続し、読み上げを開始します。"
@@ -394,6 +323,7 @@ def setup_commands(bot):
         except Exception as e:
             # エラーメッセージをユーザーに通知
             await interaction.followup.send(f"接続中にエラーが発生しました: {e}")
+
     # @bot.command(name="remove_command")
     # async def remove_command(ctx, command_name: str):
     #     # このコマンドを使用すると、指定されたコマンド名のスラッシュコマンドを削除します。
@@ -430,3 +360,36 @@ def setup_commands(bot):
     #         await ctx.send(f"グローバルコマンド {command_name} が見つかりませんでした。")
     #     except Exception as e:
     #         await ctx.send(f"コマンドを削除中にエラーが発生しました: {e}")
+    @bot.tree.command(
+        name="display_current_settings",
+        guild=TEST_GUILD_ID,
+        description="現在のスタイル設定を表示します。",
+    )
+    async def display_current_settings(interaction: discord.Interaction):
+        guild_id = str(interaction.guild_id)
+        user_id = str(interaction.user.id)
+
+        # Dictionary to map style types to more user-friendly descriptions
+        style_type_descriptions = {
+            "user": "ユーザー特有のスタイル",
+            "notify": "VC入退室時の通知",
+            "user_default": "ユーザーデフォルト",
+        }
+
+        # Prepare messages for each style type
+        messages = []
+        for style_type, description in style_type_descriptions.items():
+            style_id, speaker_name, style_name = get_current_style_details(
+                guild_id, user_id, style_type
+            )
+            messages.append(
+                f"**{description}**: {speaker_name} {style_name} (スタイルID: {style_id})"
+            )
+
+        # Send the compiled message
+        if messages:
+            await interaction.response.send_message(
+                "以下は現在のスタイル設定です:\n" + "\n".join(messages)
+            )
+        else:
+            await interaction.response.send_message("現在のスタイル設定はありません。")
