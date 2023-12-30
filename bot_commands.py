@@ -482,7 +482,7 @@ def setup_commands(bot):
             super().__init__()
             self.add_item(SpeakerSelect(speakers))
 
-    @bot.tree.command(name="style", description="スタイルを表示または設定します。")
+    @bot.tree.command(name="style",guild=TEST_GUILD_ID,  description="スタイルを表示または設定します。")
     @app_commands.choices(
         style_type=[
             app_commands.Choice(name="ユーザーデフォルト", value="user_default"),
