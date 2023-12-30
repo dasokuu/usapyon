@@ -91,21 +91,21 @@ def get_current_style_details(guild_id, user_id, type):
 
 
 def setup_commands(bot):
-    # @bot.tree.command(
-    #     name="style",
-    #     guild=TEST_GUILD_ID,
-    #     description="スタイルを表示または設定します。",
-    # )
-    # async def style(interaction, type: str = None, style_id: int = None):
-    #     valid_types = ["user_default", "notify", "user", None]
-    #     if type not in valid_types:
-    #         await interaction.response.send_message(
-    #             f"⚠️ 指定されたタイプが無効です。有効なタイプは以下の通りです: {', '.join(valid_types[:-1])}"
-    #         )
-    #         return
+    @bot.tree.command(
+        name="select_style_id",
+        guild=TEST_GUILD_ID,
+        description="スタイルを表示または設定します。",
+    )
+    async def select_style_id(interaction, type: str = None, style_id: int = None):
+        valid_types = ["user_default", "notify", "user", None]
+        if type not in valid_types:
+            await interaction.response.send_message(
+                f"⚠️ 指定されたタイプが無効です。有効なタイプは以下の通りです: {', '.join(valid_types[:-1])}"
+            )
+            return
 
-    #     # コードを共通化し、異なるスタイルタイプに対応
-    #     await handle_style_command(interaction, style_id, type)
+        # コードを共通化し、異なるスタイルタイプに対応
+        await handle_style_command(interaction, style_id, type)
 
     @bot.command(name="remove_command")
     async def remove_command(ctx, command_name: str):
@@ -328,7 +328,9 @@ def setup_commands(bot):
     }
 
     @bot.tree.command(
-        name="style", guild=TEST_GUILD_ID, description="一人称を選択し、スタイルを表示または設定します。"
+        name="set_first_person_style",
+        guild=TEST_GUILD_ID,
+        description="一人称を選択し、スタイルを表示または設定します。",
     )
     @app_commands.choices(
         style_type=[
@@ -340,7 +342,7 @@ def setup_commands(bot):
             app_commands.Choice(name=fp, value=fp) for fp in first_persons.keys()
         ],
     )
-    async def style(
+    async def set_first_person_style(
         interaction: discord.Interaction, style_type: str, first_person: str
     ):
         selected_fp = first_person
