@@ -278,6 +278,39 @@ def setup_commands(bot):
                 f"{selected_fp}に対応するキャラクターを選んでください。",
                 view=CharacterView(characters, style_type),
             )
+    @bot.tree.command(
+        name="display_current_settings",
+        guild=TEST_GUILD_ID,
+        description="現在のスタイル設定を表示します。",
+    )
+    async def display_current_settings(interaction: discord.Interaction):
+        guild_id = str(interaction.guild_id)
+        user_id = str(interaction.user.id)
+
+        # Dictionary to map style types to more user-friendly descriptions
+        style_type_descriptions = {
+            "user_default": "ユーザーデフォルト",
+            "notify": "VC入退室時の通知",
+            "user": "ユーザー特有のスタイル"
+        }
+
+        # Prepare messages for each style type
+        messages = []
+        for style_type, description in style_type_descriptions.items():
+            style_id, speaker_name, style_name = get_current_style_details(
+                guild_id, user_id, style_type
+            )
+            messages.append(
+                f"**{description}**: {speaker_name} {style_name} (スタイルID: {style_id})"
+            )
+
+        # Send the compiled message
+        if messages:
+            await interaction.response.send_message(
+                "以下は現在のスタイル設定です:\n" + "\n".join(messages)
+            )
+        else:
+            await interaction.response.send_message("現在のスタイル設定はありません。")
 
     # @bot.command(name="remove_command")
     # async def remove_command(ctx, command_name: str):
