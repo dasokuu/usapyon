@@ -18,15 +18,15 @@ from discord import app_commands
 
 
 class CharacterView(discord.ui.View):
-    def __init__(self, characters, voice_style_scope):
+    def __init__(self, characters, voice_scope):
         super().__init__()
-        # Pass voice_style_scope to CharacterSelect
-        self.add_item(CharacterSelect(characters, voice_style_scope))
+        # Pass voice_scope to CharacterSelect
+        self.add_item(CharacterSelect(characters, voice_scope))
 
 
 class CharacterSelect(discord.ui.Select):
-    def __init__(self, characters, voice_style_scope):
-        self.voice_style_scope = voice_style_scope  # Store voice_style_scope
+    def __init__(self, characters, voice_scope):
+        self.voice_scope = voice_scope  # Store voice_scope
         options = [discord.SelectOption(label=char, value=char) for char in characters]
         super().__init__(
             placeholder="キャラクターを選択...", min_values=1, max_values=1, options=options
@@ -41,24 +41,24 @@ class CharacterSelect(discord.ui.Select):
             for style in speaker["styles"]
         ]
 
-        # Pass voice_style_scope to StyleView when instantiated
+        # Pass voice_scope to StyleView when instantiated
         await interaction.response.send_message(
             f"{selected_char}のスタイルを選んでください。",
-            view=StyleView(styles, self.voice_style_scope),
+            view=StyleView(styles, self.voice_scope),
         )
 
 
 class StyleView(discord.ui.View):
-    def __init__(self, styles, voice_style_scope):
+    def __init__(self, styles, voice_scope):
         super().__init__()
-        self.add_item(StyleSelect(styles, voice_style_scope))
+        self.add_item(StyleSelect(styles, voice_scope))
 
 
 class StyleSelect(discord.ui.Select):
-    def __init__(self, styles, voice_style_scope):
+    def __init__(self, styles, voice_scope):
         self.styles = styles  # ここでスタイル情報を保存します
-        self.voice_style_scope = (
-            voice_style_scope  # スタイルのタイプ（user_default, notify, user）
+        self.voice_scope = (
+            voice_scope  # スタイルのタイプ（user_default, notify, user）
         )
         options = [
             discord.SelectOption(label=style["name"], value=style["id"])
@@ -71,7 +71,7 @@ class StyleSelect(discord.ui.Select):
     async def callback(self, interaction: discord.Interaction):
         selected_style_id = int(self.values[0])  # 選択されたスタイルID
         update_message = await handle_style_command(
-            interaction, selected_style_id, self.voice_style_scope
+            interaction, selected_style_id, self.voice_scope
         )
         if update_message:
             if interaction.response.is_done():
@@ -80,28 +80,28 @@ class StyleSelect(discord.ui.Select):
                 await interaction.response.send_message(update_message)
 
 
-async def handle_style_command(interaction, style_id: int, voice_style_scope: str):
+async def handle_style_command(interaction, style_id: int, voice_scope: str):
     guild_id = str(interaction.guild_id)
     user_id = str(interaction.user.id)
     user_display_name = interaction.user.display_name  # Corrected variable name
 
     # Define descriptions for each voice style scope
-    voice_style_scope_description = {
+    voice_scope_description = {
         "user": f"{user_display_name}",  # Corrected variable name
         "notify": "VC入退室時",
         "user_default": "ユーザーデフォルト",
     }
 
     try:
-        # If style_id and voice_style_scope are None, display all settings
-        if style_id is None and voice_style_scope is None:
+        # If style_id and voice_scope are None, display all settings
+        if style_id is None and voice_scope is None:
             messages = []
-            for t in voice_style_scope_description:
+            for t in voice_scope_description:
                 style_id, speaker_name, style_name = get_current_style_details(
                     guild_id, user_id, t
                 )
                 messages.append(
-                    f"**{voice_style_scope_description[t]}**: {speaker_name} {style_name}"
+                    f"**{voice_scope_description[t]}**: {speaker_name} {style_name}"
                 )
             await interaction.response.send_message("\n".join(messages))
             return
@@ -111,37 +111,37 @@ async def handle_style_command(interaction, style_id: int, voice_style_scope: st
             valid, speaker_name, style_name = validate_style_id(style_id)
             if not valid:
                 return f"スタイルID {style_id} は無効です。正しいIDを入力してください。"
-            update_style_setting(guild_id, user_id, style_id, voice_style_scope)
-            return f"{voice_style_scope_description[voice_style_scope]}の読み上げ音声が「{speaker_name} {style_name}」に更新されました。"
+            update_style_setting(guild_id, user_id, style_id, voice_scope)
+            return f"{voice_scope_description[voice_scope]}の読み上げ音声が「{speaker_name} {style_name}」に更新されました。"
 
         # Display current style settings
         current_style_id, speaker_name, style_name = get_current_style_details(
-            guild_id, user_id, voice_style_scope
+            guild_id, user_id, voice_scope
         )
         await interaction.response.send_message(
-            f"現在の{voice_style_scope_description[voice_style_scope]}の読み上げ音声は「{speaker_name} {style_name}」です。"
+            f"現在の{voice_scope_description[voice_scope]}の読み上げ音声は「{speaker_name} {style_name}」です。"
         )
     except Exception as e:
         await interaction.response.send_message(f"エラーが発生しました: {e}")
     return None  # Return None if there's no response
 
 
-def update_style_setting(guild_id, user_id, style_id, voice_style_scope):
-    if voice_style_scope == "user_default":
+def update_style_setting(guild_id, user_id, style_id, voice_scope):
+    if voice_scope == "user_default":
         speaker_settings[guild_id]["user_default"] = style_id
-    elif voice_style_scope == "notify":
+    elif voice_scope == "notify":
         speaker_settings[guild_id]["notify"] = style_id
-    elif voice_style_scope == "user":
+    elif voice_scope == "user":
         speaker_settings[user_id] = style_id
     save_style_settings()
 
 
-def get_current_style_details(guild_id, user_id, voice_style_scope):
-    if voice_style_scope == "user_default":
+def get_current_style_details(guild_id, user_id, voice_scope):
+    if voice_scope == "user_default":
         style_id = speaker_settings[guild_id].get("user_default", USER_DEFAULT_STYLE_ID)
-    elif voice_style_scope == "notify":
+    elif voice_scope == "notify":
         style_id = speaker_settings[guild_id].get("notify", NOTIFY_DEFAULT_STYLE_ID)
-    elif voice_style_scope == "user":
+    elif voice_scope == "user":
         style_id = speaker_settings.get(user_id, USER_DEFAULT_STYLE_ID)
 
     speaker_name, style_name = get_style_details(style_id)
@@ -167,7 +167,7 @@ def setup_commands(bot):
         description="現在の読み上げキャラクターを表示、または一人称を選択し設定します。",
     )
     @app_commands.choices(
-        voice_style_scope=[
+        voice_scope=[
             app_commands.Choice(name="ユーザー", value="user"),
             app_commands.Choice(name="VC入退室時", value="notify"),
             app_commands.Choice(name="ユーザーデフォルト", value="user_default"),
@@ -179,13 +179,13 @@ def setup_commands(bot):
     )
     async def voice_config(
         interaction: discord.Interaction,
-        voice_style_scope: str = None,
+        voice_scope: str = None,
         first_person: str = None,
     ):
         if first_person is None:
-            await handle_style_command(interaction, None, voice_style_scope)
+            await handle_style_command(interaction, None, voice_scope)
             return
-        if voice_style_scope is None:
+        if voice_scope is None:
             characters = FIRST_PERSON_DICTIONARY[first_person]
             character_message = "\n".join(characters)
             await interaction.response.send_message(
@@ -208,7 +208,7 @@ def setup_commands(bot):
             if len(styles) == 1:
                 selected_style_id = styles[0]["id"]
                 update_message = await handle_style_command(
-                    interaction, selected_style_id, voice_style_scope
+                    interaction, selected_style_id, voice_scope
                 )
                 if update_message:
                     if interaction.response.is_done():
@@ -220,13 +220,13 @@ def setup_commands(bot):
                 # If there are multiple styles to choose from, let the user select
                 await interaction.response.send_message(
                     f"一人称「{first_person}」のキャラクターは{selected_char}が該当します。スタイルを選んでください。",
-                    view=StyleView(styles, voice_style_scope),
+                    view=StyleView(styles, voice_scope),
                 )
         else:
             # If there are multiple characters to choose from, let the user select
             await interaction.response.send_message(
                 f"一人称「{selected_fp}」のキャラクターに絞り込みました。キャラクターを選んでください。",
-                view=CharacterView(characters, voice_style_scope),
+                view=CharacterView(characters, voice_scope),
             )
 
     @bot.tree.command(
@@ -315,20 +315,20 @@ def setup_commands(bot):
     #     description="スタイルを表示または設定します。",
     # )
     # @app_commands.choices(
-    #     voice_style_scope=[
+    #     voice_scope=[
     #         app_commands.Choice(name="ユーザー", value="user"),
     #         app_commands.Choice(name="VC入退室時", value="notify"),
     #         app_commands.Choice(name="ユーザーデフォルト", value="user_default"),
     #     ]
     # )
-    # async def style_id(interaction, voice_style_scope: str, style_id: int = None):
-    #     if voice_style_scope and not style_id:
-    #         # If only voice_style_scope is provided, display the current settings for that type.
-    #         update_message = await handle_style_command(interaction, None, voice_style_scope)
+    # async def style_id(interaction, voice_scope: str, style_id: int = None):
+    #     if voice_scope and not style_id:
+    #         # If only voice_scope is provided, display the current settings for that type.
+    #         update_message = await handle_style_command(interaction, None, voice_scope)
     #     else:
     #         # handle_style_command from the response
     #         update_message = await handle_style_command(
-    #             interaction, style_id, voice_style_scope
+    #             interaction, style_id, voice_scope
     #         )
 
     #     # Sending the response or follow-up message
@@ -384,7 +384,7 @@ def setup_commands(bot):
     #     user_id = str(interaction.user.id)
 
     #     # Dictionary to map style types to more user-friendly descriptions
-    #     voice_style_scope_descriptions = {
+    #     voice_scope_descriptions = {
     #         "user": "ユーザー特有のスタイル",
     #         "notify": "VC入退室時の通知",
     #         "user_default": "ユーザーデフォルト",
@@ -392,9 +392,9 @@ def setup_commands(bot):
 
     #     # Prepare messages for each style type
     #     messages = []
-    #     for voice_style_scope, description in voice_style_scope_descriptions.items():
+    #     for voice_scope, description in voice_scope_descriptions.items():
     #         style_id, speaker_name, style_name = get_current_style_details(
-    #             guild_id, user_id, voice_style_scope
+    #             guild_id, user_id, voice_scope
     #         )
     #         messages.append(
     #             f"**{description}**: {speaker_name} {style_name} (スタイルID: {style_id})"
