@@ -105,6 +105,28 @@ def setup_commands(bot):
 
     #     # コードを共通化し、異なるスタイルタイプに対応
     #     await handle_style_command(interaction, style_id, type)
+    @bot.command(name="remove_command")
+    async def remove_command(ctx, command_name: str):
+        # このコマンドを使用すると、指定されたコマンド名のスラッシュコマンドを削除します。
+        guild_id = ctx.guild.id  # コマンドを削除したいギルドのID
+        guild = discord.Object(id=guild_id)
+        for cmd in await bot.tree.fetch_commands(guild=guild):
+            if cmd.name == command_name:
+                await bot.tree.remove_command(cmd.name, guild=guild)
+                await ctx.send(f"コマンド {command_name} を削除しました。")
+                break
+        else:
+            await ctx.send(f"コマンド {command_name} が見つかりませんでした。")
+    @bot.command(name="remove_global_command")
+    async def remove_global_command(ctx, command_name: str):
+        # このコマンドを使用すると、グローバルスコープで指定されたコマンド名のスラッシュコマンドを削除します。
+        for cmd in await bot.tree.fetch_commands():
+            if cmd.name == command_name:
+                await bot.tree.remove_command(cmd.name)
+                await ctx.send(f"グローバルコマンド {command_name} を削除しました。")
+                break
+        else:
+            await ctx.send(f"グローバルコマンド {command_name} が見つかりませんでした。")
 
     @bot.tree.command(
         name="join", guild=TEST_GUILD_ID, description="ボットをボイスチャンネルに接続し、読み上げを開始します。"
