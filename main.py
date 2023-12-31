@@ -40,4 +40,4 @@ if __name__ == "__main__":
     async def on_voice_state_update(member, before, after):
         await handle_voice_state_update(bot, member, before, after)
 
-    bot.run(os.getenv("VOICECHATLOIDTEST_TOKEN"))
+    bot.run(os.getenv("VOICECHATLOID_TOKEN"))
