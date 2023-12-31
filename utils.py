@@ -94,7 +94,7 @@ async def replace_content(text, message):
         channel = message.guild.get_channel(channel_id)
         return channel.name + "チャンネル" if channel else match.group(0)
 
-    def replace_keywords_with_short_name(text, symbol_dict, special_cases):
+    def replace_emoji_name_to_kana(text, symbol_dict, special_cases):
         for symbol, data in symbol_dict.items():
             # 特別なケースを先に処理
             if symbol in special_cases:
@@ -244,4 +244,6 @@ emoji_ja = fetch_json(
     "https://raw.githubusercontent.com/yagays/emoji-ja/master/data/emoji_ja.json"
 )
 # 特別な置き換え規則
-special_cases = {"🇵🇸": "パレスチ}
+special_cases = {
+    "🇵🇸": "パレスチナ"
+}
