@@ -138,6 +138,8 @@ def setup_commands(bot):
                 welcome_voice = "読み上げを開始します。"
 
                 guild_id = str(interaction.guild_id)
+                user_id = str(interaction.user.id)  # コマンド使用者のユーザーID
+                user_display_name = interaction.user.display_name  # Corrected variable name
                 text_channel_id = str(interaction.channel_id)  # このコマンドを使用したテキストチャンネルID
 
                 # サーバー設定が存在しない場合は初期化
@@ -150,12 +152,15 @@ def setup_commands(bot):
                 save_style_settings()  # 変更を保存
 
                 # 通知スタイルIDを取得
-                notify_style_id = speaker_settings.get(guild_id, {}).get(
-                    "notify", NOTIFY_DEFAULT_STYLE_ID
-                )
+                notify_style_id = speaker_settings.get(guild_id, {}).get("notify", NOTIFY_DEFAULT_STYLE_ID)
+                # ユーザーのスタイルIDを取得
+                user_style_id = speaker_settings.get(user_id, USER_DEFAULT_STYLE_ID)
+
                 # クレジットをメッセージに追加
-                speaker_name, _ = get_style_details(notify_style_id)
-                welcome_message = f"入退室アナウンス音声「VOICEVOX:{speaker_name}」"
+                notify_speaker_name, _ = get_style_details(notify_style_id)
+                user_speaker_name, _ = get_style_details(user_style_id)
+                welcome_message = (f"アナウンス音声「VOICEVOX:{notify_speaker_name}」\n"
+                                f"{user_display_name}のテキスト読み上げ音声「VOICEVOX:{user_speaker_name}」")
 
                 # メッセージとスタイルIDをキューに追加
                 await text_to_speech(

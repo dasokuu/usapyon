@@ -176,7 +176,9 @@ async def handle_voice_state_update(bot, member, before, after):
         )
         # クレジットをメッセージに追加
         speaker_name, _ = get_style_details(notify_style_id)
-        notify_message = f"{notify_voice}\n\n{member.display_name}さんの読み上げ音声「VOICEVOX:{speaker_name}」"
+        notify_message = (
+            f"{notify_voice}\n\n{member.display_name}さんの読み上げ音声「VOICEVOX:{speaker_name}」"
+        )
 
         # テキストチャンネルを取得してメッセージを送信
         text_channel_id = speaker_settings[guild_id].get("text_channel")
