@@ -54,12 +54,14 @@ class PaginationView(View):
             )
             message += f"\n[{name}]({url}): {styles_info}"
 
+        # 応答済みの場合、フォローアップとして編集
         if interaction.response.is_done():
-            # 応答済みの場合、フォローアップとして編集
-            await interaction.followup.edit_message(message_id=interaction.message.id, content=message, view=self)
+            await interaction.followup.edit_message(
+                message_id=interaction.message.id, content=message, view=self
+            )
         else:
             # まだ応答されていない場合、応答として送信
-            await interaction.response.send_message(content=message, view=self)
+            await interaction.response.edit_message(content=message, view=self)
 
     async def send_initial_message(self, interaction):
         start_index = (self.page - 1) * ITEMS_PER_PAGE
