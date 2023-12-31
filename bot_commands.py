@@ -56,6 +56,24 @@ class PaginationView(View):
 
         await interaction.response.edit_message(content=message, view=self)
 
+    async def send_initial_message(self, interaction):
+        start_index = (self.page - 1) * ITEMS_PER_PAGE
+        end_index = start_index + ITEMS_PER_PAGE
+
+        # メッセージを整形して作成
+        message = f"**利用可能な話者とスタイル (ページ {self.page}):**\n"
+        for speaker in self.speakers[start_index:end_index]:
+            name = speaker["name"]
+            character_id = CHARACTORS_INFO.get(name, "unknown")
+            url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
+            styles_info = ", ".join(
+                f"{style['name']} (ID: {style['id']})" for style in speaker["styles"]
+            )
+            message += f"\n[{name}]({url}): {styles_info}"
+
+        # 最初のメッセージを送信
+        await interaction.response.send_message(content=message, view=self)
+
 
 async def handle_voice_config_command(interaction, style_id: int, voice_scope: str):
     guild_id = str(interaction.guild_id)
@@ -267,18 +285,13 @@ def setup_commands(bot):
         name="list", guild=TEST_GUILD_ID, description="話者とそのスタイルをページングして表示します。"
     )
     async def list(interaction: discord.Interaction):
-        print("コマンド開始")  # コマンドの開始時
-        try:
-            print("スピーカー処理中", speakers)  # 各スピーカーを処理するループ内
-            if not speakers:
-                await interaction.response.send_message("話者のデータを取得できませんでした。")
-                return
-            # 最初のページを表示
-            view = PaginationView(speakers)
-            await view.update_message(interaction)
-        except Exception as e:
-            print(f"エラーが発生しました: {e}")
-            await interaction.response.send_message(f"エラーが発生しました: {e}")
+        if not speakers:
+            await interaction.response.send_message("話者のデータを取得できませんでした。")
+            return
+
+        # 最初のページを表示
+        view = PaginationView(speakers)
+        await view.send_initial_message(interaction)
 
     async def send_long_message(
         interaction: discord.Interaction, message, split_char="\n"
