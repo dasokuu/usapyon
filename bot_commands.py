@@ -267,7 +267,9 @@ def setup_commands(bot):
         name="list", guild=TEST_GUILD_ID, description="話者とそのスタイルをページングして表示します。"
     )
     async def list(interaction: discord.Interaction):
+        print("コマンド開始")  # コマンドの開始時
         try:
+            print("スピーカー処理中", speakers)  # 各スピーカーを処理するループ内
             if not speakers:
                 await interaction.response.send_message("話者のデータを取得できませんでした。")
                 return
