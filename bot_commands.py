@@ -15,6 +15,46 @@ from utils import (
 )
 from voice import clear_playback_queue, text_to_speech
 from discord import app_commands
+import discord
+from discord.ui import Button, View
+
+ITEMS_PER_PAGE = 10  # 1ページあたりのアイテム数
+
+
+class PaginationView(View):
+    def __init__(self, speakers, page=1):
+        super().__init__()
+        self.speakers = speakers
+        self.page = page
+
+    @discord.ui.button(label="前へ", style=discord.ButtonStyle.primary)
+    async def previous(self, button: Button, interaction: discord.Interaction):
+        # ページ数を減らす
+        self.page = max(1, self.page - 1)
+        await self.update_message(interaction)
+
+    @discord.ui.button(label="次へ", style=discord.ButtonStyle.primary)
+    async def next(self, button: Button, interaction: discord.Interaction):
+        # ページ数を増やす
+        self.page = self.page + 1
+        await self.update_message(interaction)
+
+    async def update_message(self, interaction):
+        start_index = (self.page - 1) * ITEMS_PER_PAGE
+        end_index = start_index + ITEMS_PER_PAGE
+
+        # メッセージを更新
+        message = f"**利用可能な話者とスタイル (ページ {self.page}):**\n"
+        for speaker in self.speakers[start_index:end_index]:
+            name = speaker["name"]
+            character_id = CHARACTORS_INFO.get(name, "unknown")
+            url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
+            styles_info = ", ".join(
+                f"{style['name']} (ID: {style['id']})" for style in speaker["styles"]
+            )
+            message += f"\n[{name}]({url}): {styles_info}"
+
+        await interaction.response.edit_message(content=message, view=self)
 
 
 async def handle_voice_config_command(interaction, style_id: int, voice_scope: str):
@@ -37,7 +77,9 @@ async def handle_voice_config_command(interaction, style_id: int, voice_scope: s
                 style_id, speaker_name, style_name = get_current_style_details(
                     guild_id, user_id, t
                 )
-                character_id = CHARACTORS_INFO.get(speaker_name, "unknown")  # キャラクターIDを取得
+                character_id = CHARACTORS_INFO.get(
+                    speaker_name, "unknown"
+                )  # キャラクターIDを取得
                 url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
                 messages.append(
                     f"**{voice_scope_description[t]}**: [{speaker_name}]({url}) {style_name}"
@@ -60,7 +102,9 @@ async def handle_voice_config_command(interaction, style_id: int, voice_scope: s
                 style_id, speaker_name, style_name = get_current_style_details(
                     guild_id, user_id, t
                 )
-                character_id = CHARACTORS_INFO.get(speaker_name, "unknown")  # キャラクターIDを取得
+                character_id = CHARACTORS_INFO.get(
+                    speaker_name, "unknown"
+                )  # キャラクターIDを取得
                 url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
                 messages.append(
                     f"**{voice_scope_description[t]}**: [{speaker_name}]({url}) {style_name}"
@@ -101,7 +145,9 @@ def get_current_style_details(guild_id, user_id, voice_scope):
     if voice_scope == "user_default":
         style_id = speaker_settings[guild_id].get("user_default", USER_DEFAULT_STYLE_ID)
     elif voice_scope == "announcement":
-        style_id = speaker_settings[guild_id].get("announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID)
+        style_id = speaker_settings[guild_id].get(
+            "announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID
+        )
     elif voice_scope == "user":
         style_id = speaker_settings.get(user_id, USER_DEFAULT_STYLE_ID)
 
@@ -188,11 +234,17 @@ def setup_commands(bot):
                 announcement_speaker_name, announcement_style_name = get_style_details(
                     announcement_style_id
                 )
-                announcement_character_id = CHARACTORS_INFO.get(announcement_speaker_name, "unknown")  # キャラクターIDを取得
+                announcement_character_id = CHARACTORS_INFO.get(
+                    announcement_speaker_name, "unknown"
+                )  # キャラクターIDを取得
                 announcement_url = f"https://voicevox.hiroshiba.jp/dormitory/{announcement_character_id}/"
                 user_speaker_name, user_style_name = get_style_details(user_style_id)
-                user_character_id = CHARACTORS_INFO.get(user_speaker_name, "unknown")  # キャラクターIDを取得
-                user_url = f"https://voicevox.hiroshiba.jp/dormitory/{user_character_id}/"
+                user_character_id = CHARACTORS_INFO.get(
+                    user_speaker_name, "unknown"
+                )  # キャラクターIDを取得
+                user_url = (
+                    f"https://voicevox.hiroshiba.jp/dormitory/{user_character_id}/"
+                )
                 welcome_message = (
                     f"アナウンス音声「[VOICEVOX:{announcement_speaker_name}]({announcement_url}) {announcement_style_name}」\n"
                     f"{user_display_name}のテキスト読み上げ音声「[VOICEVOX:{user_speaker_name}]({user_url}) {user_style_name}」"
@@ -210,37 +262,18 @@ def setup_commands(bot):
         except Exception as e:
             # エラーメッセージをユーザーに通知
             await interaction.followup.send(f"接続中にエラーが発生しました: {e}")
-    ITEMS_PER_PAGE = 10  # 1ページあたりのアイテム数
 
     @bot.tree.command(
-        name="list", guild=TEST_GUILD_ID, description="話者とそのスタイルID、URLをコンパクトに表示します。"
+        name="list", guild=TEST_GUILD_ID, description="話者とそのスタイルをページングして表示します。"
     )
-    @app_commands.describe(page='表示するページ番号')
-    async def list(interaction: discord.Interaction, page: int = 1):
+    async def list(interaction: discord.Interaction):
         if not speakers:
             await interaction.response.send_message("話者のデータを取得できませんでした。")
             return
 
-        # ページングの計算
-        start_index = (page - 1) * ITEMS_PER_PAGE
-        end_index = start_index + ITEMS_PER_PAGE
-
-        # メッセージを整形して作成
-        message = f"**利用可能な話者とスタイル (ページ {page}):**\n"
-        for speaker in speakers[start_index:end_index]:
-            name = speaker["name"]
-            character_id = CHARACTORS_INFO.get(name, "unknown")  # キャラクターIDを取得
-            url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
-            styles_info = ", ".join(
-                f"{style['name']} (ID: {style['id']})"
-                for style in speaker["styles"]
-            )
-            message += f"\n[{name}]({url}): {styles_info}"
-
-        # メッセージを送信
-        await interaction.response.send_message(message)
-
-
+        # 最初のページを表示
+        view = PaginationView(speakers)
+        await view.update_message(interaction)
 
     async def send_long_message(
         interaction: discord.Interaction, message, split_char="\n"
