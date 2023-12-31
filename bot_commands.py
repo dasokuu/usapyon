@@ -211,28 +211,31 @@ def setup_commands(bot):
             # エラーメッセージをユーザーに通知
             await interaction.followup.send(f"接続中にエラーが発生しました: {e}")
 
+    ITEMS_PER_PAGE = 10  # 1ページあたりのアイテム数
+
     @bot.tree.command(
-        name="list", guild=TEST_GUILD_ID, description="話者とそのスタイルIDを表示します。"
+        name="list", guild=TEST_GUILD_ID, description="話者とそのスタイルをページングして表示します。"
     )
-    async def list(interaction: discord.Interaction):
-        """話者とそのスタイルIDを表示します。"""
+    @app_commands.describe(page='表示するページ番号')
+    async def list(interaction: discord.Interaction, page: int = 1):
         if not speakers:
             await interaction.response.send_message("話者のデータを取得できませんでした。")
             return
 
-        # メッセージを整形して作成
-        message = "**利用可能な話者とスタイル:**\n"
-        for speaker in speakers:
-            name = speaker["name"]
-            character_id = CHARACTORS_INFO.get(name, "unknown")  # キャラクターIDを取得
-            url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
-            styles = ", ".join(
-                [f"{style['name']} (ID: {style['id']})" for style in speaker["styles"]]
-            )
-            message += f"\n[{name}]({url}) {styles}"
+        # ページングの計算
+        start_index = (page - 1) * ITEMS_PER_PAGE
+        end_index = start_index + ITEMS_PER_PAGE
 
-        # 長いメッセージを適切に分割して送信
-        await send_long_message(interaction, message)
+        # メッセージを整形して作成
+        message = f"**利用可能な話者とスタイル (ページ {page}):**\n"
+        for speaker in speakers[start_index:end_index]:
+            name = speaker["name"]
+            styles = ", ".join(style["name"] for style in speaker["styles"])
+            message += f"\n{name}: {styles}"
+
+        # メッセージを送信
+        await interaction.response.send_message(message)
+
 
     async def send_long_message(
         interaction: discord.Interaction, message, split_char="\n"
