@@ -29,27 +29,21 @@ class StyleSelectionView(View):
     async def send_initial_message(self, interaction):
         message = f"**{self.speaker['name']}の利用可能なスタイル:**\n"
         for style in self.speaker["styles"]:
-            # 各スタイル選択用のボタンを動的に追加
-            # ここでユニークなcustom_idを設定します
             self.add_item(
                 Button(label=style["name"], custom_id=f"select_style_{style['id']}")
             )
         await interaction.response.send_message(content=message, view=self)
 
+    @discord.ui.button(label="Style", style=discord.ButtonStyle.secondary, custom_id="select_style")
+    async def select_style(self, interaction: discord.Interaction, button: Button):
+        style_id = int(button.custom_id.split('_')[-1])
+        await self.handle_style_selection(interaction, style_id)
+
     async def handle_style_selection(self, interaction: discord.Interaction, style_id):
-        # ここにスタイル選択時の処理を記述します
         print(f"Selected style ID: {style_id}")  # デバッグメッセージ
         update_style_setting(str(interaction.user.id), style_id)
         await interaction.response.send_message(f"スタイルが更新されました: {style_id}")
 
-    async def interaction_check(self, interaction: discord.Interaction) -> bool:
-        # ここでカスタムIDをチェックし、適切なハンドラを呼び出します
-        for item in self.children:
-            if interaction.data['custom_id'] == item.custom_id:
-                style_id = int(item.custom_id.split('_')[-1])
-                await self.handle_style_selection(interaction, style_id)
-                return True  # 正常に処理されたことを示します
-        return False  # 何も一致しなかった場合
 
 
 
@@ -109,9 +103,13 @@ class PaginationView(View):
 
         # 話者選択用のボタンを追加
         for i, speaker in enumerate(self.speakers[start_index:end_index]):
-            self.add_item(
-                Button(label=f'{speaker["name"]}を選択', custom_id=f"select_speaker_{i}")
+            button = Button(
+                label=f'{speaker["name"]}を選択',
+                custom_id=f"select_speaker_{i}",
+                style=discord.ButtonStyle.secondary
             )
+            button.callback = self.select_speaker
+            self.add_item(button)
 
         # メッセージを送信または更新
         if interaction.response.is_done():
