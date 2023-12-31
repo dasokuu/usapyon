@@ -1,109 +1,46 @@
 import discord
 
-BOT_PREFIX = "!"
-GAME_NAME = "待機中"
+COMMAND_PREFIX = "!"
+GAME_NAME = f"待機中 | {COMMAND_PREFIX}helpでコマンド説明を表示"
 USER_DEFAULT_STYLE_ID = 3
 NOTIFY_DEFAULT_STYLE_ID = 8
 MAX_MESSAGE_LENGTH = 200
-SPEAKERS_URL = "http://127.0.0.1:50021/speakers"
-AUDIO_QUERY_URL = "http://127.0.0.1:50021/audio_query"
-SYNTHESIS_URL = "http://127.0.0.1:50021/synthesis"
+VOICEVOX_ENGINE_URL = "http://127.0.0.1:50021/"
+SPEAKERS_URL = VOICEVOX_ENGINE_URL + "speakers"
+AUDIO_QUERY_URL = VOICEVOX_ENGINE_URL + "audio_query"
+SYNTHESIS_URL = VOICEVOX_ENGINE_URL + "synthesis"
 STYLE_SETTINGS_FILE = "style_settings.json"
 TEST_GUILD_ID = discord.Object(id="1129051248574869617")
-
-
-# gender_categories = {
-#     "男性": [
-#         "玄野武宏",
-#         "白上虎太郎",
-#         "青山龍星",
-#         "剣崎雌雄",
-#         "ちび式じい",
-#         "†聖騎士 紅桜†",
-#         "雀松朱司",
-#         "麒ヶ島宗麟",
-#         "栗田まろん",
-#     ],
-#     "女性": [
-#         "四国めたん",
-#         "ずんだもん",
-#         "春日部つむぎ",
-#         "雨晴はう",
-#         "波音リツ",
-#         "冥鳴ひまり",
-#         "九州そら",
-#         "もち子さん",
-#         "WhiteCUL",
-#         "後鬼",
-#         "No.7",
-#         "櫻歌ミコ",
-#         "小夜/SAYO",
-#         "ナースロボ＿タイプＴ",
-#         "春歌ナナ",
-#         "猫使アル",
-#         "猫使ビィ",
-#         "中国うさぎ",
-#         "あいえるたん",
-#         "満別花丸",
-#         "琴詠ニア",
-#     ],
-# }
-# first_persons = {
-#     "わたくし": ["四国めたん"],
-#     "ずんだもん": ["ずんだもん"],
-#     "僕": ["ずんだもん", "雨晴はう", "剣崎雌雄", "No.7", "雀松朱司", "栗田まろん", "猫使アル", "猫使ビィ", "満別花丸"],
-#     "あーし": ["春日部つむぎ"],
-#     "あたし": ["波音リツ"],
-#     "おれ": ["白上虎太郎", "猫使アル", "玄野武宏", "青山龍星"],
-#     "私": [
-#         "冥鳴ひまり",
-#         "もち子さん",
-#         "No.7",
-#         "櫻歌ミコ",
-#         "麒ヶ島宗麟",
-#         "猫使ビィ",
-#         "琴詠ニア",
-#         "WhiteCUL",
-#         "後鬼",
-#         "ナースロボ＿タイプＴ",
-#         "春歌ナナ",
-#         "中国うさぎ",
-#         "あいえるたん",
-#     ],
-#     "まーくつー": ["九州そら"],
-#     "もち子さん": ["もち子さん"],
-#     "ワテ": ["後鬼"],
-#     "わし": ["ちび式じい"],
-#     "ミコ": ["櫻歌ミコ"],
-#     "小夜": ["小夜/SAYO"],
-#     "我": ["†聖騎士 紅桜†"],
-#     "ナナ": ["春歌ナナ"],
-#     "アル": ["猫使アル"],
-#     "ビィ": ["猫使ビィ"],
-#     "あいえるたん": ["あいえるたん"],
-# }
-FIRST_PERSON_DICTIONARY = {
-    "私": ["冥鳴ひまり", "もち子さん", "No.7", "櫻歌ミコ", "麒ヶ島宗麟", "猫使ビィ", "琴詠ニア"],
-    "わたし": ["WhiteCUL", "後鬼", "ナースロボ＿タイプＴ", "春歌ナナ", "中国うさぎ", "あいえるたん"],
-    "わたくし": ["四国めたん"],
-    "あーし": ["春日部つむぎ"],
-    "あたし": ["波音リツ"],
-    "僕": ["ずんだもん", "雨晴はう", "剣崎雌雄", "No.7", "雀松朱司", "栗田まろん"],
-    "ぼく": ["満別花丸"],
-    "ボク": ["猫使アル", "猫使ビィ"],
-    "おれ": ["白上虎太郎", "猫使アル"],
-    "俺": ["玄野武宏"],
-    "オレ": ["青山龍星"],
-    "ワテ": ["後鬼"],
-    "我": ["†聖騎士 紅桜†"],
-    "わし": ["ちび式じい"],
-    "ずんだもん": ["ずんだもん"],
-    "まーくつー": ["九州そら"],
-    "もち子さん": ["もち子さん"],
-    "ミコ": ["櫻歌ミコ"],
-    "小夜": ["小夜/SAYO"],
-    "ナナ": ["春歌ナナ"],
-    "アル": ["猫使アル"],
-    "ビィ": ["猫使ビィ"],
-    "あいえるたん": ["あいえるたん"],
+# https://raw.githubusercontent.com/VOICEVOX/voicevox_blog/master/src/constants.ts
+CHARACTORS_INFO = {
+    "四国めたん": "shikoku_metan",
+    "ずんだもん": "zundamon",
+    "春日部つむぎ": "kasukabe_tsumugi",
+    "雨晴はう": "amehare_hau",
+    "波音リツ": "namine_ritsu",
+    "玄野武宏": "kurono_takehiro",
+    "白上虎太郎": "shirakami_kotarou",
+    "青山龍星": "aoyama_ryusei",
+    "冥鳴ひまり": "meimei_himari",
+    "九州そら": "kyushu_sora",
+    "もち子さん": "mochikosan",
+    "剣崎雌雄": "kenzaki_mesuo",
+    "WhiteCUL": "white_cul",
+    "後鬼": "goki",
+    "No.7": "number_seven",
+    "ちび式じい": "chibishikiji",
+    "櫻歌ミコ": "ouka_miko",
+    "小夜/SAYO": "sayo",
+    "ナースロボ＿タイプＴ": "nurserobo_typet",
+    "†聖騎士 紅桜†": "horinaito_benizakura",
+    "雀松朱司": "wakamatsu_akashi",
+    "麒ヶ島宗麟": "kigashima_sourin",
+    "春歌ナナ": "haruka_nana",
+    "猫使アル": "nekotsuka_aru",
+    "猫使ビィ": "nekotsuka_bi",
+    "中国うさぎ": "chugoku_usagi",
+    "栗田まろん": "kurita_maron",
+    "あいえるたん": "aierutan",
+    "満別花丸": "manbetsu_hanamaru",
+    "琴詠ニア": "kotoyomi_nia",
 }
