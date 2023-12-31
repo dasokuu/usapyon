@@ -1,7 +1,7 @@
 import asyncio
 import discord
 from settings import (
-    FIRST_PERSON_DICTIONARY,
+    CHARACTORS_INFO,
     TEST_GUILD_ID,
     USER_DEFAULT_STYLE_ID,
     NOTIFY_DEFAULT_STYLE_ID,
@@ -15,69 +15,6 @@ from utils import (
 )
 from voice import clear_playback_queue, text_to_speech
 from discord import app_commands
-
-
-class CharacterView(discord.ui.View):
-    def __init__(self, characters, voice_scope):
-        super().__init__()
-        # Pass voice_scope to CharacterSelect
-        self.add_item(CharacterSelect(characters, voice_scope))
-
-
-class CharacterSelect(discord.ui.Select):
-    def __init__(self, characters, voice_scope):
-        self.voice_scope = voice_scope  # Store voice_scope
-        options = [discord.SelectOption(label=char, value=char) for char in characters]
-        super().__init__(
-            placeholder="キャラクターを選択...", min_values=1, max_values=1, options=options
-        )
-
-    async def callback(self, interaction: discord.Interaction):
-        selected_char = self.values[0]
-        styles = [
-            style
-            for speaker in speakers
-            if speaker["name"] == selected_char
-            for style in speaker["styles"]
-        ]
-
-        # Pass voice_scope to StyleView when instantiated
-        await interaction.response.send_message(
-            f"{selected_char}のスタイルを選んでください。",
-            view=StyleView(styles, self.voice_scope),
-        )
-
-
-class StyleView(discord.ui.View):
-    def __init__(self, styles, voice_scope):
-        super().__init__()
-        self.add_item(StyleSelect(styles, voice_scope))
-
-
-class StyleSelect(discord.ui.Select):
-    def __init__(self, styles, voice_scope):
-        self.styles = styles  # ここでスタイル情報を保存します
-        self.voice_scope = (
-            voice_scope  # スタイルのタイプ（user_default, notify, user）
-        )
-        options = [
-            discord.SelectOption(label=style["name"], value=style["id"])
-            for style in styles
-        ]
-        super().__init__(
-            placeholder="スタイルを選択...", min_values=1, max_values=1, options=options
-        )
-
-    async def callback(self, interaction: discord.Interaction):
-        selected_style_id = int(self.values[0])  # 選択されたスタイルID
-        update_message = await handle_style_command(
-            interaction, selected_style_id, self.voice_scope
-        )
-        if update_message:
-            if interaction.response.is_done():
-                await interaction.followup.send(update_message)
-            else:
-                await interaction.response.send_message(update_message)
 
 
 async def handle_style_command(interaction, style_id: int, voice_scope: str):
@@ -164,70 +101,10 @@ def setup_commands(bot):
     @bot.tree.command(
         name="voice_config",
         guild=TEST_GUILD_ID,
-        description="現在の読み上げキャラクターを表示、または一人称を選択し設定します。",
+        description="読み上げキャラクターを表示また設定します。",
     )
-    @app_commands.choices(
-        voice_scope=[
-            app_commands.Choice(name="あなた", value="user"),
-            app_commands.Choice(name="VC入退室時", value="notify"),
-            app_commands.Choice(name="ユーザーデフォルト", value="user_default"),
-        ],
-        first_person=[
-            app_commands.Choice(name=fp, value=fp)
-            for fp in FIRST_PERSON_DICTIONARY.keys()
-        ],
-    )
-    async def voice_config(
-        interaction: discord.Interaction,
-        voice_scope: str = None,
-        first_person: str = None,
-    ):
-        if first_person is None:
-            await handle_style_command(interaction, None, voice_scope)
-            return
-        if voice_scope is None:
-            characters = FIRST_PERSON_DICTIONARY[first_person]
-            character_message = "\n".join(characters)
-            await interaction.response.send_message(
-                f"一人称「{first_person}」のキャラクター:\n{character_message}\n読み上げキャラクターを変更するには、その音声設定対象を指定してください。"
-            )
-            return
-
-        selected_fp = first_person
-        characters = FIRST_PERSON_DICTIONARY[selected_fp]
-
-        if len(characters) == 1:
-            selected_char = characters[0]
-            styles = [  # stylesをここで定義
-                style
-                for speaker in speakers
-                if speaker["name"] == selected_char
-                for style in speaker["styles"]
-            ]
-
-            if len(styles) == 1:
-                selected_style_id = styles[0]["id"]
-                update_message = await handle_style_command(
-                    interaction, selected_style_id, voice_scope
-                )
-                if update_message:
-                    if interaction.response.is_done():
-                        await interaction.followup.send(update_message)
-                    else:
-                        await interaction.response.send_message(update_message)
-
-            else:
-                # If there are multiple styles to choose from, let the user select
-                await interaction.response.send_message(
-                    f"一人称「{first_person}」のキャラクターは{selected_char}が該当します。スタイルを選んでください。",
-                    view=StyleView(styles, voice_scope),
-                )
-        else:
-            # If there are multiple characters to choose from, let the user select
-            await interaction.response.send_message(
-                f"一人称「{selected_fp}」のキャラクターに絞り込みました。キャラクターを選んでください。",
-                view=CharacterView(characters, voice_scope),
-            )
+    async def voice_config(interaction: discord.Interaction, style_id: int = None):
+        handle_style_command(interaction, style_id, voice_scope="user")
 
     @bot.tree.command(
         name="join", guild=TEST_GUILD_ID, description="ボットをボイスチャンネルに接続し、読み上げを開始します。"
@@ -273,11 +150,14 @@ def setup_commands(bot):
         except Exception as e:
             # エラーメッセージをユーザーに通知
             await interaction.followup.send(f"接続中にエラーが発生しました: {e}")
-    @bot.command(name="list", help="スピーカーとそのスタイルIDを表示します。")
-    async def list(ctx):
+
+    @bot.tree.command(
+        name="list", guild=TEST_GUILD_ID, description="スピーカーとそのスタイルIDを表示します。"
+    )
+    async def list(interaction: discord.Interaction):
         """スピーカーとそのスタイルIDを表示します。"""
         if not speakers:
-            await ctx.send("スピーカーのデータを取得できませんでした。")
+            await interaction.response.send_message("スピーカーのデータを取得できませんでした。")
             return
 
         # メッセージを整形して作成
@@ -292,15 +172,16 @@ def setup_commands(bot):
             message += f"\n[{name}]({url}): {styles}"
 
         # 長いメッセージを適切に分割して送信
-        await send_long_message(ctx, message)
+        await send_long_message(interaction, message)
 
-
-    async def send_long_message(ctx, message, split_char="\n"):
+    async def send_long_message(
+        interaction: discord.Interaction, message, split_char="\n"
+    ):
         """2000文字を超える長いメッセージを適切に分割して送信します。"""
         while len(message) > 0:
             # メッセージが2000文字以下の場合はそのまま送信
             if len(message) <= 2000:
-                await ctx.send(message)
+                await interaction.response.send_message(message)
                 break
             # メッセージを2000文字で仮に切り分け
             part = message[:2000]
@@ -310,9 +191,10 @@ def setup_commands(bot):
                 # 分割文字が見つからない場合は、2000文字で強制的に分割
                 split_pos = 1999
             # 最初の部分を送信
-            await ctx.send(message[: split_pos + 1])
+            await interaction.response.send_message(message[: split_pos + 1])
             # 残りのメッセージを更新
             message = message[split_pos + 1 :]
+
     # @bot.tree.command(
     #     name="list_style_ids",
     #     guild=TEST_GUILD_ID,
