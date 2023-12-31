@@ -20,7 +20,6 @@ import discord
 from discord.ui import Button, View
 
 ITEMS_PER_PAGE = 10  # 1ページあたりのアイテム数
-ZERO_WIDTH_SPACE = "\u200B"
 
 
 class PaginationView(View):
@@ -53,12 +52,11 @@ class PaginationView(View):
         for speaker in self.speakers[start_index:end_index]:
             name = speaker["name"]
             character_id, display_name = get_character_info(name)
-            display_url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id[:2]}{ZERO_WIDTH_SPACE}{character_id[2:]}/"
-            actual_url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
+            url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
             styles_info = " ".join(
                 f"{style['name']} (`{style['id']}`)" for style in speaker["styles"]
             )
-            message += f"\n[{display_name}]({actual_url} '{display_url}') {styles_info}"
+            message += f"\n[{display_name}]({url}) {styles_info}"
 
         if interaction.response.is_done():
             await interaction.followup.edit_message(
@@ -78,12 +76,11 @@ class PaginationView(View):
         for speaker in self.speakers[start_index:end_index]:
             name = speaker["name"]
             character_id, display_name = get_character_info(name)
-            display_url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id[:2]}{ZERO_WIDTH_SPACE}{character_id[2:]}/"
-            actual_url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
+            url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
             styles_info = " ".join(
                 f"{style['name']} (`{style['id']}`)" for style in speaker["styles"]
             )
-            message += f"\n[{display_name}]({actual_url} '{display_url}') {styles_info}"
+            message += f"\n[{display_name}]({url}) {styles_info}"
 
         # 最初のメッセージを送信
         await interaction.response.send_message(content=message, view=self)
