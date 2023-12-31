@@ -21,16 +21,28 @@ from discord.ui import Button, View
 ITEMS_PER_PAGE = 10  # 1ページあたりのアイテム数
 
 
+class StyleSelect(discord.ui.Select):
+    def __init__(self, speaker):
+        options = [
+            discord.SelectOption(label=style["name"], value=str(style["id"]))
+            for style in speaker["styles"]
+        ]
+        super().__init__(placeholder=f"{speaker['name']}のスタイルを選択...", min_values=1, max_values=1, options=options)
+        self.speaker = speaker
+
+    async def callback(self, interaction: discord.Interaction):
+        style_id = int(self.values[0])
+        # コールバック内で、選択されたスタイルをユーザーの読み上げ音声に設定
+        await handle_voice_config_command(interaction, style_id, voice_scope="user")
+
+
 class PaginationView(View):
     def __init__(self, speakers, page=1):
         super().__init__()
-        self.speakers = speakers
         self.page = page
-        self.total_pages = max(
-            1,
-            len(speakers) // ITEMS_PER_PAGE
-            + (1 if len(speakers) % ITEMS_PER_PAGE > 0 else 0),
-        )
+        # 現在のページの話者ごとにセレクトボックスを追加
+        for speaker in speakers[(page - 1) * ITEMS_PER_PAGE : page * ITEMS_PER_PAGE]:
+            self.add_item(StyleSelect(speaker))
 
     @discord.ui.button(label="前へ", style=discord.ButtonStyle.primary)
     async def previous(self, interaction: discord.Interaction, button: Button):
@@ -318,43 +330,7 @@ def setup_commands(bot):
         view = PaginationView(speakers)
         await view.send_initial_message(interaction)
 
-    async def send_long_message(
-        interaction: discord.Interaction, message, split_char="\n"
-    ):
-        """2000文字を超える長いメッセージを適切に分割して送信します。
-        最初のメッセージは応答として送信され、残りはフォローアップとして送信されます。
-        """
-        # 最初のメッセージフラグを設定します。
-        first_message = True
 
-        while len(message) > 0:
-            # メッセージが2000文字以下の場合はそのまま送信
-            if len(message) <= 2000:
-                # 最初のメッセージの場合は応答として送信
-                if first_message:
-                    await interaction.response.send_message(message)
-                else:
-                    await interaction.followup.send(message)
-                break
-
-            # メッセージを2000文字で仮に切り分け
-            part = message[:2000]
-            # 最後の改行位置または分割文字の位置を探す
-            split_pos = part.rfind(split_char)
-            if split_pos == -1:
-                # 分割文字が見つからない場合は、2000文字で強制的に分割
-                split_pos = 1999
-
-            # 最初の部分を送信
-            part_to_send = message[: split_pos + 1]
-            if first_message:
-                await interaction.response.send_message(part_to_send)
-                first_message = False
-            else:
-                await interaction.followup.send(part_to_send)
-
-            # 残りのメッセージを更新
-            message = message[split_pos + 1 :]
 
     @bot.tree.command(
         name="help", guilds=APPROVED_GUILD_IDS, description="利用可能なコマンドとその説明を表示します。"
