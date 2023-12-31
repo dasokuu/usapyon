@@ -116,7 +116,7 @@ def setup_commands(bot):
         guild=TEST_GUILD_ID,
         description="読み上げキャラクターを表示また設定します。",
     )
-    async def voice_config(interaction: discord.Interaction, style_id: int):
+    async def voice_config(interaction: discord.Interaction, style_id: int = None):
         await handle_voice_config_command(interaction, style_id, voice_scope="user")
 
     @bot.tree.command(
