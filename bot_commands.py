@@ -20,6 +20,7 @@ import discord
 from discord.ui import Button, View
 
 ITEMS_PER_PAGE = 10  # 1ページあたりのアイテム数
+ZERO_WIDTH_SPACE = "\u200B"
 
 
 class PaginationView(View):
@@ -52,7 +53,7 @@ class PaginationView(View):
         for speaker in self.speakers[start_index:end_index]:
             name = speaker["name"]
             character_id, display_name = get_character_info(name)
-            url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
+            url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id[:2]}{ZERO_WIDTH_SPACE}{character_id[2:]}/"
             styles_info = " ".join(
                 f"{style['name']} (`{style['id']}`)" for style in speaker["styles"]
             )
@@ -76,7 +77,7 @@ class PaginationView(View):
         for speaker in self.speakers[start_index:end_index]:
             name = speaker["name"]
             character_id, display_name = get_character_info(name)
-            url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
+            url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id[:2]}{ZERO_WIDTH_SPACE}{character_id[2:]}/"
             styles_info = " ".join(
                 f"{style['name']} (`{style['id']}`)" for style in speaker["styles"]
             )
