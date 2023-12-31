@@ -180,7 +180,7 @@ async def handle_voice_state_update(bot, member, before, after):
         character_id = CHARACTORS_INFO.get(speaker_name, "unknown")  # キャラクターIDを取得
         url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
         notify_message = (
-            f"{notify_voice}\n\n{member.display_name}さんのテキスト読み上げ音声「VOICEVOX:{speaker_name}({url}): {style_name}」"
+            f"{notify_voice}\n\n{member.display_name}さんのテキスト読み上げ音声「[VOICEVOX:{speaker_name}]({url}): {style_name}」"
         )
 
         # テキストチャンネルを取得してメッセージを送信
