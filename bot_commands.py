@@ -92,7 +92,7 @@ async def handle_voice_config_command(interaction, style_id: int, voice_scope: s
 
     # Define descriptions for each voice style scope
     voice_scope_description = {
-        "user": f"{user_display_name}のテキスト読み上げ音声",  # Corrected variable name
+        "user": f"{user_display_name}さんのテキスト読み上げ音声",  # Corrected variable name
         "announcement": "アナウンス音声",
         "user_default": "ユーザーデフォルトTTS音声",
     }
@@ -275,7 +275,7 @@ def setup_commands(bot):
                 )
                 welcome_message = (
                     f"アナウンス音声「[VOICEVOX:{announcement_speaker_name}]({announcement_url}) {announcement_style_name}」\n"
-                    f"{user_display_name}のテキスト読み上げ音声「[VOICEVOX:{user_speaker_name}]({user_url}) {user_style_name}」"
+                    f"{user_display_name}さんのテキスト読み上げ音声「[VOICEVOX:{user_speaker_name}]({user_url}) {user_style_name}」"
                 )
 
                 # メッセージとスタイルIDをキューに追加
