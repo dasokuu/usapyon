@@ -48,13 +48,13 @@ class PaginationView(View):
         end_index = start_index + ITEMS_PER_PAGE
 
         # メッセージを更新
-        message = f"**利用可能な話者とスタイル (ページ {self.page}/{self.total_pages}):**\n"
+        message = f"**利用可能な話者とスタイルID (ページ {self.page}/{self.total_pages}):**\n"
         for speaker in self.speakers[start_index:end_index]:
             name = speaker["name"]
             character_id, display_name = get_character_info(name)
             url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
             styles_info = " ".join(
-                f"{style['name']} (ID: {style['id']})" for style in speaker["styles"]
+                f"{style['name']} (`{style['id']}`)" for style in speaker["styles"]
             )
             message += f"\n[{display_name}]({url}) {styles_info}"
 
@@ -72,13 +72,13 @@ class PaginationView(View):
         end_index = start_index + ITEMS_PER_PAGE
 
         # メッセージを整形して作成
-        message = f"**利用可能な話者とスタイル (ページ {self.page}):**\n"
+        message = f"**利用可能な話者とスタイルID (ページ {self.page}):**\n"
         for speaker in self.speakers[start_index:end_index]:
             name = speaker["name"]
             character_id, display_name = get_character_info(name)
             url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
             styles_info = " ".join(
-                f"{style['name']} (ID: {style['id']})" for style in speaker["styles"]
+                f"{style['name']} (`{style['id']}`)" for style in speaker["styles"]
             )
             message += f"\n[{display_name}]({url}) {styles_info}"
 
