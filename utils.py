@@ -94,12 +94,18 @@ async def replace_content(text, message):
         channel = message.guild.get_channel(channel_id)
         return channel.name + "チャンネル" if channel else match.group(0)
 
-    def replace_emoji_name_to_kana(text):
-        for symbol, data in emoji_ja.items():
+    def replace_keywords_with_short_name(text, symbol_dict, special_cases):
+        for symbol, data in symbol_dict.items():
+            # 特別なケースを先に処理
+            if symbol in special_cases:
+                text = text.replace(symbol, special_cases[symbol])
+                continue
+
             # キーワードのリストから正規表現パターンを作成
             keywords_pattern = "|".join(map(re.escape, data["keywords"]))
             # テキスト内のキーワードをshort_nameで置き換え
             text = re.sub(keywords_pattern, data["short_name"], text)
+
             # 絵文字自体も置き換え対象に含める
             text = text.replace(symbol, data["short_name"])
         return text
@@ -237,3 +243,5 @@ speaker_settings = load_style_settings()
 emoji_ja = fetch_json(
     "https://raw.githubusercontent.com/yagays/emoji-ja/master/data/emoji_ja.json"
 )
+# 特別な置き換え規則
+special_cases = {"🇵🇸": "パレスチ}
