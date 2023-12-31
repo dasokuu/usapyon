@@ -77,19 +77,17 @@ class PaginationView(View):
 
         # メッセージを更新
         message = f"**利用可能な話者とスタイル (ページ {self.page}/{self.total_pages}):**\n"
-        for speaker in self.speakers[start_index:end_index]:
+        for i, speaker in enumerate(self.speakers[start_index:end_index]):
             name = speaker["name"]
             character_id, display_name = get_character_info(name)
             url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
             styles_info = " ".join(
                 f"{style['name']} (ID: `{style['id']}`)" for style in speaker["styles"]
             )
-            message += f"\n[{display_name}]({url}): {styles_info}"
-        # 話者選択用のボタンを追加
-        for i, speaker in enumerate(self.speakers[start_index:end_index]):
-            self.add_item(
-                Button(label=speaker["name"], custom_id=f"select_speaker_{i}")
-            )
+            # メッセージにリンクを含める
+            message += f"\n[{display_name}]({url}): {styles_info}\n"
+            # 各話者選択用のボタンを追加
+            self.add_item(Button(label=f"{display_name} を選択", custom_id=f"select_speaker_{i}"))
         if interaction.response.is_done():
             await interaction.followup.edit_message(
                 message_id=interaction.message.id, content=message, view=self
@@ -97,9 +95,7 @@ class PaginationView(View):
         else:
             await interaction.response.edit_message(content=message, view=self)
 
-    @discord.ui.button(
-        label="Select", style=discord.ButtonStyle.secondary, custom_id="select_speaker"
-    )
+    @discord.ui.button(label="Select", style=discord.ButtonStyle.secondary, custom_id="select_speaker")
     async def select_speaker(self, interaction: discord.Interaction, button: Button):
         # 選択された話者のIDを取得
         selected_speaker_id = int(button.custom_id.split("_")[-1])
