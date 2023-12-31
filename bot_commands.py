@@ -194,8 +194,8 @@ def setup_commands(bot):
                 user_character_id = CHARACTORS_INFO.get(user_speaker_name, "unknown")  # キャラクターIDを取得
                 user_url = f"https://voicevox.hiroshiba.jp/dormitory/{user_character_id}/"
                 welcome_message = (
-                    f"アナウンス音声「[VOICEVOX:{announcement_speaker_name}]({announcement_url})-{announcement_style_name}」\n"
-                    f"{user_display_name}のテキスト読み上げ音声「[VOICEVOX:{user_speaker_name}]({user_url})-{user_style_name}」"
+                    f"アナウンス音声「[VOICEVOX:{announcement_speaker_name}]({announcement_url}) {announcement_style_name}」\n"
+                    f"{user_display_name}のテキスト読み上げ音声「[VOICEVOX:{user_speaker_name}]({user_url}) {user_style_name}」"
                 )
 
                 # メッセージとスタイルIDをキューに追加
