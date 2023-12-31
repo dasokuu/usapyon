@@ -159,8 +159,8 @@ def setup_commands(bot):
                 # クレジットをメッセージに追加
                 notify_speaker_name, notify_style_name = get_style_details(notify_style_id)
                 user_speaker_name, user_style_name = get_style_details(user_style_id)
-                welcome_message = (f"アナウンス音声「VOICEVOX:{notify_speaker_name}（{notify_style_name}）」\n"
-                                f"{user_display_name}のテキスト読み上げ音声「VOICEVOX:{user_speaker_name}（{user_style_name}）」")
+                welcome_message = (f"アナウンス音声「VOICEVOX:{notify_speaker_name}」\n"
+                                f"{user_display_name}のテキスト読み上げ音声「VOICEVOX:{user_speaker_name}」")
 
                 # メッセージとスタイルIDをキューに追加
                 await text_to_speech(

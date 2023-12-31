@@ -175,7 +175,7 @@ async def handle_voice_state_update(bot, member, before, after):
             "notify", NOTIFY_DEFAULT_STYLE_ID
         )
         # クレジットをメッセージに追加
-        speaker_name, _ = get_style_details(notify_style_id)
+        speaker_name, style_name = get_style_details(notify_style_id)
         notify_message = (
             f"{notify_voice}\n\n{member.display_name}さんの読み上げ音声「VOICEVOX:{speaker_name}」"
         )
