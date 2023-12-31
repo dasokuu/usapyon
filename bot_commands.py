@@ -35,16 +35,19 @@ class StyleSelectionView(View):
             )
         await interaction.response.send_message(content=message, view=self)
 
-    @discord.ui.button(
-        label="Select", style=discord.ButtonStyle.secondary, custom_id="select_style"
-    )
+    @discord.ui.button(label="Select", style=discord.ButtonStyle.secondary, custom_id="select_style")
     async def select_style(self, interaction: discord.Interaction, button: Button):
-        # 選択されたスタイルIDを取得
-        selected_style_id = int(button.custom_id.split("_")[-1])
-        # ユーザーの設定を更新
-        update_style_setting(str(interaction.user.id), selected_style_id)
-        await interaction.response.send_message(f"スタイルが更新されました: {selected_style_id}")
+        try:
 
+            selected_style_id = int(button.custom_id.split("_")[-1])
+            update_style_setting(str(interaction.user.id), selected_style_id)
+            await interaction.followup.send(f"スタイルが更新されました: {selected_style_id}")
+
+        except Exception as e:
+            # エラーメッセージをログに記録
+            print(f"Error in select_style: {e}")
+            # ユーザーにフィードバックを提供
+            await interaction.followup.send("スタイルの選択中にエラーが発生しました。")
 
 class PaginationView(View):
     def __init__(self, speakers, page=1):
@@ -72,8 +75,22 @@ class PaginationView(View):
         self.clear_items()
 
         # 前へ/次へのボタンを再追加
-        self.add_item(Button(label="前へ", style=discord.ButtonStyle.primary, custom_id="previous", disabled=self.page <= 1))
-        self.add_item(Button(label="次へ", style=discord.ButtonStyle.primary, custom_id="next", disabled=self.page >= self.total_pages))
+        self.add_item(
+            Button(
+                label="前へ",
+                style=discord.ButtonStyle.primary,
+                custom_id="previous",
+                disabled=self.page <= 1,
+            )
+        )
+        self.add_item(
+            Button(
+                label="次へ",
+                style=discord.ButtonStyle.primary,
+                custom_id="next",
+                disabled=self.page >= self.total_pages,
+            )
+        )
 
         start_index = (self.page - 1) * ITEMS_PER_PAGE
         end_index = start_index + ITEMS_PER_PAGE
@@ -99,15 +116,20 @@ class PaginationView(View):
             )
         else:
             await interaction.response.edit_message(content=message, view=self)
-    @discord.ui.button(
-        label="Select", style=discord.ButtonStyle.secondary, custom_id="select_speaker"
-    )
+
+    @discord.ui.button(label="Select", style=discord.ButtonStyle.secondary, custom_id="select_speaker")
     async def select_speaker(self, interaction: discord.Interaction, button: Button):
-        # 選択された話者のIDを取得
-        selected_speaker_id = int(button.custom_id.split("_")[-1])
-        # スタイル選択ビューを作成して表示
-        view = StyleSelectionView(self.speakers[selected_speaker_id])
-        await view.send_initial_message(interaction)
+        try:
+
+            selected_speaker_id = int(button.custom_id.split("_")[-1])
+            view = StyleSelectionView(self.speakers[selected_speaker_id])
+            await view.send_initial_message(interaction)
+
+        except Exception as e:
+            # エラーメッセージをログに記録
+            print(f"Error in select_speaker: {e}")
+            # ユーザーにフィードバックを提供
+            await interaction.followup.send("話者の選択中にエラーが発生しました。")
 
     async def send_initial_message(self, interaction):
         self.children[0].disabled = self.page <= 1
