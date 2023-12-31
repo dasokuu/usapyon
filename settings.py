@@ -1,6 +1,6 @@
 import discord
 
-COMMAND_PREFIX = "!"
+BOT_PREFIX = "!"
 GAME_NAME = f"待機中 | {COMMAND_PREFIX}helpでコマンド説明を表示"
 USER_DEFAULT_STYLE_ID = 3
 NOTIFY_DEFAULT_STYLE_ID = 8
