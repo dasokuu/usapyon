@@ -7,7 +7,7 @@ import discord
 from settings import (
     CHARACTORS_INFO,
     USER_DEFAULT_STYLE_ID,
-    NOTIFY_DEFAULT_STYLE_ID,
+    ANNOUNCEMENT_DEFAULT_STYLE_ID,
     MAX_MESSAGE_LENGTH,
     SPEAKERS_URL,
     STYLE_SETTINGS_FILE,
@@ -173,7 +173,7 @@ async def handle_voice_state_update(bot, member, before, after):
     if before.channel != voice_client.channel and after.channel == voice_client.channel:
         notify_voice = f"{member.display_name}さんが入室しました。"
         notify_style_id = speaker_settings.get(str(member.guild.id), {}).get(
-            "notify", NOTIFY_DEFAULT_STYLE_ID
+            "notify", ANNOUNCEMENT_DEFAULT_STYLE_ID
         )
         # クレジットをメッセージに追加
         speaker_name, style_name = get_style_details(notify_style_id)
@@ -197,7 +197,7 @@ async def handle_voice_state_update(bot, member, before, after):
     ):
         notify_voice = f"{member.display_name}さんが退室しました。"
         notify_style_id = speaker_settings.get(str(member.guild.id), {}).get(
-            "notify", NOTIFY_DEFAULT_STYLE_ID
+            "notify", ANNOUNCEMENT_DEFAULT_STYLE_ID
         )
         await text_to_speech(voice_client, notify_voice, notify_style_id, guild_id)
 
