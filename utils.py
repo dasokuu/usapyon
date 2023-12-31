@@ -44,7 +44,11 @@ def get_style_details(style_id, default_name="デフォルト"):
     for speaker in speakers:
         for style in speaker["styles"]:
             if style["id"] == style_id:
-                return (speaker["name"], style["name"])
+                speaker_name = speaker["name"]
+                # もち子の場合、特別なクレジット表記を追加
+                if speaker_name == "もち子さん":
+                    speaker_name = "もち子(cv 明日葉よもぎ)"
+                return (speaker_name, style["name"])
     return (default_name, default_name)
 
 
@@ -91,14 +95,14 @@ async def replace_content(text, message):
         return channel.name + "チャンネル" if channel else match.group(0)
 
     def replace_emoji_name_to_kana(text):
-        new_text = ""
-        for char in text:
-            if emoji_ja.get(char, None) is not None:
-                new_char = emoji_ja.get(char)["short_name"]
-                new_text += new_char
-            else:
-                new_text += char
-        return new_text
+        for symbol, data in emoji_ja.items():
+            # キーワードのリストから正規表現パターンを作成
+            keywords_pattern = "|".join(map(re.escape, data["keywords"]))
+            # テキスト内のキーワードをshort_nameで置き換え
+            text = re.sub(keywords_pattern, data["short_name"], text)
+            # 絵文字自体も置き換え対象に含める
+            text = text.replace(symbol, data["short_name"])
+        return text
 
     def replace_custom_emoji_name_to_kana(match):
         emoji_name = match.group(1)
@@ -109,7 +113,7 @@ async def replace_content(text, message):
     # ロールメンションを「○○役職」に置き換え
     text = role_mention_pattern.sub(replace_role_mention, text)
     text = channel_pattern.sub(replace_channel_mention, text)
-    # text = custom_emoji_pattern.sub(replace_custom_emoji_name_to_kana, text)
+    text = custom_emoji_pattern.sub(replace_custom_emoji_name_to_kana, text)
     text = replace_emoji_name_to_kana(text)
     text = url_pattern.sub("URL省略", text)
 
