@@ -27,9 +27,9 @@ def validate_style_id(style_id):
     return False, None, None
 
 
-def fetch_json():
+def fetch_json(url):
     try:
-        response = requests.get(SPEAKERS_URL)
+        response = requests.get(url)
         response.raise_for_status()
         return response.json()
     except requests.HTTPError as http_err:
@@ -224,5 +224,5 @@ async def handle_voice_state_update(bot, member, before, after):
 
 # Initialize global variables
 guild_playback_queues = {}
-speakers = fetch_json()  # URL is now from settings
+speakers = fetch_json(SPEAKERS_URL)  # URL is now from settings
 speaker_settings = load_style_settings()
