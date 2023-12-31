@@ -68,16 +68,12 @@ class PaginationView(View):
         await self.update_message(interaction)
 
     async def update_message(self, interaction):
-        # 現在のページに応じてボタンの有効/無効を設定
-        self.children[0].disabled = self.page <= 1
-        self.children[1].disabled = self.page >= self.total_pages
-
         # 既存の話者選択ボタンをクリア
         self.clear_items()
 
         # 前へ/次へのボタンを再追加
-        self.add_item(Button(label="前へ", style=discord.ButtonStyle.primary, custom_id="previous"))
-        self.add_item(Button(label="次へ", style=discord.ButtonStyle.primary, custom_id="next"))
+        self.add_item(Button(label="前へ", style=discord.ButtonStyle.primary, custom_id="previous", disabled=self.page <= 1))
+        self.add_item(Button(label="次へ", style=discord.ButtonStyle.primary, custom_id="next", disabled=self.page >= self.total_pages))
 
         start_index = (self.page - 1) * ITEMS_PER_PAGE
         end_index = start_index + ITEMS_PER_PAGE
@@ -103,7 +99,6 @@ class PaginationView(View):
             )
         else:
             await interaction.response.edit_message(content=message, view=self)
-
     @discord.ui.button(
         label="Select", style=discord.ButtonStyle.secondary, custom_id="select_speaker"
     )
