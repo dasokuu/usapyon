@@ -26,15 +26,14 @@ class PaginationView(View):
         super().__init__()
         self.speakers = speakers
         self.page = page
-
     @discord.ui.button(label="前へ", style=discord.ButtonStyle.primary)
-    async def previous(self, button: Button, interaction: discord.Interaction):
+    async def previous(self, interaction: discord.Interaction, button: Button):
         # ページ数を減らす
         self.page = max(1, self.page - 1)
         await self.update_message(interaction)
 
     @discord.ui.button(label="次へ", style=discord.ButtonStyle.primary)
-    async def next(self, button: Button, interaction: discord.Interaction):
+    async def next(self, interaction: discord.Interaction, button: Button):
         # ページ数を増やす
         self.page = self.page + 1
         await self.update_message(interaction)
@@ -54,7 +53,11 @@ class PaginationView(View):
             )
             message += f"\n[{name}]({url}): {styles_info}"
 
-        await interaction.response.edit_message(content=message, view=self)
+        try:
+            # 既に応答済みのメッセージを編集
+            await interaction.edit_original_response(content=message, view=self)
+        except Exception as e:
+            print(f"update_messageでエラーが発生しました: {e}")
 
     async def send_initial_message(self, interaction):
         start_index = (self.page - 1) * ITEMS_PER_PAGE
