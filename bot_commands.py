@@ -42,22 +42,35 @@ async def handle_voice_config_command(interaction, style_id: int, voice_scope: s
                 )
             await interaction.response.send_message("\n".join(messages))
             return
-
-        # Update settings if style_id is provided
-        if style_id is not None:
+        elif style_id is None and voice_scope is not None:
+            # Display current style settings
+            current_style_id, speaker_name, style_name = get_current_style_details(
+                guild_id, user_id, voice_scope
+            )
+            await interaction.response.send_message(
+                f"現在の{voice_scope_description[voice_scope]}の読み上げ音声は「{speaker_name} {style_name}」です。"
+            )
+        elif style_id is not None and voice_scope is None:
+            messages = []
+            for t in voice_scope_description:
+                style_id, speaker_name, style_name = get_current_style_details(
+                    guild_id, user_id, t
+                )
+                messages.append(
+                    f"**{voice_scope_description[t]}**: {speaker_name} {style_name}"
+                )
+            await interaction.response.send_message("\n".join(messages))
+            return
+        elif style_id is not None and voice_scope is not None:
             valid, speaker_name, style_name = validate_style_id(style_id)
             if not valid:
                 return f"スタイルID {style_id} は無効です。正しいIDを入力してください。"
             update_style_setting(guild_id, user_id, style_id, voice_scope)
-            return f"{voice_scope_description[voice_scope]}の読み上げ音声が「{speaker_name} {style_name}」に更新されました。"
+            await interaction.response.send_message(
+                f"{voice_scope_description[voice_scope]}の読み上げ音声が「{speaker_name} {style_name}」に更新されました。"
+            )
+            return
 
-        # Display current style settings
-        current_style_id, speaker_name, style_name = get_current_style_details(
-            guild_id, user_id, voice_scope
-        )
-        await interaction.response.send_message(
-            f"現在の{voice_scope_description[voice_scope]}の読み上げ音声は「{speaker_name} {style_name}」です。"
-        )
     except Exception as e:
         await interaction.response.send_message(f"エラーが発生しました: {e}")
     return None  # Return None if there's no response
