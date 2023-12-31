@@ -266,7 +266,7 @@ def setup_commands(bot):
     @bot.tree.command(
         name="list", guild=TEST_GUILD_ID, description="話者とそのスタイルをページングして表示します。"
     )
-    async def list(interaction: discord.Interaction)
+    async def list(interaction: discord.Interaction):
         try:
             if not speakers:
                 await interaction.response.send_message("話者のデータを取得できませんでした。")
