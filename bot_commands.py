@@ -48,7 +48,7 @@ async def handle_voice_config_command(interaction, style_id: int, voice_scope: s
                 guild_id, user_id, voice_scope
             )
             await interaction.response.send_message(
-                f"現在の{voice_scope_description[voice_scope]}の読み上げ音声は「{speaker_name} {style_name}」です。"
+                f"現在の{voice_scope_description[voice_scope]}のテキスト読み上げ音声は「{speaker_name} {style_name}」です。"
             )
         elif style_id is not None and voice_scope is None:
             messages = []
@@ -117,10 +117,24 @@ def setup_commands(bot):
     @bot.tree.command(
         name="voice_config",
         guild=TEST_GUILD_ID,
-        description="読み上げキャラクターを表示また設定します。",
+        description="あなたのテキスト読み上げキャラクターを設定します。",
     )
     async def voice_config(interaction: discord.Interaction, style_id: int):
         await handle_voice_config_command(interaction, style_id, voice_scope="user")
+
+    @bot.tree.command(
+        name="server_voice_config",
+        guild=TEST_GUILD_ID,
+        description="サーバーのテキスト読み上げキャラクターを表示また設定します。",
+    )
+    @app_commands.choices(
+    voice_scope=[
+        app_commands.Choice(name="アナウンス音声", value="notify"),
+        app_commands.Choice(name="ユーザーデフォルトTTS音声", value="user_default"),
+    ]
+    )
+    async def server_voice_config(interaction: discord.Interaction, voice_scope, style_id: int=None):
+        await handle_voice_config_command(interaction, style_id, voice_scope)
 
     @bot.tree.command(
         name="join", guild=TEST_GUILD_ID, description="ボットをボイスチャンネルに接続し、読み上げを開始します。"
@@ -139,7 +153,9 @@ def setup_commands(bot):
 
                 guild_id = str(interaction.guild_id)
                 user_id = str(interaction.user.id)  # コマンド使用者のユーザーID
-                user_display_name = interaction.user.display_name  # Corrected variable name
+                user_display_name = (
+                    interaction.user.display_name
+                )  # Corrected variable name
                 text_channel_id = str(interaction.channel_id)  # このコマンドを使用したテキストチャンネルID
 
                 # サーバー設定が存在しない場合は初期化
@@ -152,15 +168,21 @@ def setup_commands(bot):
                 save_style_settings()  # 変更を保存
 
                 # 通知スタイルIDを取得
-                notify_style_id = speaker_settings.get(guild_id, {}).get("notify", NOTIFY_DEFAULT_STYLE_ID)
+                notify_style_id = speaker_settings.get(guild_id, {}).get(
+                    "notify", NOTIFY_DEFAULT_STYLE_ID
+                )
                 # ユーザーのスタイルIDを取得
                 user_style_id = speaker_settings.get(user_id, USER_DEFAULT_STYLE_ID)
 
                 # クレジットをメッセージに追加
-                notify_speaker_name, notify_style_name = get_style_details(notify_style_id)
+                notify_speaker_name, notify_style_name = get_style_details(
+                    notify_style_id
+                )
                 user_speaker_name, user_style_name = get_style_details(user_style_id)
-                welcome_message = (f"アナウンス音声「VOICEVOX:{notify_speaker_name}-{notify_style_name}」\n"
-                                f"{user_display_name}のテキスト読み上げ音声「VOICEVOX:{user_speaker_name}-{user_style_name}」")
+                welcome_message = (
+                    f"アナウンス音声「VOICEVOX:{notify_speaker_name}-{notify_style_name}」\n"
+                    f"{user_display_name}のテキスト読み上げ音声「VOICEVOX:{user_speaker_name}-{user_style_name}」"
+                )
 
                 # メッセージとスタイルIDをキューに追加
                 await text_to_speech(
