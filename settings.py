@@ -1,7 +1,7 @@
 import discord
 
 BOT_PREFIX = "!"
-GAME_NAME = f"`/list`でIDを確認。`/voice_config`で音声変更。"
+GAME_NAME = f"/helpでヘルプを表示。/listでIDを確認。/voice_configで音声変更。"
 USER_DEFAULT_STYLE_ID = 3
 ANNOUNCEMENT_DEFAULT_STYLE_ID = 8
 MAX_MESSAGE_LENGTH = 200
