@@ -70,7 +70,7 @@ async def handle_voice_config_command(interaction, style_id: int, voice_scope: s
                 return
             update_style_setting(guild_id, user_id, style_id, voice_scope)
             await interaction.response.send_message(
-                f"{voice_scope_description[voice_scope]}の読み上げ音声が「VOICEVOX:{speaker_name}-{style_name}」に更新されました。"
+                f"{voice_scope_description[voice_scope]}が「VOICEVOX:{speaker_name}-{style_name}」に更新されました。"
             )
             return
 
