@@ -78,7 +78,7 @@ async def handle_voice_config_command(interaction, style_id: int, voice_scope: s
             character_id = CHARACTORS_INFO.get(speaker_name, "unknown")  # キャラクターIDを取得
             url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
             await interaction.response.send_message(
-                f"{voice_scope_description[voice_scope]}が「[VOICEVOX:{speaker_name}]({url}): {style_name}」に更新されました。"
+                f"{voice_scope_description[voice_scope]}が「[VOICEVOX:{speaker_name}]({url}) {style_name}」に更新されました。"
             )
             return
 
@@ -229,7 +229,7 @@ def setup_commands(bot):
             styles = ", ".join(
                 [f"{style['name']} (ID: {style['id']})" for style in speaker["styles"]]
             )
-            message += f"\n[{name}]({url}): {styles}"
+            message += f"\n[{name}]({url}) {styles}"
 
         # 長いメッセージを適切に分割して送信
         await send_long_message(interaction, message)
