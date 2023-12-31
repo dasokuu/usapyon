@@ -70,7 +70,7 @@ async def handle_voice_config_command(interaction, style_id: int, voice_scope: s
                 return
             update_style_setting(guild_id, user_id, style_id, voice_scope)
             await interaction.response.send_message(
-                f"{voice_scope_description[voice_scope]}の読み上げ音声が「{speaker_name} {style_name}」に更新されました。"
+                f"{voice_scope_description[voice_scope]}の読み上げ音声が「VOICEVOX:{speaker_name}（{style_name}）」に更新されました。"
             )
             return
 
@@ -157,10 +157,10 @@ def setup_commands(bot):
                 user_style_id = speaker_settings.get(user_id, USER_DEFAULT_STYLE_ID)
 
                 # クレジットをメッセージに追加
-                notify_speaker_name, _ = get_style_details(notify_style_id)
-                user_speaker_name, _ = get_style_details(user_style_id)
-                welcome_message = (f"アナウンス音声「VOICEVOX:{notify_speaker_name}」\n"
-                                f"{user_display_name}のテキスト読み上げ音声「VOICEVOX:{user_speaker_name}」")
+                notify_speaker_name, notify_style_name = get_style_details(notify_style_id)
+                user_speaker_name, user_style_name = get_style_details(user_style_id)
+                welcome_message = (f"アナウンス音声「VOICEVOX:{notify_speaker_name}（{notify_style_name}）」\n"
+                                f"{user_display_name}のテキスト読み上げ音声「VOICEVOX:{user_speaker_name}（{user_style_name}）」")
 
                 # メッセージとスタイルIDをキューに追加
                 await text_to_speech(
