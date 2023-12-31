@@ -6,7 +6,6 @@ from voice import process_playback_queue
 from bot_commands import setup_commands
 from settings import BOT_PREFIX, GAME_NAME, TEST_GUILD_ID
 
-print(fetch_json("https://raw.githubusercontent.com/yagays/emoji-ja/master/data/emoji_ja.json"))
 if __name__ == "__main__":
     # Initialize bot with intents and prefix
     intents = discord.Intents.default()

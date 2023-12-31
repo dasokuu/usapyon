@@ -91,7 +91,14 @@ async def replace_content(text, message):
         return channel.name + "チャンネル" if channel else match.group(0)
 
     def replace_emoji_name_to_kana(text):
-        return emoji.demojize(text, language="ja")
+        new_text = ""
+        for char in text:
+            if emoji_ja.get(char, None) is not None:
+                new_char = emoji_ja.get(char)["short_name"]
+                new_text += new_char
+            else:
+                new_text += char
+        return new_text
 
     def replace_custom_emoji_name_to_kana(match):
         emoji_name = match.group(1)
@@ -103,7 +110,6 @@ async def replace_content(text, message):
     text = role_mention_pattern.sub(replace_role_mention, text)
     text = channel_pattern.sub(replace_channel_mention, text)
     text = custom_emoji_pattern.sub(replace_custom_emoji_name_to_kana, text)
-
     text = replace_emoji_name_to_kana(text)
     text = url_pattern.sub("URL省略", text)
 
@@ -179,9 +185,7 @@ async def handle_voice_state_update(bot, member, before, after):
         speaker_name, style_name = get_style_details(notify_style_id)
         character_id = CHARACTORS_INFO.get(speaker_name, "unknown")  # キャラクターIDを取得
         url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
-        notify_message = (
-            f"{notify_voice}\n\n{member.display_name}さんのテキスト読み上げ音声「[VOICEVOX:{speaker_name}]({url}) {style_name}」"
-        )
+        notify_message = f"{notify_voice}\n\n{member.display_name}さんのテキスト読み上げ音声「[VOICEVOX:{speaker_name}]({url}) {style_name}」"
 
         # テキストチャンネルを取得してメッセージを送信
         text_channel_id = speaker_settings[guild_id].get("text_channel")
@@ -226,3 +230,6 @@ async def handle_voice_state_update(bot, member, before, after):
 guild_playback_queues = {}
 speakers = fetch_json(SPEAKERS_URL)  # URL is now from settings
 speaker_settings = load_style_settings()
+emoji_ja = fetch_json(
+    "https://raw.githubusercontent.com/yagays/emoji-ja/master/data/emoji_ja.json"
+)
