@@ -72,6 +72,13 @@ class PaginationView(View):
         self.children[0].disabled = self.page <= 1
         self.children[1].disabled = self.page >= self.total_pages
 
+        # 既存の話者選択ボタンをクリア
+        self.clear_items()
+
+        # 前へ/次へのボタンを再追加
+        self.add_item(Button(label="前へ", style=discord.ButtonStyle.primary, custom_id="previous"))
+        self.add_item(Button(label="次へ", style=discord.ButtonStyle.primary, custom_id="next"))
+
         start_index = (self.page - 1) * ITEMS_PER_PAGE
         end_index = start_index + ITEMS_PER_PAGE
 
@@ -82,11 +89,14 @@ class PaginationView(View):
             character_id, display_name = get_character_info(name)
             url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
             message += f"\n- [{display_name}]({url})"
+
         # 話者選択用のボタンを追加
         for i, speaker in enumerate(self.speakers[start_index:end_index]):
             self.add_item(
                 Button(label=f'{speaker["name"]}を選択', custom_id=f"select_speaker_{i}")
             )
+
+        # メッセージを送信または更新
         if interaction.response.is_done():
             await interaction.followup.edit_message(
                 message_id=interaction.message.id, content=message, view=self
