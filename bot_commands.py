@@ -37,8 +37,10 @@ async def handle_voice_config_command(interaction, style_id: int, voice_scope: s
                 style_id, speaker_name, style_name = get_current_style_details(
                     guild_id, user_id, t
                 )
+                character_id = CHARACTORS_INFO.get(speaker_name, "unknown")  # キャラクターIDを取得
+                url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
                 messages.append(
-                    f"**{voice_scope_description[t]}**: {speaker_name} {style_name}"
+                    f"**{voice_scope_description[t]}**: {speaker_name}({url}) {style_name}"
                 )
             await interaction.response.send_message("\n".join(messages))
             return
@@ -47,8 +49,10 @@ async def handle_voice_config_command(interaction, style_id: int, voice_scope: s
             current_style_id, speaker_name, style_name = get_current_style_details(
                 guild_id, user_id, voice_scope
             )
+            character_id = CHARACTORS_INFO.get(speaker_name, "unknown")  # キャラクターIDを取得
+            url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
             await interaction.response.send_message(
-                f"現在の{voice_scope_description[voice_scope]}は「{speaker_name} {style_name}」です。"
+                f"現在の{voice_scope_description[voice_scope]}は「{speaker_name}({url}) {style_name}」です。"
             )
         elif style_id is not None and voice_scope is None:
             messages = []
@@ -56,8 +60,10 @@ async def handle_voice_config_command(interaction, style_id: int, voice_scope: s
                 style_id, speaker_name, style_name = get_current_style_details(
                     guild_id, user_id, t
                 )
+                character_id = CHARACTORS_INFO.get(speaker_name, "unknown")  # キャラクターIDを取得
+                url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
                 messages.append(
-                    f"**{voice_scope_description[t]}**: {speaker_name} {style_name}"
+                    f"**{voice_scope_description[t]}**: {speaker_name}({url}) {style_name}"
                 )
             await interaction.response.send_message("\n".join(messages))
             return
@@ -69,8 +75,10 @@ async def handle_voice_config_command(interaction, style_id: int, voice_scope: s
                 )
                 return
             update_style_setting(guild_id, user_id, style_id, voice_scope)
+            character_id = CHARACTORS_INFO.get(speaker_name, "unknown")  # キャラクターIDを取得
+            url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
             await interaction.response.send_message(
-                f"{voice_scope_description[voice_scope]}が「VOICEVOX:{speaker_name}-{style_name}」に更新されました。"
+                f"{voice_scope_description[voice_scope]}が「VOICEVOX:{speaker_name}({url}): {style_name}」に更新されました。"
             )
             return
 
