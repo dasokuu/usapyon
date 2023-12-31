@@ -128,12 +128,14 @@ def setup_commands(bot):
         description="サーバーのテキスト読み上げキャラクターを表示また設定します。",
     )
     @app_commands.choices(
-    voice_scope=[
-        app_commands.Choice(name="アナウンス音声", value="notify"),
-        app_commands.Choice(name="ユーザーデフォルトTTS音声", value="user_default"),
-    ]
+        voice_scope=[
+            app_commands.Choice(name="アナウンス音声", value="notify"),
+            app_commands.Choice(name="ユーザーデフォルトTTS音声", value="user_default"),
+        ]
     )
-    async def server_voice_config(interaction: discord.Interaction, voice_scope, style_id: int=None):
+    async def server_voice_config(
+        interaction: discord.Interaction, voice_scope: str = None, style_id: int = None
+    ):
         await handle_voice_config_command(interaction, style_id, voice_scope)
 
     @bot.tree.command(
