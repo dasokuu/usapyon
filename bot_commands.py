@@ -18,34 +18,44 @@ from discord import app_commands
 import discord
 from discord.ui import Button, View
 
-ITEMS_PER_PAGE = 1  # 1ページあたりのアイテム数
+ITEMS_PER_PAGE = 10  # 1ページあたりのアイテム数
 
 
-class StyleSelect(discord.ui.Select):
+# ステップ 2: スタイル選択ビューの作成
+class StyleSelectionView(View):
     def __init__(self, speaker):
-        options = [
-            discord.SelectOption(label=style["name"], value=str(style["id"]))
-            for style in speaker["styles"]
-        ]
-        super().__init__(placeholder=f"{speaker['name']}のスタイルを選択...", min_values=1, max_values=1, options=options)
+        super().__init__()
         self.speaker = speaker
 
-    async def callback(self, interaction: discord.Interaction):
-        style_id = int(self.values[0])
-        # コールバック内で、選択されたスタイルをユーザーの読み上げ音声に設定
-        await handle_voice_config_command(interaction, style_id, voice_scope="user")
+    async def send_initial_message(self, interaction):
+        message = f"**{self.speaker['name']}の利用可能なスタイル:**\n"
+        for style in self.speaker["styles"]:
+            self.add_item(
+                Button(label=style["name"], custom_id=f"select_style_{style['id']}")
+            )
+        await interaction.response.send_message(content=message, view=self)
+
+    @discord.ui.button(
+        label="Select", style=discord.ButtonStyle.secondary, custom_id="select_style"
+    )
+    async def select_style(self, interaction: discord.Interaction, button: Button):
+        # 選択されたスタイルIDを取得
+        selected_style_id = int(button.custom_id.split("_")[-1])
+        # ユーザーの設定を更新
+        update_style_setting(str(interaction.user.id), selected_style_id)
+        await interaction.response.send_message(f"スタイルが更新されました: {selected_style_id}")
 
 
 class PaginationView(View):
     def __init__(self, speakers, page=1):
         super().__init__()
+        self.speakers = speakers
         self.page = page
-        self.speakers = speakers  # この行を確認
-        self.total_pages = max(1, len(speakers) // ITEMS_PER_PAGE + (1 if len(speakers) % ITEMS_PER_PAGE > 0 else 0))
-        # # 現在のページの話者ごとにセレクトボックスを追加
-        # for speaker in speakers[(page - 1) * ITEMS_PER_PAGE : page * ITEMS_PER_PAGE]:
-        #     self.add_item(StyleSelect(speaker))
-
+        self.total_pages = max(
+            1,
+            len(speakers) // ITEMS_PER_PAGE
+            + (1 if len(speakers) % ITEMS_PER_PAGE > 0 else 0),
+        )
 
     @discord.ui.button(label="前へ", style=discord.ButtonStyle.primary)
     async def previous(self, interaction: discord.Interaction, button: Button):
@@ -75,15 +85,27 @@ class PaginationView(View):
                 f"{style['name']} (ID: `{style['id']}`)" for style in speaker["styles"]
             )
             message += f"\n[{display_name}]({url}): {styles_info}"
-        # 現在のページの話者ごとにセレクトボックスを追加
-        for speaker in speakers[(self.page - 1) * ITEMS_PER_PAGE : self.page * ITEMS_PER_PAGE]:
-            self.add_item(StyleSelect(speaker))
+        # 話者選択用のボタンを追加
+        for i, speaker in enumerate(self.speakers[start_index:end_index]):
+            self.add_item(
+                Button(label=speaker["name"], custom_id=f"select_speaker_{i}")
+            )
         if interaction.response.is_done():
             await interaction.followup.edit_message(
                 message_id=interaction.message.id, content=message, view=self
             )
         else:
             await interaction.response.edit_message(content=message, view=self)
+
+    @discord.ui.button(
+        label="Select", style=discord.ButtonStyle.secondary, custom_id="select_speaker"
+    )
+    async def select_speaker(self, interaction: discord.Interaction, button: Button):
+        # 選択された話者のIDを取得
+        selected_speaker_id = int(button.custom_id.split("_")[-1])
+        # スタイル選択ビューを作成して表示
+        view = StyleSelectionView(self.speakers[selected_speaker_id])
+        await view.send_initial_message(interaction)
 
     async def send_initial_message(self, interaction):
         self.children[0].disabled = self.page <= 1
@@ -101,9 +123,7 @@ class PaginationView(View):
                 f"{style['name']} (ID: `{style['id']}`)" for style in speaker["styles"]
             )
             message += f"\n[{display_name}]({url}): {styles_info}"
-        # 現在のページの話者ごとにセレクトボックスを追加
-        for speaker in speakers[(self.page - 1) * ITEMS_PER_PAGE : self.page * ITEMS_PER_PAGE]:
-            self.add_item(StyleSelect(speaker))
+
         # 最初のメッセージを送信
         await interaction.response.send_message(content=message, view=self)
 
@@ -336,8 +356,6 @@ def setup_commands(bot):
         # 最初のページを表示
         view = PaginationView(speakers)
         await view.send_initial_message(interaction)
-
-
 
     @bot.tree.command(
         name="help", guilds=APPROVED_GUILD_IDS, description="利用可能なコマンドとその説明を表示します。"
