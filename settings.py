@@ -10,7 +10,7 @@ SPEAKERS_URL = VOICEVOX_ENGINE_URL + "speakers"
 AUDIO_QUERY_URL = VOICEVOX_ENGINE_URL + "audio_query"
 SYNTHESIS_URL = VOICEVOX_ENGINE_URL + "synthesis"
 STYLE_SETTINGS_FILE = "style_settings.json"
-TEST_GUILD_ID = discord.Object(id="1129051248574869617")
+TEST_GUILD_ID = discord.Object(id="1189256965172514836")
 # https://raw.githubusercontent.com/VOICEVOX/voicevox_blog/master/src/constants.ts
 CHARACTORS_INFO = {
     "四国めたん": "shikoku_metan",
