@@ -17,7 +17,7 @@ from voice import clear_playback_queue, text_to_speech
 from discord import app_commands
 
 
-async def handle_style_command(interaction, style_id: int, voice_scope: str):
+async def handle_voice_config_command(interaction, style_id: int, voice_scope: str):
     guild_id = str(interaction.guild_id)
     user_id = str(interaction.user.id)
     user_display_name = interaction.user.display_name  # Corrected variable name
@@ -104,7 +104,7 @@ def setup_commands(bot):
         description="読み上げキャラクターを表示また設定します。",
     )
     async def voice_config(interaction: discord.Interaction, style_id: int):
-        await handle_style_command(interaction, style_id, voice_scope="user")
+        await handle_voice_config_command(interaction, style_id, voice_scope="user")
 
     @bot.tree.command(
         name="join", guild=TEST_GUILD_ID, description="ボットをボイスチャンネルに接続し、読み上げを開始します。"
@@ -177,12 +177,22 @@ def setup_commands(bot):
     async def send_long_message(
         interaction: discord.Interaction, message, split_char="\n"
     ):
-        """2000文字を超える長いメッセージを適切に分割して送信します。"""
+        """2000文字を超える長いメッセージを適切に分割して送信します。
+        最初のメッセージは応答として送信され、残りはフォローアップとして送信されます。
+        """
+        # 最初のメッセージフラグを設定します。
+        first_message = True
+
         while len(message) > 0:
             # メッセージが2000文字以下の場合はそのまま送信
             if len(message) <= 2000:
-                await interaction.response.send_message(message)
+                # 最初のメッセージの場合は応答として送信
+                if first_message:
+                    await interaction.response.send_message(message)
+                else:
+                    await interaction.followup.send(message)
                 break
+
             # メッセージを2000文字で仮に切り分け
             part = message[:2000]
             # 最後の改行位置または分割文字の位置を探す
@@ -190,8 +200,15 @@ def setup_commands(bot):
             if split_pos == -1:
                 # 分割文字が見つからない場合は、2000文字で強制的に分割
                 split_pos = 1999
+
             # 最初の部分を送信
-            await interaction.response.send_message(message[: split_pos + 1])
+            part_to_send = message[: split_pos + 1]
+            if first_message:
+                await interaction.response.send_message(part_to_send)
+                first_message = False
+            else:
+                await interaction.followup.send(part_to_send)
+
             # 残りのメッセージを更新
             message = message[split_pos + 1 :]
 
@@ -245,10 +262,10 @@ def setup_commands(bot):
     # async def style_id(interaction, voice_scope: str, style_id: int = None):
     #     if voice_scope and not style_id:
     #         # If only voice_scope is provided, display the current settings for that type.
-    #         update_message = await handle_style_command(interaction, None, voice_scope)
+    #         update_message = await handle_voice_config_command(interaction, None, voice_scope)
     #     else:
-    #         # handle_style_command from the response
-    #         update_message = await handle_style_command(
+    #         # handle_voice_config_command from the response
+    #         update_message = await handle_voice_config_command(
     #             interaction, style_id, voice_scope
     #         )
 
