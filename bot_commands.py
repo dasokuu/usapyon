@@ -75,15 +75,12 @@ class PaginationView(View):
         message = f"**利用可能な話者とスタイル (ページ {self.page}):**\n"
         for speaker in self.speakers[start_index:end_index]:
             name = speaker["name"]
-            # もち子さんの場合、特別なクレジット表記を使用
-            if name == "もち子さん":
-                name = "もち子(cv 明日葉よもぎ)"
-            character_id = CHARACTORS_INFO.get(name, "unknown")
+            character_id, display_name = get_character_info(name)
             url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
             styles_info = ", ".join(
                 f"{style['name']} (ID: {style['id']})" for style in speaker["styles"]
             )
-            message += f"\n[{name}]({url}): {styles_info}"
+            message += f"\n[{display_name}]({url}): {styles_info}"
 
         # 最初のメッセージを送信
         await interaction.response.send_message(content=message, view=self)
