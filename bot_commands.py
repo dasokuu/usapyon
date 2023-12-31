@@ -1,5 +1,6 @@
 import discord
 from settings import (
+    APPROVED_GUILD_IDS,
     CHARACTORS_INFO,
     TEST_GUILD_ID,
     USER_DEFAULT_STYLE_ID,
@@ -187,7 +188,7 @@ def get_current_style_details(guild_id, user_id, voice_scope):
 
 def setup_commands(bot):
     @bot.tree.command(
-        name="leave", guild=TEST_GUILD_ID, description="ボットをボイスチャンネルから切断します。"
+        name="leave", guilds=APPROVED_GUILD_IDS, description="ボットをボイスチャンネルから切断します。"
     )
     async def leave(interaction: discord.Interaction):
         if interaction.guild.voice_client:
@@ -200,7 +201,7 @@ def setup_commands(bot):
 
     @bot.tree.command(
         name="voice_config",
-        guild=TEST_GUILD_ID,
+        guilds=APPROVED_GUILD_IDS,
         description="あなたのテキスト読み上げキャラクターを設定します。",
     )
     async def voice_config(interaction: discord.Interaction, style_id: int):
@@ -208,7 +209,7 @@ def setup_commands(bot):
 
     @bot.tree.command(
         name="server_voice_config",
-        guild=TEST_GUILD_ID,
+        guilds=APPROVED_GUILD_IDS,
         description="サーバーのテキスト読み上げキャラクターを表示また設定します。",
     )
     @app_commands.choices(
@@ -223,7 +224,7 @@ def setup_commands(bot):
         await handle_voice_config_command(interaction, style_id, voice_scope)
 
     @bot.tree.command(
-        name="join", guild=TEST_GUILD_ID, description="ボットをボイスチャンネルに接続し、読み上げを開始します。"
+        name="join", guilds=APPROVED_GUILD_IDS, description="ボットをボイスチャンネルに接続し、読み上げを開始します。"
     )
     async def join(interaction: discord.Interaction):
         # defer the response to keep the interaction alive
@@ -290,7 +291,7 @@ def setup_commands(bot):
             await interaction.followup.send(f"接続中にエラーが発生しました: {e}")
 
     @bot.tree.command(
-        name="list", guild=TEST_GUILD_ID, description="話者とそのスタイルをページングして表示します。"
+        name="list", guilds=APPROVED_GUILD_IDS, description="話者とそのスタイルをページングして表示します。"
     )
     async def list(interaction: discord.Interaction):
         if not speakers:
@@ -377,7 +378,7 @@ def setup_commands(bot):
     #         await ctx.send(f"コマンドを削除中にエラーが発生しました: {e}")
     # @bot.tree.command(
     #     name="display_current_settings",
-    #     guild=TEST_GUILD_ID,
+    #     guilds=APPROVED_GUILD_IDS,
     #     description="現在のスタイル設定を表示します。",
     # )
     # async def display_current_settings(interaction: discord.Interaction):
