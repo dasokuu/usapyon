@@ -26,7 +26,11 @@ class PaginationView(View):
         super().__init__()
         self.speakers = speakers
         self.page = page
-        self.total_pages = max(1, len(speakers) // ITEMS_PER_PAGE + (1 if len(speakers) % ITEMS_PER_PAGE > 0 else 0))
+        self.total_pages = max(
+            1,
+            len(speakers) // ITEMS_PER_PAGE
+            + (1 if len(speakers) % ITEMS_PER_PAGE > 0 else 0),
+        )
 
     @discord.ui.button(label="前へ", style=discord.ButtonStyle.primary)
     async def previous(self, interaction: discord.Interaction, button: Button):
@@ -142,7 +146,8 @@ async def handle_voice_config_command(interaction, style_id: int, voice_scope: s
             valid, speaker_name, style_name = validate_style_id(style_id)
             if not valid:
                 await interaction.response.send_message(
-                    f"スタイルID {style_id} は無効です。`/list`で有効なIDを確認し、正しいIDを入力してください。", ephemeral=True
+                    f"スタイルID {style_id} は無効です。`/list`で有効なIDを確認し、正しいIDを入力してください。",
+                    ephemeral=True,
                 )
                 return
             update_style_setting(guild_id, user_id, style_id, voice_scope)
@@ -223,7 +228,9 @@ def setup_commands(bot):
         await handle_voice_config_command(interaction, style_id, voice_scope)
 
     @bot.tree.command(
-        name="join", guilds=APPROVED_GUILD_IDS, description="ボットをボイスチャンネルに接続し、読み上げを開始します。"
+        name="join",
+        guilds=APPROVED_GUILD_IDS,
+        description="ボットをボイスチャンネルに接続し、読み上げを開始します。",
     )
     async def join(interaction: discord.Interaction):
         # defer the response to keep the interaction alive
@@ -258,16 +265,26 @@ def setup_commands(bot):
                     "announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID
                 )
                 # ユーザーのスタイルIDを取得
-                user_style_id = speaker_settings.get(user_id, speaker_settings[guild_id].get("user_default", USER_DEFAULT_STYLE_ID))
+                user_style_id = speaker_settings.get(
+                    user_id,
+                    speaker_settings[guild_id].get(
+                        "user_default", USER_DEFAULT_STYLE_ID
+                    ),
+                )
 
                 # クレジットをメッセージに追加
                 announcement_speaker_name, announcement_style_name = get_style_details(
                     announcement_style_id
                 )
-                announcement_character_id, announcement_display_name = get_character_info(announcement_speaker_name)
+                (
+                    announcement_character_id,
+                    announcement_display_name,
+                ) = get_character_info(announcement_speaker_name)
                 announcement_url = f"https://voicevox.hiroshiba.jp/dormitory/{announcement_character_id}/"
                 user_speaker_name, user_style_name = get_style_details(user_style_id)
-                user_character_id, user_tts_display_name = get_character_info(user_speaker_name)
+                user_character_id, user_tts_display_name = get_character_info(
+                    user_speaker_name
+                )
                 user_url = (
                     f"https://voicevox.hiroshiba.jp/dormitory/{user_character_id}/"
                 )
@@ -338,6 +355,22 @@ def setup_commands(bot):
 
             # 残りのメッセージを更新
             message = message[split_pos + 1 :]
+
+    @bot.tree.command(name="help", description="利用可能なコマンドとその説明を表示します。")
+    async def help_command(interaction: discord.Interaction):
+        help_text = """
+        **VOICECHATLOIDヘルプ**
+        以下は利用可能なコマンドのリストです：
+
+        `/join` - ボットをユーザーのいるボイスチャンネルに接続します。
+        `/leave` - ボットをボイスチャンネルから切断します。
+        `/voice_config [style_id]` - ユーザーのテキスト読み上げ音声スタイルを設定します。
+        `/server_voice_config [voice_scope] [style_id]` - サーバーのテキスト読み上げキャラクターを設定します。
+        `/list` - 利用可能な話者とそのスタイルを表示します。
+
+        各コマンドの詳細については、コマンドを入力時に表示される説明を参照してください。
+        """
+        await interaction.response.send_message(help_text)
 
     # @bot.command(name="remove_command")
     # async def remove_command(ctx, command_name: str):

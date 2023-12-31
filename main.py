@@ -21,6 +21,7 @@ if __name__ == "__main__":
     @bot.event
     async def on_ready():
         print(f"Logged in as {bot.user.name}")
+        await bot.change_presence(activity=discord.Game(name=GAME_NAME))  # ボットのステータスを設定
         for guild in APPROVED_GUILD_IDS:
             await bot.tree.sync(guild=guild)
         for guild in bot.guilds:
