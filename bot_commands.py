@@ -75,7 +75,9 @@ class PaginationView(View):
                 f"{style['name']} (ID: `{style['id']}`)" for style in speaker["styles"]
             )
             message += f"\n[{display_name}]({url}): {styles_info}"
-
+        # 現在のページの話者ごとにセレクトボックスを追加
+        for speaker in speakers[(self.page - 1) * ITEMS_PER_PAGE : self.page * ITEMS_PER_PAGE]:
+            self.add_item(StyleSelect(speaker))
         if interaction.response.is_done():
             await interaction.followup.edit_message(
                 message_id=interaction.message.id, content=message, view=self
@@ -99,7 +101,9 @@ class PaginationView(View):
                 f"{style['name']} (ID: `{style['id']}`)" for style in speaker["styles"]
             )
             message += f"\n[{display_name}]({url}): {styles_info}"
-
+        # 現在のページの話者ごとにセレクトボックスを追加
+        for speaker in speakers[(self.page - 1) * ITEMS_PER_PAGE : self.page * ITEMS_PER_PAGE]:
+            self.add_item(StyleSelect(speaker))
         # 最初のメッセージを送信
         await interaction.response.send_message(content=message, view=self)
 
