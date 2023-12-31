@@ -18,7 +18,7 @@ from discord import app_commands
 import discord
 from discord.ui import Button, View
 
-ITEMS_PER_PAGE = 10  # 1ページあたりのアイテム数
+ITEMS_PER_PAGE = 5  # 1ページあたりのアイテム数
 
 
 class StyleSelect(discord.ui.Select):
