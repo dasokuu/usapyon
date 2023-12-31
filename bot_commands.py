@@ -143,7 +143,7 @@ async def handle_voice_config_command(interaction, style_id: int, voice_scope: s
             valid, speaker_name, style_name = validate_style_id(style_id)
             if not valid:
                 await interaction.response.send_message(
-                    f"スタイルID {style_id} は無効です。正しいIDを入力してください。", ephemeral=True
+                    f"スタイルID {style_id} は無効です。`/list`で有効なIDを確認し、正しいIDを入力してください。", ephemeral=True
                 )
                 return
             update_style_setting(guild_id, user_id, style_id, voice_scope)
