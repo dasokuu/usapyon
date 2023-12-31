@@ -153,6 +153,9 @@ def setup_commands(bot):
                 notify_style_id = speaker_settings.get(guild_id, {}).get(
                     "notify", NOTIFY_DEFAULT_STYLE_ID
                 )
+                # クレジットをメッセージに追加
+                speaker_name, _ = get_style_details(notify_style_id)
+                welcome_message += f"\n\nこの音声は「VOICEVOX:{speaker_name}」を使用しています。"
 
                 # メッセージとスタイルIDをキューに追加
                 await text_to_speech(

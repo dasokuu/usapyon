@@ -174,6 +174,9 @@ async def handle_voice_state_update(bot, member, before, after):
         notify_style_id = speaker_settings.get(str(member.guild.id), {}).get(
             "notify", NOTIFY_DEFAULT_STYLE_ID
         )
+        # クレジットをメッセージに追加
+        speaker_name, _ = get_style_details(notify_style_id)
+        message += f"\n\n{member.display_name}さんの読み上げ音声は「VOICEVOX:{speaker_name}」を使用します。"
         await text_to_speech(voice_client, message, notify_style_id, guild_id)
 
     # ボイスチャンネルから切断したとき
