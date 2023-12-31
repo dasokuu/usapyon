@@ -24,7 +24,7 @@ async def handle_voice_config_command(interaction, style_id: int, voice_scope: s
 
     # Define descriptions for each voice style scope
     voice_scope_description = {
-        "user": f"{user_display_name}",  # Corrected variable name
+        "user": f"{user_display_name}のテキスト読み上げ音声",  # Corrected variable name
         "notify": "アナウンス音声",
         "user_default": "ユーザーデフォルトTTS音声",
     }
