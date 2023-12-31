@@ -271,13 +271,12 @@ def setup_commands(bot):
             if not speakers:
                 await interaction.response.send_message("話者のデータを取得できませんでした。")
                 return
+            # 最初のページを表示
+            view = PaginationView(speakers)
+            await view.update_message(interaction)
         except Exception as e:
             print(f"エラーが発生しました: {e}")
             await interaction.response.send_message(f"エラーが発生しました: {e}")
-
-        # 最初のページを表示
-        view = PaginationView(speakers)
-        await view.update_message(interaction)
 
     async def send_long_message(
         interaction: discord.Interaction, message, split_char="\n"
