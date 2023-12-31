@@ -64,7 +64,10 @@ async def handle_voice_config_command(interaction, style_id: int, voice_scope: s
         elif style_id is not None and voice_scope is not None:
             valid, speaker_name, style_name = validate_style_id(style_id)
             if not valid:
-                return f"スタイルID {style_id} は無効です。正しいIDを入力してください。"
+                await interaction.response.send_message(
+                    f"スタイルID {style_id} は無効です。正しいIDを入力してください。"
+                )
+                return
             update_style_setting(guild_id, user_id, style_id, voice_scope)
             await interaction.response.send_message(
                 f"{voice_scope_description[voice_scope]}の読み上げ音声が「{speaker_name} {style_name}」に更新されました。"
