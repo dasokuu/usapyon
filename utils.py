@@ -15,6 +15,7 @@ from voice import clear_playback_queue, text_to_speech
 
 current_voice_client = None
 
+
 def get_character_info(speaker_name):
     # もち子さんの特別な処理
     if speaker_name == "もち子さん":
@@ -26,6 +27,7 @@ def get_character_info(speaker_name):
 
     character_id = CHARACTORS_INFO.get(character_key, "unknown")  # キャラクターIDを取得
     return character_id, display_name
+
 
 def validate_style_id(style_id):
     valid_style_ids = [
@@ -195,12 +197,12 @@ async def handle_voice_state_update(bot, member, before, after):
     if before.channel != voice_client.channel and after.channel == voice_client.channel:
         announcement_voice = f"{member.display_name}さんが入室しました。"
         # ユーザーのスタイルIDを取得
-        user_style_id = speaker_settings.get(member.id, USER_DEFAULT_STYLE_ID)
-        speaker_name, style_name = get_style_details(user_style_id)
-        character_id, display_name = get_character_info(speaker_name)
-        url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
+        user_style_id = speaker_settings.get(str(member.id), USER_DEFAULT_STYLE_ID)
+        user_speaker_name, user_style_name = get_style_details(user_style_id)
+        user_character_id, user_display_name = get_character_info(user_speaker_name)
+        user_url = f"https://voicevox.hiroshiba.jp/dormitory/{user_character_id}/"
         announcement_message = (
-            f"{member.display_name}さんのテキスト読み上げ音声「[{display_name}]({url}) {style_name}」"
+            f"{member.display_name}さんのテキスト読み上げ音声「[{user_display_name}]({user_url}) {user_style_name}」"
         )
 
         # テキストチャンネルを取得してメッセージを送信
@@ -209,6 +211,8 @@ async def handle_voice_state_update(bot, member, before, after):
             text_channel = bot.get_channel(int(text_channel_id))
             if text_channel:
                 await text_channel.send(announcement_message)
+        # アナウンス用の音声スタイルIDを取得
+        announcement_style_id = speaker_settings.get(guild_id, {}).get("notify", ANNOUNCEMENT_DEFAULT_STYLE_ID)
         await text_to_speech(voice_client, announcement_voice, announcement_style_id, guild_id)
 
     # ボイスチャンネルから切断したとき
@@ -219,7 +223,9 @@ async def handle_voice_state_update(bot, member, before, after):
         announcement_style_id = speaker_settings.get(str(member.guild.id), {}).get(
             "announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID
         )
-        await text_to_speech(voice_client, announcement_voice, announcement_style_id, guild_id)
+        await text_to_speech(
+            voice_client, announcement_voice, announcement_style_id, guild_id
+        )
 
     # ボイスチャンネルに誰もいなくなったら自動的に切断します。
     if after.channel is None and member.guild.voice_client:
@@ -250,6 +256,4 @@ emoji_ja = fetch_json(
     "https://raw.githubusercontent.com/yagays/emoji-ja/master/data/emoji_ja.json"
 )
 # 特別な置き換え規則
-special_cases = {
-    "🇵🇸": "パレスチナ"
-}
+special_cases = {"🇵🇸": "パレスチ}
