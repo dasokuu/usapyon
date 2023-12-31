@@ -79,7 +79,7 @@ class PaginationView(View):
             styles_info = ", ".join(
                 f"{style['name']} (ID: {style['id']})" for style in speaker["styles"]
             )
-            message += f"\n[VOICEVOX:{name}]({url}): {styles_info}"
+            message += f"\n[{name}]({url}): {styles_info}"
 
         # 最初のメッセージを送信
         await interaction.response.send_message(content=message, view=self)
