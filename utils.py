@@ -256,4 +256,4 @@ emoji_ja = fetch_json(
     "https://raw.githubusercontent.com/yagays/emoji-ja/master/data/emoji_ja.json"
 )
 # 特別な置き換え規則
-special_cases = {"🇵🇸": "パレスチ}
+special_cases = {"🇵🇸": "パレスチナ"}
