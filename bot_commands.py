@@ -356,7 +356,9 @@ def setup_commands(bot):
             # 残りのメッセージを更新
             message = message[split_pos + 1 :]
 
-    @bot.tree.command(name="help", description="利用可能なコマンドとその説明を表示します。")
+    @bot.tree.command(
+        name="help", guilds=APPROVED_GUILD_IDS, description="利用可能なコマンドとその説明を表示します。"
+    )
     async def help_command(interaction: discord.Interaction):
         help_text = """
         **VOICECHATLOIDヘルプ**
