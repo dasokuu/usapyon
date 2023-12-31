@@ -56,7 +56,7 @@ class PaginationView(View):
             styles_info = " ".join(
                 f"{style['name']} (ID: {style['id']})" for style in speaker["styles"]
             )
-            message += f"\n[{display_name}]<{url}>: {styles_info}"
+            message += f"\n[{display_name}]({url}): {styles_info}"
 
         if interaction.response.is_done():
             await interaction.followup.edit_message(
