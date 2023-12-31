@@ -45,9 +45,6 @@ def get_style_details(style_id, default_name="デフォルト"):
         for style in speaker["styles"]:
             if style["id"] == style_id:
                 speaker_name = speaker["name"]
-                # もち子の場合、特別なクレジット表記を追加
-                if speaker_name == "もち子さん":
-                    speaker_name = "もち子(cv 明日葉よもぎ)"
                 return (speaker_name, style["name"])
     return (default_name, default_name)
 
@@ -185,17 +182,20 @@ async def handle_voice_state_update(bot, member, before, after):
     if not voice_client or not voice_client.channel:
         return
 
-    # ボイスチャンネルに接続したとき
     if before.channel != voice_client.channel and after.channel == voice_client.channel:
         notify_voice = f"{member.display_name}さんが入室しました。"
         notify_style_id = speaker_settings.get(str(member.guild.id), {}).get(
             "notify", ANNOUNCEMENT_DEFAULT_STYLE_ID
         )
-        # クレジットをメッセージに追加
         speaker_name, style_name = get_style_details(notify_style_id)
+        # もち子さんの場合、特別なクレジット表記を使用
+        if speaker_name == "もち子さん":
+            speaker_name = "VOICEVOX:もち子(cv 明日葉よもぎ)"
         character_id = CHARACTORS_INFO.get(speaker_name, "unknown")  # キャラクターIDを取得
         url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
-        notify_message = f"{notify_voice}\n\n{member.display_name}さんのテキスト読み上げ音声「[VOICEVOX:{speaker_name}]({url}) {style_name}」"
+        notify_message = (
+            f"{notify_voice}\n\n{member.display_name}さんのテキスト読み上げ音声「[VOICEVOX:{speaker_name}]({url}) {style_name}」"
+        )
 
         # テキストチャンネルを取得してメッセージを送信
         text_channel_id = speaker_settings[guild_id].get("text_channel")
