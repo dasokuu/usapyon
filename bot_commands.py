@@ -258,7 +258,7 @@ def setup_commands(bot):
                     "announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID
                 )
                 # ユーザーのスタイルIDを取得
-                user_style_id = speaker_settings.get(user_id, USER_DEFAULT_STYLE_ID)
+                user_style_id = speaker_settings.get(user_id, speaker_settings[guild_id].get("user_default", USER_DEFAULT_STYLE_ID))
 
                 # クレジットをメッセージに追加
                 announcement_speaker_name, announcement_style_name = get_style_details(

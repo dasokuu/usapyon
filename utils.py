@@ -158,10 +158,10 @@ async def handle_message(bot, message):
     guild_id = str(message.guild.id)
     # Initialize default settings for the server if none exist
     if guild_id not in speaker_settings:
-        speaker_settings[guild_id] = {"default": USER_DEFAULT_STYLE_ID}
+        speaker_settings[guild_id] = {"user_default": USER_DEFAULT_STYLE_ID}
 
     # Use get to safely access 'default' key
-    default_style_id = speaker_settings[guild_id].get("default", USER_DEFAULT_STYLE_ID)
+    default_style_id = speaker_settings[guild_id].get("user_default", USER_DEFAULT_STYLE_ID)
 
     style_id = speaker_settings.get(str(message.author.id), default_style_id)
 
