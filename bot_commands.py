@@ -54,9 +54,9 @@ class PaginationView(View):
             character_id, display_name = get_character_info(name)
             url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
             styles_info = " ".join(
-                f"{style['name']} (ID: {style['id']})" for style in speaker["styles"]
+                f"{style['name']} (ID: `{style['id']}`)" for style in speaker["styles"]
             )
-            message += f"\n[{display_name}]({url}) {styles_info}"
+            message += f"\n[{display_name}]({url}): {styles_info}"
 
         if interaction.response.is_done():
             await interaction.followup.edit_message(
@@ -78,9 +78,9 @@ class PaginationView(View):
             character_id, display_name = get_character_info(name)
             url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
             styles_info = " ".join(
-                f"{style['name']} (ID: {style['id']})" for style in speaker["styles"]
+                f"{style['name']} (ID: `{style['id']}`)" for style in speaker["styles"]
             )
-            message += f"\n[{display_name}]({url}) {styles_info}"
+            message += f"\n[{display_name}]({url}): {styles_info}"
 
         # 最初のメッセージを送信
         await interaction.response.send_message(content=message, view=self)
