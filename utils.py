@@ -94,7 +94,7 @@ async def replace_content(text, message):
         channel = message.guild.get_channel(channel_id)
         return channel.name + "チャンネル" if channel else match.group(0)
 
-    def replace_emoji_name_to_kana(text, symbol_dict, special_cases):
+    def replace_keywords_with_short_name(text, symbol_dict, special_cases):
         for symbol, data in symbol_dict.items():
             # 特別なケースを先に処理
             if symbol in special_cases:
@@ -120,7 +120,7 @@ async def replace_content(text, message):
     text = role_mention_pattern.sub(replace_role_mention, text)
     text = channel_pattern.sub(replace_channel_mention, text)
     text = custom_emoji_pattern.sub(replace_custom_emoji_name_to_kana, text)
-    text = replace_emoji_name_to_kana(text)
+    text = replace_keywords_with_short_name(text, emoji_ja, special_cases)
     text = url_pattern.sub("URL省略", text)
 
     return text
