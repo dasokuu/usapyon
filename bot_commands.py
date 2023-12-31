@@ -25,8 +25,8 @@ async def handle_voice_config_command(interaction, style_id: int, voice_scope: s
     # Define descriptions for each voice style scope
     voice_scope_description = {
         "user": f"{user_display_name}",  # Corrected variable name
-        "notify": "VC入退室時",
-        "user_default": "ユーザーデフォルト",
+        "notify": "アナウンス音声",
+        "user_default": "ユーザーデフォルトTTS音声",
     }
 
     try:
@@ -48,7 +48,7 @@ async def handle_voice_config_command(interaction, style_id: int, voice_scope: s
                 guild_id, user_id, voice_scope
             )
             await interaction.response.send_message(
-                f"現在の{voice_scope_description[voice_scope]}のテキスト読み上げ音声は「{speaker_name} {style_name}」です。"
+                f"現在の{voice_scope_description[voice_scope]}は「{speaker_name} {style_name}」です。"
             )
         elif style_id is not None and voice_scope is None:
             messages = []
