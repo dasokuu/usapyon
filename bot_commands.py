@@ -210,11 +210,10 @@ def setup_commands(bot):
         except Exception as e:
             # エラーメッセージをユーザーに通知
             await interaction.followup.send(f"接続中にエラーが発生しました: {e}")
-
     ITEMS_PER_PAGE = 10  # 1ページあたりのアイテム数
 
     @bot.tree.command(
-        name="list", guild=TEST_GUILD_ID, description="話者とそのスタイルID、URLをページングして表示します。"
+        name="list", guild=TEST_GUILD_ID, description="話者とそのスタイルID、URLをコンパクトに表示します。"
     )
     @app_commands.describe(page='表示するページ番号')
     async def list(interaction: discord.Interaction, page: int = 1):
@@ -232,13 +231,15 @@ def setup_commands(bot):
             name = speaker["name"]
             character_id = CHARACTORS_INFO.get(name, "unknown")  # キャラクターIDを取得
             url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
-            styles_info = "\n".join(
-                f"{style['name']} (ID: {style['id']})" for style in speaker["styles"]
+            styles_info = ", ".join(
+                f"{style['name']} (ID: {style['id']})"
+                for style in speaker["styles"]
             )
-            message += f"\n[{name}]({url}): \n{styles_info}"
+            message += f"\n[{name}]({url}): {styles_info}"
 
         # メッセージを送信
         await interaction.response.send_message(message)
+
 
 
     async def send_long_message(
