@@ -1,4 +1,3 @@
-import asyncio
 import discord
 from settings import (
     CHARACTORS_INFO,

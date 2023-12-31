@@ -1,4 +1,3 @@
-import emoji
 import requests
 import json
 import jaconv
