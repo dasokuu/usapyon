@@ -104,7 +104,7 @@ def setup_commands(bot):
         description="読み上げキャラクターを表示また設定します。",
     )
     async def voice_config(interaction: discord.Interaction, style_id: int):
-        handle_style_command(interaction, style_id, voice_scope="user")
+        await handle_style_command(interaction, style_id, voice_scope="user")
 
     @bot.tree.command(
         name="join", guild=TEST_GUILD_ID, description="ボットをボイスチャンネルに接続し、読み上げを開始します。"
