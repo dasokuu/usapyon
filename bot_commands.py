@@ -85,7 +85,7 @@ class PaginationView(View):
         # 話者選択用のボタンを追加
         for i, speaker in enumerate(self.speakers[start_index:end_index]):
             self.add_item(
-                Button(label=speaker["name"], custom_id=f"select_speaker_{i}")
+                Button(label=f'{speaker["name"]}を選択', custom_id=f"select_speaker_{i}")
             )
         if interaction.response.is_done():
             await interaction.followup.edit_message(
@@ -120,7 +120,7 @@ class PaginationView(View):
         # 話者選択用のボタンを追加
         for i, speaker in enumerate(self.speakers[start_index:end_index]):
             self.add_item(
-                Button(label=speaker["name"], custom_id=f"select_speaker_{i}")
+                Button(label=f'{speaker["name"]}を選択', custom_id=f"select_speaker_{i}")
             )
         # 最初のメッセージを送信
         await interaction.response.send_message(content=message, view=self)
