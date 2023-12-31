@@ -4,7 +4,7 @@ from settings import (
     CHARACTORS_INFO,
     TEST_GUILD_ID,
     USER_DEFAULT_STYLE_ID,
-    NOTIFY_DEFAULT_STYLE_ID,
+    announcement_DEFAULT_STYLE_ID,
 )
 from utils import (
     speakers,
@@ -25,7 +25,7 @@ async def handle_voice_config_command(interaction, style_id: int, voice_scope: s
     # Define descriptions for each voice style scope
     voice_scope_description = {
         "user": f"{user_display_name}のテキスト読み上げ音声",  # Corrected variable name
-        "notify": "アナウンス音声",
+        "announcement": "アナウンス音声",
         "user_default": "ユーザーデフォルトTTS音声",
     }
 
@@ -90,8 +90,8 @@ async def handle_voice_config_command(interaction, style_id: int, voice_scope: s
 def update_style_setting(guild_id, user_id, style_id, voice_scope):
     if voice_scope == "user_default":
         speaker_settings[guild_id]["user_default"] = style_id
-    elif voice_scope == "notify":
-        speaker_settings[guild_id]["notify"] = style_id
+    elif voice_scope == "announcement":
+        speaker_settings[guild_id]["announcement"] = style_id
     elif voice_scope == "user":
         speaker_settings[user_id] = style_id
     save_style_settings()
@@ -100,8 +100,8 @@ def update_style_setting(guild_id, user_id, style_id, voice_scope):
 def get_current_style_details(guild_id, user_id, voice_scope):
     if voice_scope == "user_default":
         style_id = speaker_settings[guild_id].get("user_default", USER_DEFAULT_STYLE_ID)
-    elif voice_scope == "notify":
-        style_id = speaker_settings[guild_id].get("notify", NOTIFY_DEFAULT_STYLE_ID)
+    elif voice_scope == "announcement":
+        style_id = speaker_settings[guild_id].get("announcement", announcement_DEFAULT_STYLE_ID)
     elif voice_scope == "user":
         style_id = speaker_settings.get(user_id, USER_DEFAULT_STYLE_ID)
 
@@ -137,7 +137,7 @@ def setup_commands(bot):
     )
     @app_commands.choices(
         voice_scope=[
-            app_commands.Choice(name="アナウンス音声", value="notify"),
+            app_commands.Choice(name="アナウンス音声", value="announcement"),
             app_commands.Choice(name="ユーザーデフォルトTTS音声", value="user_default"),
         ]
     )
@@ -178,25 +178,29 @@ def setup_commands(bot):
                 save_style_settings()  # 変更を保存
 
                 # 通知スタイルIDを取得
-                notify_style_id = speaker_settings.get(guild_id, {}).get(
-                    "notify", NOTIFY_DEFAULT_STYLE_ID
+                announcement_style_id = speaker_settings.get(guild_id, {}).get(
+                    "announcement", announcement_DEFAULT_STYLE_ID
                 )
                 # ユーザーのスタイルIDを取得
                 user_style_id = speaker_settings.get(user_id, USER_DEFAULT_STYLE_ID)
 
                 # クレジットをメッセージに追加
-                notify_speaker_name, notify_style_name = get_style_details(
-                    notify_style_id
+                announcement_speaker_name, announcement_style_name = get_style_details(
+                    announcement_style_id
                 )
+                announcement_character_id = CHARACTORS_INFO.get(announcement_speaker_name, "unknown")  # キャラクターIDを取得
+                announcement_url = f"https://voicevox.hiroshiba.jp/dormitory/{announcement_character_id}/"
                 user_speaker_name, user_style_name = get_style_details(user_style_id)
+                user_character_id = CHARACTORS_INFO.get(user_speaker_name, "unknown")  # キャラクターIDを取得
+                user_url = f"https://voicevox.hiroshiba.jp/dormitory/{user_character_id}/"
                 welcome_message = (
-                    f"アナウンス音声「VOICEVOX:{notify_speaker_name}-{notify_style_name}」\n"
-                    f"{user_display_name}のテキスト読み上げ音声「VOICEVOX:{user_speaker_name}-{user_style_name}」"
+                    f"アナウンス音声「[VOICEVOX:{announcement_speaker_name}]({announcement_url})-{announcement_style_name}」\n"
+                    f"{user_display_name}のテキスト読み上げ音声「[VOICEVOX:{user_speaker_name}]({user_url})-{user_style_name}」"
                 )
 
                 # メッセージとスタイルIDをキューに追加
                 await text_to_speech(
-                    voice_client, welcome_voice, notify_style_id, guild_id
+                    voice_client, welcome_voice, announcement_style_id, guild_id
                 )
                 await interaction.followup.send(welcome_message)
             else:
@@ -311,7 +315,7 @@ def setup_commands(bot):
     # @app_commands.choices(
     #     voice_scope=[
     #         app_commands.Choice(name="ユーザー", value="user"),
-    #         app_commands.Choice(name="VC入退室時", value="notify"),
+    #         app_commands.Choice(name="VC入退室時", value="announcement"),
     #         app_commands.Choice(name="ユーザーデフォルト", value="user_default"),
     #     ]
     # )
@@ -380,7 +384,7 @@ def setup_commands(bot):
     #     # Dictionary to map style types to more user-friendly descriptions
     #     voice_scope_descriptions = {
     #         "user": "ユーザー特有のスタイル",
-    #         "notify": "VC入退室時の通知",
+    #         "announcement": "VC入退室時の通知",
     #         "user_default": "ユーザーデフォルト",
     #     }
 
