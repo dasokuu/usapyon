@@ -193,15 +193,14 @@ async def handle_voice_state_update(bot, member, before, after):
         return
 
     if before.channel != voice_client.channel and after.channel == voice_client.channel:
-        notify_voice = f"{member.display_name}さんが入室しました。"
-        notify_style_id = speaker_settings.get(str(member.guild.id), {}).get(
-            "notify", ANNOUNCEMENT_DEFAULT_STYLE_ID
-        )
-        speaker_name, style_name = get_style_details(notify_style_id)
+        announcement_voice = f"{member.display_name}さんが入室しました。"
+        # ユーザーのスタイルIDを取得
+        user_style_id = speaker_settings.get(member.id, USER_DEFAULT_STYLE_ID)
+        speaker_name, style_name = get_style_details(user_style_id)
         character_id, display_name = get_character_info(speaker_name)
         url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
-        notify_message = (
-            f"{notify_voice}\n\n{member.display_name}さんのテキスト読み上げ音声「[{display_name}]({url}) {style_name}」"
+        announcement_message = (
+            f"{member.display_name}さんのテキスト読み上げ音声「[{display_name}]({url}) {style_name}」"
         )
 
         # テキストチャンネルを取得してメッセージを送信
@@ -209,18 +208,18 @@ async def handle_voice_state_update(bot, member, before, after):
         if text_channel_id:
             text_channel = bot.get_channel(int(text_channel_id))
             if text_channel:
-                await text_channel.send(notify_message)
-        await text_to_speech(voice_client, notify_voice, notify_style_id, guild_id)
+                await text_channel.send(announcement_message)
+        await text_to_speech(voice_client, announcement_voice, announcement_style_id, guild_id)
 
     # ボイスチャンネルから切断したとき
     elif (
         before.channel == voice_client.channel and after.channel != voice_client.channel
     ):
-        notify_voice = f"{member.display_name}さんが退室しました。"
-        notify_style_id = speaker_settings.get(str(member.guild.id), {}).get(
-            "notify", ANNOUNCEMENT_DEFAULT_STYLE_ID
+        announcement_voice = f"{member.display_name}さんが退室しました。"
+        announcement_style_id = speaker_settings.get(str(member.guild.id), {}).get(
+            "announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID
         )
-        await text_to_speech(voice_client, notify_voice, notify_style_id, guild_id)
+        await text_to_speech(voice_client, announcement_voice, announcement_style_id, guild_id)
 
     # ボイスチャンネルに誰もいなくなったら自動的に切断します。
     if after.channel is None and member.guild.voice_client:
