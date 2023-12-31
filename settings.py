@@ -15,6 +15,7 @@ APPROVED_GUILD_IDS = [
     discord.Object(id="1189256965172514836"),  # くーさーばー１
     discord.Object(id="1190673139072516096"),  # くーさーばー２
     discord.Object(id="1129051248574869617"),  # めぞんどとわいらいと
+    discord.Object(id="1156189448288079882"),  # ばろ
     # 他の承認されたギルドIDを追加する場合は、以下のようにリストに追加します。
     # discord.Object(id="他のギルドID"),
     # ...
