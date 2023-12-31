@@ -26,6 +26,7 @@ class PaginationView(View):
         super().__init__()
         self.speakers = speakers
         self.page = page
+
     @discord.ui.button(label="前へ", style=discord.ButtonStyle.primary)
     async def previous(self, interaction: discord.Interaction, button: Button):
         # ページ数を減らす
@@ -53,11 +54,12 @@ class PaginationView(View):
             )
             message += f"\n[{name}]({url}): {styles_info}"
 
-        try:
-            # 既に応答済みのメッセージを編集
-            await interaction.edit_original_response(content=message, view=self)
-        except Exception as e:
-            print(f"update_messageでエラーが発生しました: {e}")
+        if interaction.response.is_done():
+            # 応答済みの場合、フォローアップとして編集
+            await interaction.followup.edit_message(message_id=interaction.message.id, content=message, view=self)
+        else:
+            # まだ応答されていない場合、応答として送信
+            await interaction.response.send_message(content=message, view=self)
 
     async def send_initial_message(self, interaction):
         start_index = (self.page - 1) * ITEMS_PER_PAGE
@@ -333,70 +335,6 @@ def setup_commands(bot):
 
             # 残りのメッセージを更新
             message = message[split_pos + 1 :]
-
-    # @bot.tree.command(
-    #     name="list_style_ids",
-    #     guild=TEST_GUILD_ID,
-    #     description="利用可能なスタイルIDの一覧を表示します。",
-    # )
-    # async def list_style_ids(interaction: discord.Interaction):
-    #     # 応答を遅延させる
-    #     await interaction.response.defer()
-
-    #     embeds = []
-    #     embed = discord.Embed(title="利用可能なスタイルIDの一覧", color=0x00FF00)
-    #     embed.description = "各話者と利用可能なスタイルのIDです。"
-    #     field_count = 0
-
-    #     for speaker in speakers:
-    #         name = speaker["name"]
-    #         styles = "\n".join(
-    #             f"- {style['name']} `{style['id']}`" for style in speaker["styles"]
-    #         )
-
-    #         if field_count < 25:
-    #             embed.add_field(name=name, value=styles, inline=True)
-    #             field_count += 1
-    #         else:
-    #             embeds.append(embed)
-    #             embed = discord.Embed(title="利用可能なスタイルIDの一覧 (続き)", color=0x00FF00)
-    #             embed.add_field(name=name, value=styles, inline=True)
-    #             field_count = 1  # Reset for the new embed
-
-    #     # Add the last embed
-    #     embeds.append(embed)
-
-    #     # フォローアップメッセージを使用して複数の埋め込みを送信
-    #     for embed in embeds:
-    #         await interaction.followup.send(embed=embed)
-    # @bot.tree.command(
-    #     name="style_id",
-    #     guild=TEST_GUILD_ID,
-    #     description="スタイルを表示または設定します。",
-    # )
-    # @app_commands.choices(
-    #     voice_scope=[
-    #         app_commands.Choice(name="ユーザー", value="user"),
-    #         app_commands.Choice(name="VC入退室時", value="announcement"),
-    #         app_commands.Choice(name="ユーザーデフォルト", value="user_default"),
-    #     ]
-    # )
-    # async def style_id(interaction, voice_scope: str, style_id: int = None):
-    #     if voice_scope and not style_id:
-    #         # If only voice_scope is provided, display the current settings for that type.
-    #         update_message = await handle_voice_config_command(interaction, None, voice_scope)
-    #     else:
-    #         # handle_voice_config_command from the response
-    #         update_message = await handle_voice_config_command(
-    #             interaction, style_id, voice_scope
-    #         )
-
-    #     # Sending the response or follow-up message
-    #     if update_message:
-    #         if interaction.response.is_done():
-    #             await interaction.followup.send(update_message)
-    #         else:
-    #             await interaction.response.send_message(update_message)
 
     # @bot.command(name="remove_command")
     # async def remove_command(ctx, command_name: str):
