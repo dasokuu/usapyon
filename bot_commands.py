@@ -142,7 +142,7 @@ def setup_commands(bot):
         ]
     )
     async def server_voice_config(
-        interaction: discord.Interaction, voice_scope: str = None, style_id: int = None
+        interaction: discord.Interaction, voice_scope: str, style_id: int = None
     ):
         await handle_voice_config_command(interaction, style_id, voice_scope)
 
