@@ -15,6 +15,8 @@ from settings import (
 from voice import clear_playback_queue, text_to_speech
 
 current_voice_client = None
+ZERO_WIDTH_SPACE = "\u200B"
+
 def get_character_info(speaker_name):
     # もち子さんの特別な処理
     if speaker_name == "もち子さん":
