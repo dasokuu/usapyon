@@ -26,25 +26,28 @@ class PaginationView(View):
         super().__init__()
         self.speakers = speakers
         self.page = page
+        self.total_pages = max(1, len(speakers) // ITEMS_PER_PAGE + (1 if len(speakers) % ITEMS_PER_PAGE > 0 else 0))
 
     @discord.ui.button(label="前へ", style=discord.ButtonStyle.primary)
     async def previous(self, interaction: discord.Interaction, button: Button):
-        # ページ数を減らす
         self.page = max(1, self.page - 1)
         await self.update_message(interaction)
 
     @discord.ui.button(label="次へ", style=discord.ButtonStyle.primary)
     async def next(self, interaction: discord.Interaction, button: Button):
-        # ページ数を増やす
-        self.page = self.page + 1
+        self.page = min(self.total_pages, self.page + 1)
         await self.update_message(interaction)
 
     async def update_message(self, interaction):
+        # 現在のページに応じてボタンの有効/無効を設定
+        self.children[0].disabled = self.page <= 1
+        self.children[1].disabled = self.page >= self.total_pages
+
         start_index = (self.page - 1) * ITEMS_PER_PAGE
         end_index = start_index + ITEMS_PER_PAGE
 
         # メッセージを更新
-        message = f"**利用可能な話者とスタイル (ページ {self.page}):**\n"
+        message = f"**利用可能な話者とスタイル (ページ {self.page}/{self.total_pages}):**\n"
         for speaker in self.speakers[start_index:end_index]:
             name = speaker["name"]
             character_id = CHARACTORS_INFO.get(name, "unknown")
@@ -54,16 +57,16 @@ class PaginationView(View):
             )
             message += f"\n[{name}]({url}): {styles_info}"
 
-        # 応答済みの場合、フォローアップとして編集
         if interaction.response.is_done():
             await interaction.followup.edit_message(
                 message_id=interaction.message.id, content=message, view=self
             )
         else:
-            # まだ応答されていない場合、応答として送信
             await interaction.response.edit_message(content=message, view=self)
 
     async def send_initial_message(self, interaction):
+        self.children[0].disabled = self.page <= 1
+        self.children[1].disabled = self.page >= self.total_pages
         start_index = (self.page - 1) * ITEMS_PER_PAGE
         end_index = start_index + ITEMS_PER_PAGE
 
