@@ -34,15 +34,19 @@ class StyleSelectionView(View):
             )
         await interaction.response.send_message(content=message, view=self)
 
-    @discord.ui.button(label="Style", style=discord.ButtonStyle.secondary, custom_id="select_style")
-    async def select_style(self, interaction: discord.Interaction, button: Button):
-        style_id = int(button.custom_id.split('_')[-1])
-        await self.handle_style_selection(interaction, style_id)
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        for item in self.children:
+            if interaction.data['custom_id'] == item.custom_id:
+                style_id = int(item.custom_id.split('_')[-1])
+                await self.handle_style_selection(interaction, style_id)
+                return True  # 正常に処理されたことを示します
+        return False  # 何も一致しなかった場合
 
     async def handle_style_selection(self, interaction: discord.Interaction, style_id):
         print(f"Selected style ID: {style_id}")  # デバッグメッセージ
         update_style_setting(str(interaction.user.id), style_id)
-        await interaction.response.send_message(f"スタイルが更新されました: {style_id}")
+        await interaction.followup.send(f"スタイルが更新されました: {style_id}")
+
 
 
 
@@ -119,13 +123,14 @@ class PaginationView(View):
         else:
             await interaction.response.edit_message(content=message, view=self)
 
-    @discord.ui.button(
-        label="Select", style=discord.ButtonStyle.secondary, custom_id="select_speaker"
-    )
     async def select_speaker(self, interaction: discord.Interaction, button: Button):
         try:
-            selected_speaker_id = int(button.custom_id.split("_")[-1])
-            view = StyleSelectionView(self.speakers[selected_speaker_id])
+            # interaction.response.defer() を使用して、処理時間を確保します
+            await interaction.response.defer()
+
+            selected_index = int(button.custom_id.split("_")[-1])
+            selected_speaker = self.speakers[selected_index]
+            view = StyleSelectionView(selected_speaker)
             await view.send_initial_message(interaction)
 
         except Exception as e:
