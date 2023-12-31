@@ -135,7 +135,7 @@ def setup_commands(bot):
                 voice_client = await channel.connect(self_deaf=True)
                 # 接続成功時の処理
                 # 接続メッセージの読み上げ
-                welcome_message = "読み上げを開始します。"
+                welcome_voice = "読み上げを開始します。"
 
                 guild_id = str(interaction.guild_id)
                 text_channel_id = str(interaction.channel_id)  # このコマンドを使用したテキストチャンネルID
@@ -155,13 +155,13 @@ def setup_commands(bot):
                 )
                 # クレジットをメッセージに追加
                 speaker_name, _ = get_style_details(notify_style_id)
-                welcome_message += f"\n\nこの音声は「VOICEVOX:{speaker_name}」を使用しています。"
+                welcome_message = f"入退室アナウンス音声「VOICEVOX:{speaker_name}」"
 
                 # メッセージとスタイルIDをキューに追加
                 await text_to_speech(
-                    voice_client, welcome_message, notify_style_id, guild_id
+                    voice_client, welcome_voice, notify_style_id, guild_id
                 )
-                await interaction.followup.send("ボイスチャンネルに接続し、読み上げを開始しました。")
+                await interaction.followup.send(welcome_message)
             else:
                 await interaction.followup.send(
                     "ボイスチャンネルに接続できませんでした。ユーザーがボイスチャンネルにいることを確認してください。"

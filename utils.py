@@ -170,24 +170,31 @@ async def handle_voice_state_update(bot, member, before, after):
 
     # ボイスチャンネルに接続したとき
     if before.channel != voice_client.channel and after.channel == voice_client.channel:
-        message = f"{member.display_name}さんが入室しました。"
+        notify_voice = f"{member.display_name}さんが入室しました。"
         notify_style_id = speaker_settings.get(str(member.guild.id), {}).get(
             "notify", NOTIFY_DEFAULT_STYLE_ID
         )
         # クレジットをメッセージに追加
         speaker_name, _ = get_style_details(notify_style_id)
-        message += f"\n\n{member.display_name}さんの読み上げ音声は「VOICEVOX:{speaker_name}」を使用します。"
-        await text_to_speech(voice_client, message, notify_style_id, guild_id)
+        notify_message = f"{notify_voice}\n\n{member.display_name}さんの読み上げ音声「VOICEVOX:{speaker_name}」"
+
+        # テキストチャンネルを取得してメッセージを送信
+        text_channel_id = speaker_settings[guild_id].get("text_channel")
+        if text_channel_id:
+            text_channel = bot.get_channel(int(text_channel_id))
+            if text_channel:
+                await text_channel.send(notify_message)
+        await text_to_speech(voice_client, notify_voice, notify_style_id, guild_id)
 
     # ボイスチャンネルから切断したとき
     elif (
         before.channel == voice_client.channel and after.channel != voice_client.channel
     ):
-        message = f"{member.display_name}さんが退室しました。"
+        notify_voice = f"{member.display_name}さんが退室しました。"
         notify_style_id = speaker_settings.get(str(member.guild.id), {}).get(
             "notify", NOTIFY_DEFAULT_STYLE_ID
         )
-        await text_to_speech(voice_client, message, notify_style_id, guild_id)
+        await text_to_speech(voice_client, notify_voice, notify_style_id, guild_id)
 
     # ボイスチャンネルに誰もいなくなったら自動的に切断します。
     if after.channel is None and member.guild.voice_client:
