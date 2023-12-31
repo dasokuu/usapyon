@@ -190,7 +190,7 @@ async def handle_voice_state_update(bot, member, before, after):
         speaker_name, style_name = get_style_details(notify_style_id)
         # もち子さんの場合、特別なクレジット表記を使用
         if speaker_name == "もち子さん":
-            speaker_name = "VOICEVOX:もち子(cv 明日葉よもぎ)"
+            speaker_name = "もち子(cv 明日葉よもぎ)"
         character_id = CHARACTORS_INFO.get(speaker_name, "unknown")  # キャラクターIDを取得
         url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
         notify_message = (
