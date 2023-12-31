@@ -107,16 +107,12 @@ async def replace_content(text, message):
         for symbol, data in symbol_dict.items():
             # 特別なケースを先に処理
             if symbol in special_cases:
+                # print(f"特別なケースを処理: {symbol} -> {special_cases[symbol]}")
                 text = text.replace(symbol, special_cases[symbol])
                 continue
 
-            # キーワードのリストから正規表現パターンを作成
-            keywords_pattern = "|".join(map(re.escape, data["keywords"]))
-            # テキスト内のキーワードをshort_nameで置き換え
-            text = re.sub(keywords_pattern, data["short_name"], text)
-
-            # 絵文字自体も置き換え対象に含める
             text = text.replace(symbol, data["short_name"])
+            # print(f"シンボル置換後のテキスト: {text}")
         return text
 
     def replace_custom_emoji_name_to_kana(match):
@@ -201,9 +197,7 @@ async def handle_voice_state_update(bot, member, before, after):
         user_speaker_name, user_style_name = get_style_details(user_style_id)
         user_character_id, user_display_name = get_character_info(user_speaker_name)
         user_url = f"https://voicevox.hiroshiba.jp/dormitory/{user_character_id}/"
-        announcement_message = (
-            f"{member.display_name}さんのテキスト読み上げ音声「[{user_display_name}]({user_url}) {user_style_name}」"
-        )
+        announcement_message = f"{member.display_name}さんのテキスト読み上げ音声「[{user_display_name}]({user_url}) {user_style_name}」"
 
         # テキストチャンネルを取得してメッセージを送信
         text_channel_id = speaker_settings[guild_id].get("text_channel")
@@ -212,8 +206,12 @@ async def handle_voice_state_update(bot, member, before, after):
             if text_channel:
                 await text_channel.send(announcement_message)
         # アナウンス用の音声スタイルIDを取得
-        announcement_style_id = speaker_settings.get(guild_id, {}).get("notify", ANNOUNCEMENT_DEFAULT_STYLE_ID)
-        await text_to_speech(voice_client, announcement_voice, announcement_style_id, guild_id)
+        announcement_style_id = speaker_settings.get(guild_id, {}).get(
+            "notify", ANNOUNCEMENT_DEFAULT_STYLE_ID
+        )
+        await text_to_speech(
+            voice_client, announcement_voice, announcement_style_id, guild_id
+        )
 
     # ボイスチャンネルから切断したとき
     elif (
