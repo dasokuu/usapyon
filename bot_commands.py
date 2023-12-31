@@ -168,16 +168,16 @@ def setup_commands(bot):
             await interaction.followup.send(f"接続中にエラーが発生しました: {e}")
 
     @bot.tree.command(
-        name="list", guild=TEST_GUILD_ID, description="スピーカーとそのスタイルIDを表示します。"
+        name="list", guild=TEST_GUILD_ID, description="話者とそのスタイルIDを表示します。"
     )
     async def list(interaction: discord.Interaction):
-        """スピーカーとそのスタイルIDを表示します。"""
+        """話者とそのスタイルIDを表示します。"""
         if not speakers:
-            await interaction.response.send_message("スピーカーのデータを取得できませんでした。")
+            await interaction.response.send_message("話者のデータを取得できませんでした。")
             return
 
         # メッセージを整形して作成
-        message = "**利用可能なスピーカーとスタイル:**\n"
+        message = "**利用可能な話者とスタイル:**\n"
         for speaker in speakers:
             name = speaker["name"]
             character_id = CHARACTORS_INFO.get(name, "unknown")  # キャラクターIDを取得
@@ -239,7 +239,7 @@ def setup_commands(bot):
 
     #     embeds = []
     #     embed = discord.Embed(title="利用可能なスタイルIDの一覧", color=0x00FF00)
-    #     embed.description = "各スピーカーと利用可能なスタイルのIDです。"
+    #     embed.description = "各話者と利用可能なスタイルのIDです。"
     #     field_count = 0
 
     #     for speaker in speakers:
