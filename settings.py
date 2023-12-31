@@ -12,8 +12,9 @@ SYNTHESIS_URL = VOICEVOX_ENGINE_URL + "synthesis"
 STYLE_SETTINGS_FILE = "style_settings.json"
 TEST_GUILD_ID = discord.Object(id="1189256965172514836")
 APPROVED_GUILD_IDS = [
-    discord.Object(id="1189256965172514836"),  # 既存のギルドID
-    discord.Object(id="1190673139072516096"),  # 既存のギルドID
+    discord.Object(id="1189256965172514836"),  # くーさーばー１
+    discord.Object(id="1190673139072516096"),  # くーさーばー２
+    discord.Object(id="1129051248574869617"),  # めぞんどとわいらいと
     # 他の承認されたギルドIDを追加する場合は、以下のようにリストに追加します。
     # discord.Object(id="他のギルドID"),
     # ...
