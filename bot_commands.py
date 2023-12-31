@@ -42,9 +42,9 @@ class PaginationView(View):
         self.page = page
         self.speakers = speakers  # この行を確認
         self.total_pages = max(1, len(speakers) // ITEMS_PER_PAGE + (1 if len(speakers) % ITEMS_PER_PAGE > 0 else 0))
-        # 現在のページの話者ごとにセレクトボックスを追加
-        for speaker in speakers[(page - 1) * ITEMS_PER_PAGE : page * ITEMS_PER_PAGE]:
-            self.add_item(StyleSelect(speaker))
+        # # 現在のページの話者ごとにセレクトボックスを追加
+        # for speaker in speakers[(page - 1) * ITEMS_PER_PAGE : page * ITEMS_PER_PAGE]:
+        #     self.add_item(StyleSelect(speaker))
 
 
     @discord.ui.button(label="前へ", style=discord.ButtonStyle.primary)
