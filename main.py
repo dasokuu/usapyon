@@ -1,11 +1,10 @@
 import discord
 from discord.ext import commands
 import os
-from utils import handle_message, handle_voice_state_update
+from utils import fetch_json, handle_message, handle_voice_state_update
 from voice import process_playback_queue
 from bot_commands import setup_commands
-from settings import BOT_PREFIX, GAME_NAME, TEST_GUILD_ID
-
+from settings import APPROVED_GUILD_IDS, BOT_PREFIX, GAME_NAME
 
 if __name__ == "__main__":
     # Initialize bot with intents and prefix
@@ -22,8 +21,9 @@ if __name__ == "__main__":
     @bot.event
     async def on_ready():
         print(f"Logged in as {bot.user.name}")
-        await bot.change_presence(activity=discord.Game(name=GAME_NAME))
-        await bot.tree.sync(guild=TEST_GUILD_ID)
+        # 各承認されたギルドでコマンドを同期
+        for guild in APPROVED_GUILD_IDS:
+            await bot.tree.sync(guild=guild)
         for guild in bot.guilds:
             bot.loop.create_task(process_playback_queue(str(guild.id)))
 
@@ -41,4 +41,4 @@ if __name__ == "__main__":
     async def on_voice_state_update(member, before, after):
         await handle_voice_state_update(bot, member, before, after)
 
-    bot.run(os.getenv("VOICECHATLOID_TOKEN"))
+    bot.run(os.getenv("VOICECHATLOIDTEST_TOKEN"))

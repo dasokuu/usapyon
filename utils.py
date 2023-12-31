@@ -1,12 +1,12 @@
-import emoji
 import requests
 import json
 import jaconv
 import re
 import discord
 from settings import (
+    CHARACTORS_INFO,
     USER_DEFAULT_STYLE_ID,
-    NOTIFY_DEFAULT_STYLE_ID,
+    ANNOUNCEMENT_DEFAULT_STYLE_ID,
     MAX_MESSAGE_LENGTH,
     SPEAKERS_URL,
     STYLE_SETTINGS_FILE,
@@ -15,6 +15,17 @@ from voice import clear_playback_queue, text_to_speech
 
 current_voice_client = None
 
+def get_character_info(speaker_name):
+    # もち子さんの特別な処理
+    if speaker_name == "もち子さん":
+        character_key = "もち子さん"  # CHARACTORS_INFOでのキー
+        display_name = "VOICEVOX:もち子(cv 明日葉よもぎ)"  # 特別な表示名
+    else:
+        character_key = speaker_name  # その他のスピーカーは通常通り処理
+        display_name = f"VOICEVOX:{speaker_name}"  # 標準の表示名
+
+    character_id = CHARACTORS_INFO.get(character_key, "unknown")  # キャラクターIDを取得
+    return character_id, display_name
 
 def validate_style_id(style_id):
     valid_style_ids = [
@@ -26,9 +37,9 @@ def validate_style_id(style_id):
     return False, None, None
 
 
-def fetch_speakers():
+def fetch_json(url):
     try:
-        response = requests.get(SPEAKERS_URL)
+        response = requests.get(url)
         response.raise_for_status()
         return response.json()
     except requests.HTTPError as http_err:
@@ -43,7 +54,8 @@ def get_style_details(style_id, default_name="デフォルト"):
     for speaker in speakers:
         for style in speaker["styles"]:
             if style["id"] == style_id:
-                return (speaker["name"], style["name"])
+                speaker_name = speaker["name"]
+                return (speaker_name, style["name"])
     return (default_name, default_name)
 
 
@@ -89,8 +101,21 @@ async def replace_content(text, message):
         channel = message.guild.get_channel(channel_id)
         return channel.name + "チャンネル" if channel else match.group(0)
 
-    def replace_emoji_name_to_kana(text):
-        return emoji.demojize(text, language="ja")
+    def replace_keywords_with_short_name(text, symbol_dict, special_cases):
+        for symbol, data in symbol_dict.items():
+            # 特別なケースを先に処理
+            if symbol in special_cases:
+                text = text.replace(symbol, special_cases[symbol])
+                continue
+
+            # キーワードのリストから正規表現パターンを作成
+            keywords_pattern = "|".join(map(re.escape, data["keywords"]))
+            # テキスト内のキーワードをshort_nameで置き換え
+            text = re.sub(keywords_pattern, data["short_name"], text)
+
+            # 絵文字自体も置き換え対象に含める
+            text = text.replace(symbol, data["short_name"])
+        return text
 
     def replace_custom_emoji_name_to_kana(match):
         emoji_name = match.group(1)
@@ -102,8 +127,7 @@ async def replace_content(text, message):
     text = role_mention_pattern.sub(replace_role_mention, text)
     text = channel_pattern.sub(replace_channel_mention, text)
     text = custom_emoji_pattern.sub(replace_custom_emoji_name_to_kana, text)
-
-    text = replace_emoji_name_to_kana(text)
+    text = replace_keywords_with_short_name(text, emoji_ja, special_cases)
     text = url_pattern.sub("URL省略", text)
 
     return text
@@ -168,23 +192,35 @@ async def handle_voice_state_update(bot, member, before, after):
     if not voice_client or not voice_client.channel:
         return
 
-    # ボイスチャンネルに接続したとき
     if before.channel != voice_client.channel and after.channel == voice_client.channel:
-        message = f"{member.display_name}さんが入室しました。"
+        notify_voice = f"{member.display_name}さんが入室しました。"
         notify_style_id = speaker_settings.get(str(member.guild.id), {}).get(
-            "notify", NOTIFY_DEFAULT_STYLE_ID
+            "notify", ANNOUNCEMENT_DEFAULT_STYLE_ID
         )
-        await text_to_speech(voice_client, message, notify_style_id, guild_id)
+        speaker_name, style_name = get_style_details(notify_style_id)
+        character_id, display_name = get_character_info(speaker_name)
+        url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
+        notify_message = (
+            f"{notify_voice}\n\n{member.display_name}さんのテキスト読み上げ音声「[{display_name}]({url}) {style_name}」"
+        )
+
+        # テキストチャンネルを取得してメッセージを送信
+        text_channel_id = speaker_settings[guild_id].get("text_channel")
+        if text_channel_id:
+            text_channel = bot.get_channel(int(text_channel_id))
+            if text_channel:
+                await text_channel.send(notify_message)
+        await text_to_speech(voice_client, notify_voice, notify_style_id, guild_id)
 
     # ボイスチャンネルから切断したとき
     elif (
         before.channel == voice_client.channel and after.channel != voice_client.channel
     ):
-        message = f"{member.display_name}さんが退室しました。"
+        notify_voice = f"{member.display_name}さんが退室しました。"
         notify_style_id = speaker_settings.get(str(member.guild.id), {}).get(
-            "notify", NOTIFY_DEFAULT_STYLE_ID
+            "notify", ANNOUNCEMENT_DEFAULT_STYLE_ID
         )
-        await text_to_speech(voice_client, message, notify_style_id, guild_id)
+        await text_to_speech(voice_client, notify_voice, notify_style_id, guild_id)
 
     # ボイスチャンネルに誰もいなくなったら自動的に切断します。
     if after.channel is None and member.guild.voice_client:
@@ -209,5 +245,12 @@ async def handle_voice_state_update(bot, member, before, after):
 
 # Initialize global variables
 guild_playback_queues = {}
-speakers = fetch_speakers()  # URL is now from settings
+speakers = fetch_json(SPEAKERS_URL)  # URL is now from settings
 speaker_settings = load_style_settings()
+emoji_ja = fetch_json(
+    "https://raw.githubusercontent.com/yagays/emoji-ja/master/data/emoji_ja.json"
+)
+# 特別な置き換え規則
+special_cases = {
+    "🇵🇸": "パレスチナ"
+}

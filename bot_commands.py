@@ -1,12 +1,12 @@
-import asyncio
 import discord
 from settings import (
-    FIRST_PERSON_DICTIONARY,
-    TEST_GUILD_ID,
+    APPROVED_GUILD_IDS,
+    CHARACTORS_INFO,
     USER_DEFAULT_STYLE_ID,
-    NOTIFY_DEFAULT_STYLE_ID,
+    ANNOUNCEMENT_DEFAULT_STYLE_ID,
 )
 from utils import (
+    get_character_info,
     speakers,
     speaker_settings,
     save_style_settings,
@@ -15,81 +15,86 @@ from utils import (
 )
 from voice import clear_playback_queue, text_to_speech
 from discord import app_commands
+import discord
+from discord.ui import Button, View
+
+ITEMS_PER_PAGE = 10  # 1ページあたりのアイテム数
 
 
-class CharacterView(discord.ui.View):
-    def __init__(self, characters, voice_scope):
+class PaginationView(View):
+    def __init__(self, speakers, page=1):
         super().__init__()
-        # Pass voice_scope to CharacterSelect
-        self.add_item(CharacterSelect(characters, voice_scope))
+        self.speakers = speakers
+        self.page = page
+        self.total_pages = max(1, len(speakers) // ITEMS_PER_PAGE + (1 if len(speakers) % ITEMS_PER_PAGE > 0 else 0))
+
+    @discord.ui.button(label="前へ", style=discord.ButtonStyle.primary)
+    async def previous(self, interaction: discord.Interaction, button: Button):
+        self.page = max(1, self.page - 1)
+        await self.update_message(interaction)
+
+    @discord.ui.button(label="次へ", style=discord.ButtonStyle.primary)
+    async def next(self, interaction: discord.Interaction, button: Button):
+        self.page = min(self.total_pages, self.page + 1)
+        await self.update_message(interaction)
+
+    async def update_message(self, interaction):
+        # 現在のページに応じてボタンの有効/無効を設定
+        self.children[0].disabled = self.page <= 1
+        self.children[1].disabled = self.page >= self.total_pages
+
+        start_index = (self.page - 1) * ITEMS_PER_PAGE
+        end_index = start_index + ITEMS_PER_PAGE
+
+        # メッセージを更新
+        message = f"**利用可能な話者とスタイル (ページ {self.page}/{self.total_pages}):**\n"
+        for speaker in self.speakers[start_index:end_index]:
+            name = speaker["name"]
+            character_id, display_name = get_character_info(name)
+            url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
+            styles_info = " ".join(
+                f"{style['name']} (ID: `{style['id']}`)" for style in speaker["styles"]
+            )
+            message += f"\n[{display_name}]({url}): {styles_info}"
+
+        if interaction.response.is_done():
+            await interaction.followup.edit_message(
+                message_id=interaction.message.id, content=message, view=self
+            )
+        else:
+            await interaction.response.edit_message(content=message, view=self)
+
+    async def send_initial_message(self, interaction):
+        self.children[0].disabled = self.page <= 1
+        self.children[1].disabled = self.page >= self.total_pages
+        start_index = (self.page - 1) * ITEMS_PER_PAGE
+        end_index = start_index + ITEMS_PER_PAGE
+
+        # メッセージを整形して作成
+        message = f"**利用可能な話者とスタイル (ページ {self.page}):**\n"
+        for speaker in self.speakers[start_index:end_index]:
+            name = speaker["name"]
+            character_id, display_name = get_character_info(name)
+            url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
+            styles_info = " ".join(
+                f"{style['name']} (ID: `{style['id']}`)" for style in speaker["styles"]
+            )
+            message += f"\n[{display_name}]({url}): {styles_info}"
+
+        # 最初のメッセージを送信
+        await interaction.response.send_message(content=message, view=self)
 
 
-class CharacterSelect(discord.ui.Select):
-    def __init__(self, characters, voice_scope):
-        self.voice_scope = voice_scope  # Store voice_scope
-        options = [discord.SelectOption(label=char, value=char) for char in characters]
-        super().__init__(
-            placeholder="キャラクターを選択...", min_values=1, max_values=1, options=options
-        )
-
-    async def callback(self, interaction: discord.Interaction):
-        selected_char = self.values[0]
-        styles = [
-            style
-            for speaker in speakers
-            if speaker["name"] == selected_char
-            for style in speaker["styles"]
-        ]
-
-        # Pass voice_scope to StyleView when instantiated
-        await interaction.response.send_message(
-            f"{selected_char}のスタイルを選んでください。",
-            view=StyleView(styles, self.voice_scope),
-        )
-
-
-class StyleView(discord.ui.View):
-    def __init__(self, styles, voice_scope):
-        super().__init__()
-        self.add_item(StyleSelect(styles, voice_scope))
-
-
-class StyleSelect(discord.ui.Select):
-    def __init__(self, styles, voice_scope):
-        self.styles = styles  # ここでスタイル情報を保存します
-        self.voice_scope = (
-            voice_scope  # スタイルのタイプ（user_default, notify, user）
-        )
-        options = [
-            discord.SelectOption(label=style["name"], value=style["id"])
-            for style in styles
-        ]
-        super().__init__(
-            placeholder="スタイルを選択...", min_values=1, max_values=1, options=options
-        )
-
-    async def callback(self, interaction: discord.Interaction):
-        selected_style_id = int(self.values[0])  # 選択されたスタイルID
-        update_message = await handle_style_command(
-            interaction, selected_style_id, self.voice_scope
-        )
-        if update_message:
-            if interaction.response.is_done():
-                await interaction.followup.send(update_message)
-            else:
-                await interaction.response.send_message(update_message)
-
-
-async def handle_style_command(interaction, style_id: int, voice_scope: str):
+async def handle_voice_config_command(interaction, style_id: int, voice_scope: str):
     guild_id = str(interaction.guild_id)
     user_id = str(interaction.user.id)
     user_display_name = interaction.user.display_name  # Corrected variable name
 
     # Define descriptions for each voice style scope
     voice_scope_description = {
-        "user": f"{user_display_name}",  # Corrected variable name
-        "notify": "VC入退室時",
-        "user_default": "ユーザーデフォルト",
+        "user": f"{user_display_name}さんのテキスト読み上げ音声",  # Corrected variable name
+        "announcement": "アナウンス音声",
+        "user_default": "ユーザーデフォルトTTS音声",
     }
 
     try:
@@ -100,27 +105,57 @@ async def handle_style_command(interaction, style_id: int, voice_scope: str):
                 style_id, speaker_name, style_name = get_current_style_details(
                     guild_id, user_id, t
                 )
+                character_id, display_name = get_character_info(speaker_name)
+                url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
                 messages.append(
-                    f"**{voice_scope_description[t]}**: {speaker_name} {style_name}"
+                    f"**{voice_scope_description[t]}**: [{display_name}]({url}) {style_name}"
                 )
             await interaction.response.send_message("\n".join(messages))
             return
-
-        # Update settings if style_id is provided
-        if style_id is not None:
+        elif style_id is None and voice_scope is not None:
+            # Display current style settings
+            current_style_id, speaker_name, style_name = get_current_style_details(
+                guild_id, user_id, voice_scope
+            )
+            # もち子さんの場合、特別なクレジット表記を使用
+            if speaker_name == "もち子さん":
+                speaker_name = "もち子(cv 明日葉よもぎ)"
+            character_id = CHARACTORS_INFO.get(speaker_name, "unknown")  # キャラクターIDを取得
+            url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
+            await interaction.response.send_message(
+                f"現在の{voice_scope_description[voice_scope]}は「[VOICEVOX:{speaker_name}]({url}) {style_name}」です。"
+            )
+        elif style_id is not None and voice_scope is None:
+            messages = []
+            for t in voice_scope_description:
+                style_id, speaker_name, style_name = get_current_style_details(
+                    guild_id, user_id, t
+                )
+                character_id, display_name = get_character_info(speaker_name)
+                url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
+                messages.append(
+                    f"**{voice_scope_description[t]}**: [{display_name}]({url}) {style_name}"
+                )
+            await interaction.response.send_message("\n".join(messages))
+            return
+        elif style_id is not None and voice_scope is not None:
             valid, speaker_name, style_name = validate_style_id(style_id)
             if not valid:
-                return f"スタイルID {style_id} は無効です。正しいIDを入力してください。"
+                await interaction.response.send_message(
+                    f"スタイルID {style_id} は無効です。`/list`で有効なIDを確認し、正しいIDを入力してください。", ephemeral=True
+                )
+                return
             update_style_setting(guild_id, user_id, style_id, voice_scope)
-            return f"{voice_scope_description[voice_scope]}の読み上げ音声が「{speaker_name} {style_name}」に更新されました。"
+            # もち子さんの場合、特別なクレジット表記を使用
+            if speaker_name == "もち子さん":
+                speaker_name = "もち子(cv 明日葉よもぎ)"
+            character_id = CHARACTORS_INFO.get(speaker_name, "unknown")  # キャラクターIDを取得
+            url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
+            await interaction.response.send_message(
+                f"{voice_scope_description[voice_scope]}が「[VOICEVOX:{speaker_name}]({url}) {style_name}」に更新されました。"
+            )
+            return
 
-        # Display current style settings
-        current_style_id, speaker_name, style_name = get_current_style_details(
-            guild_id, user_id, voice_scope
-        )
-        await interaction.response.send_message(
-            f"現在の{voice_scope_description[voice_scope]}の読み上げ音声は「{speaker_name} {style_name}」です。"
-        )
     except Exception as e:
         await interaction.response.send_message(f"エラーが発生しました: {e}")
     return None  # Return None if there's no response
@@ -129,8 +164,8 @@ async def handle_style_command(interaction, style_id: int, voice_scope: str):
 def update_style_setting(guild_id, user_id, style_id, voice_scope):
     if voice_scope == "user_default":
         speaker_settings[guild_id]["user_default"] = style_id
-    elif voice_scope == "notify":
-        speaker_settings[guild_id]["notify"] = style_id
+    elif voice_scope == "announcement":
+        speaker_settings[guild_id]["announcement"] = style_id
     elif voice_scope == "user":
         speaker_settings[user_id] = style_id
     save_style_settings()
@@ -139,8 +174,10 @@ def update_style_setting(guild_id, user_id, style_id, voice_scope):
 def get_current_style_details(guild_id, user_id, voice_scope):
     if voice_scope == "user_default":
         style_id = speaker_settings[guild_id].get("user_default", USER_DEFAULT_STYLE_ID)
-    elif voice_scope == "notify":
-        style_id = speaker_settings[guild_id].get("notify", NOTIFY_DEFAULT_STYLE_ID)
+    elif voice_scope == "announcement":
+        style_id = speaker_settings[guild_id].get(
+            "announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID
+        )
     elif voice_scope == "user":
         style_id = speaker_settings.get(user_id, USER_DEFAULT_STYLE_ID)
 
@@ -150,7 +187,7 @@ def get_current_style_details(guild_id, user_id, voice_scope):
 
 def setup_commands(bot):
     @bot.tree.command(
-        name="leave", guild=TEST_GUILD_ID, description="ボットをボイスチャンネルから切断します。"
+        name="leave", guilds=APPROVED_GUILD_IDS, description="ボットをボイスチャンネルから切断します。"
     )
     async def leave(interaction: discord.Interaction):
         if interaction.guild.voice_client:
@@ -163,74 +200,30 @@ def setup_commands(bot):
 
     @bot.tree.command(
         name="voice_config",
-        guild=TEST_GUILD_ID,
-        description="現在の読み上げキャラクターを表示、または一人称を選択し設定します。",
+        guilds=APPROVED_GUILD_IDS,
+        description="あなたのテキスト読み上げキャラクターを設定します。",
+    )
+    async def voice_config(interaction: discord.Interaction, style_id: int):
+        await handle_voice_config_command(interaction, style_id, voice_scope="user")
+
+    @bot.tree.command(
+        name="server_voice_config",
+        guilds=APPROVED_GUILD_IDS,
+        description="サーバーのテキスト読み上げキャラクターを表示また設定します。",
     )
     @app_commands.choices(
         voice_scope=[
-            app_commands.Choice(name="あなた", value="user"),
-            app_commands.Choice(name="VC入退室時", value="notify"),
-            app_commands.Choice(name="ユーザーデフォルト", value="user_default"),
-        ],
-        first_person=[
-            app_commands.Choice(name=fp, value=fp)
-            for fp in FIRST_PERSON_DICTIONARY.keys()
-        ],
+            app_commands.Choice(name="アナウンス音声", value="announcement"),
+            app_commands.Choice(name="ユーザーデフォルトTTS音声", value="user_default"),
+        ]
     )
-    async def voice_config(
-        interaction: discord.Interaction,
-        voice_scope: str = None,
-        first_person: str = None,
+    async def server_voice_config(
+        interaction: discord.Interaction, voice_scope: str, style_id: int = None
     ):
-        if first_person is None:
-            await handle_style_command(interaction, None, voice_scope)
-            return
-        if voice_scope is None:
-            characters = FIRST_PERSON_DICTIONARY[first_person]
-            character_message = "\n".join(characters)
-            await interaction.response.send_message(
-                f"一人称「{first_person}」のキャラクター:\n{character_message}\n読み上げキャラクターを変更するには、その音声設定対象を指定してください。"
-            )
-            return
-
-        selected_fp = first_person
-        characters = FIRST_PERSON_DICTIONARY[selected_fp]
-
-        if len(characters) == 1:
-            selected_char = characters[0]
-            styles = [  # stylesをここで定義
-                style
-                for speaker in speakers
-                if speaker["name"] == selected_char
-                for style in speaker["styles"]
-            ]
-
-            if len(styles) == 1:
-                selected_style_id = styles[0]["id"]
-                update_message = await handle_style_command(
-                    interaction, selected_style_id, voice_scope
-                )
-                if update_message:
-                    if interaction.response.is_done():
-                        await interaction.followup.send(update_message)
-                    else:
-                        await interaction.response.send_message(update_message)
-
-            else:
-                # If there are multiple styles to choose from, let the user select
-                await interaction.response.send_message(
-                    f"一人称「{first_person}」のキャラクターは{selected_char}が該当します。スタイルを選んでください。",
-                    view=StyleView(styles, voice_scope),
-                )
-        else:
-            # If there are multiple characters to choose from, let the user select
-            await interaction.response.send_message(
-                f"一人称「{selected_fp}」のキャラクターに絞り込みました。キャラクターを選んでください。",
-                view=CharacterView(characters, voice_scope),
-            )
+        await handle_voice_config_command(interaction, style_id, voice_scope)
 
     @bot.tree.command(
-        name="join", guild=TEST_GUILD_ID, description="ボットをボイスチャンネルに接続し、読み上げを開始します。"
+        name="join", guilds=APPROVED_GUILD_IDS, description="ボットをボイスチャンネルに接続し、読み上げを開始します。"
     )
     async def join(interaction: discord.Interaction):
         # defer the response to keep the interaction alive
@@ -242,9 +235,13 @@ def setup_commands(bot):
                 voice_client = await channel.connect(self_deaf=True)
                 # 接続成功時の処理
                 # 接続メッセージの読み上げ
-                welcome_message = "読み上げを開始します。"
+                welcome_voice = "読み上げを開始します。"
 
                 guild_id = str(interaction.guild_id)
+                user_id = str(interaction.user.id)  # コマンド使用者のユーザーID
+                user_display_name = (
+                    interaction.user.display_name
+                )  # Corrected variable name
                 text_channel_id = str(interaction.channel_id)  # このコマンドを使用したテキストチャンネルID
 
                 # サーバー設定が存在しない場合は初期化
@@ -257,15 +254,33 @@ def setup_commands(bot):
                 save_style_settings()  # 変更を保存
 
                 # 通知スタイルIDを取得
-                notify_style_id = speaker_settings.get(guild_id, {}).get(
-                    "notify", NOTIFY_DEFAULT_STYLE_ID
+                announcement_style_id = speaker_settings.get(guild_id, {}).get(
+                    "announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID
+                )
+                # ユーザーのスタイルIDを取得
+                user_style_id = speaker_settings.get(user_id, USER_DEFAULT_STYLE_ID)
+
+                # クレジットをメッセージに追加
+                announcement_speaker_name, announcement_style_name = get_style_details(
+                    announcement_style_id
+                )
+                announcement_character_id, announcement_display_name = get_character_info(announcement_speaker_name)
+                announcement_url = f"https://voicevox.hiroshiba.jp/dormitory/{announcement_character_id}/"
+                user_speaker_name, user_style_name = get_style_details(user_style_id)
+                user_character_id, user_tts_display_name = get_character_info(user_speaker_name)
+                user_url = (
+                    f"https://voicevox.hiroshiba.jp/dormitory/{user_character_id}/"
+                )
+                welcome_message = (
+                    f"アナウンス音声「[{announcement_display_name}]({announcement_url}) {announcement_style_name}」\n"
+                    f"{user_display_name}さんのテキスト読み上げ音声「[{user_tts_display_name}]({user_url}) {user_style_name}」"
                 )
 
                 # メッセージとスタイルIDをキューに追加
                 await text_to_speech(
-                    voice_client, welcome_message, notify_style_id, guild_id
+                    voice_client, welcome_voice, announcement_style_id, guild_id
                 )
-                await interaction.followup.send("ボイスチャンネルに接続し、読み上げを開始しました。")
+                await interaction.followup.send(welcome_message)
             else:
                 await interaction.followup.send(
                     "ボイスチャンネルに接続できませんでした。ユーザーがボイスチャンネルにいることを確認してください。"
@@ -274,69 +289,55 @@ def setup_commands(bot):
             # エラーメッセージをユーザーに通知
             await interaction.followup.send(f"接続中にエラーが発生しました: {e}")
 
-    # @bot.tree.command(
-    #     name="list_style_ids",
-    #     guild=TEST_GUILD_ID,
-    #     description="利用可能なスタイルIDの一覧を表示します。",
-    # )
-    # async def list_style_ids(interaction: discord.Interaction):
-    #     # 応答を遅延させる
-    #     await interaction.response.defer()
+    @bot.tree.command(
+        name="list", guilds=APPROVED_GUILD_IDS, description="話者とそのスタイルをページングして表示します。"
+    )
+    async def list(interaction: discord.Interaction):
+        if not speakers:
+            await interaction.response.send_message("話者のデータを取得できませんでした。")
+            return
 
-    #     embeds = []
-    #     embed = discord.Embed(title="利用可能なスタイルIDの一覧", color=0x00FF00)
-    #     embed.description = "各スピーカーと利用可能なスタイルのIDです。"
-    #     field_count = 0
+        # 最初のページを表示
+        view = PaginationView(speakers)
+        await view.send_initial_message(interaction)
 
-    #     for speaker in speakers:
-    #         name = speaker["name"]
-    #         styles = "\n".join(
-    #             f"- {style['name']} `{style['id']}`" for style in speaker["styles"]
-    #         )
+    async def send_long_message(
+        interaction: discord.Interaction, message, split_char="\n"
+    ):
+        """2000文字を超える長いメッセージを適切に分割して送信します。
+        最初のメッセージは応答として送信され、残りはフォローアップとして送信されます。
+        """
+        # 最初のメッセージフラグを設定します。
+        first_message = True
 
-    #         if field_count < 25:
-    #             embed.add_field(name=name, value=styles, inline=True)
-    #             field_count += 1
-    #         else:
-    #             embeds.append(embed)
-    #             embed = discord.Embed(title="利用可能なスタイルIDの一覧 (続き)", color=0x00FF00)
-    #             embed.add_field(name=name, value=styles, inline=True)
-    #             field_count = 1  # Reset for the new embed
+        while len(message) > 0:
+            # メッセージが2000文字以下の場合はそのまま送信
+            if len(message) <= 2000:
+                # 最初のメッセージの場合は応答として送信
+                if first_message:
+                    await interaction.response.send_message(message)
+                else:
+                    await interaction.followup.send(message)
+                break
 
-    #     # Add the last embed
-    #     embeds.append(embed)
+            # メッセージを2000文字で仮に切り分け
+            part = message[:2000]
+            # 最後の改行位置または分割文字の位置を探す
+            split_pos = part.rfind(split_char)
+            if split_pos == -1:
+                # 分割文字が見つからない場合は、2000文字で強制的に分割
+                split_pos = 1999
 
-    #     # フォローアップメッセージを使用して複数の埋め込みを送信
-    #     for embed in embeds:
-    #         await interaction.followup.send(embed=embed)
-    # @bot.tree.command(
-    #     name="style_id",
-    #     guild=TEST_GUILD_ID,
-    #     description="スタイルを表示または設定します。",
-    # )
-    # @app_commands.choices(
-    #     voice_scope=[
-    #         app_commands.Choice(name="ユーザー", value="user"),
-    #         app_commands.Choice(name="VC入退室時", value="notify"),
-    #         app_commands.Choice(name="ユーザーデフォルト", value="user_default"),
-    #     ]
-    # )
-    # async def style_id(interaction, voice_scope: str, style_id: int = None):
-    #     if voice_scope and not style_id:
-    #         # If only voice_scope is provided, display the current settings for that type.
-    #         update_message = await handle_style_command(interaction, None, voice_scope)
-    #     else:
-    #         # handle_style_command from the response
-    #         update_message = await handle_style_command(
-    #             interaction, style_id, voice_scope
-    #         )
+            # 最初の部分を送信
+            part_to_send = message[: split_pos + 1]
+            if first_message:
+                await interaction.response.send_message(part_to_send)
+                first_message = False
+            else:
+                await interaction.followup.send(part_to_send)
 
-    #     # Sending the response or follow-up message
-    #     if update_message:
-    #         if interaction.response.is_done():
-    #             await interaction.followup.send(update_message)
-    #         else:
-    #             await interaction.response.send_message(update_message)
+            # 残りのメッセージを更新
+            message = message[split_pos + 1 :]
 
     # @bot.command(name="remove_command")
     # async def remove_command(ctx, command_name: str):
@@ -376,7 +377,7 @@ def setup_commands(bot):
     #         await ctx.send(f"コマンドを削除中にエラーが発生しました: {e}")
     # @bot.tree.command(
     #     name="display_current_settings",
-    #     guild=TEST_GUILD_ID,
+    #     guilds=APPROVED_GUILD_IDS,
     #     description="現在のスタイル設定を表示します。",
     # )
     # async def display_current_settings(interaction: discord.Interaction):
@@ -386,7 +387,7 @@ def setup_commands(bot):
     #     # Dictionary to map style types to more user-friendly descriptions
     #     voice_scope_descriptions = {
     #         "user": "ユーザー特有のスタイル",
-    #         "notify": "VC入退室時の通知",
+    #         "announcement": "VC入退室時の通知",
     #         "user_default": "ユーザーデフォルト",
     #     }
 
