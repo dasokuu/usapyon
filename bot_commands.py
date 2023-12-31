@@ -84,7 +84,7 @@ class PaginationView(View):
             styles_info = " ".join(
                 f"- {style['name']} (ID: `{style['id']}`)" for style in speaker["styles"]
             )
-            message += f"\n[{display_name}]({url}): {styles_info}"
+            message += f"\n- [{display_name}]({url}): {styles_info}"
         # 話者選択用のボタンを追加
         for i, speaker in enumerate(self.speakers[start_index:end_index]):
             self.add_item(
@@ -120,9 +120,9 @@ class PaginationView(View):
             character_id, display_name = get_character_info(name)
             url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
             styles_info = " ".join(
-                f"- {style['name']} (ID: `{style['id']}`)" for style in speaker["styles"]
+                f"{style['name']} (ID: `{style['id']}`)" for style in speaker["styles"]
             )
-            message += f"\n[{display_name}]({url}): {styles_info}"
+            message += f"\n- [{display_name}]({url}): {styles_info}"
         # 話者選択用のボタンを追加
         for i, speaker in enumerate(self.speakers[start_index:end_index]):
             self.add_item(
