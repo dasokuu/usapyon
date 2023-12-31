@@ -7,6 +7,7 @@ from settings import (
     ANNOUNCEMENT_DEFAULT_STYLE_ID,
 )
 from utils import (
+    get_character_info,
     speakers,
     speaker_settings,
     save_style_settings,
@@ -50,15 +51,12 @@ class PaginationView(View):
         message = f"**利用可能な話者とスタイル (ページ {self.page}/{self.total_pages}):**\n"
         for speaker in self.speakers[start_index:end_index]:
             name = speaker["name"]
-            # もち子さんの場合、特別なクレジット表記を使用
-            if name == "もち子さん":
-                name = "もち子(cv 明日葉よもぎ)"
-            character_id = CHARACTORS_INFO.get(name, "unknown")
+            character_id, display_name = get_character_info(name)
             url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
             styles_info = ", ".join(
                 f"{style['name']} (ID: {style['id']})" for style in speaker["styles"]
             )
-            message += f"\n[{name}]({url}): {styles_info}"
+            message += f"\n[{display_name}]({url}): {styles_info}"
 
         if interaction.response.is_done():
             await interaction.followup.edit_message(
@@ -111,15 +109,10 @@ async def handle_voice_config_command(interaction, style_id: int, voice_scope: s
                 style_id, speaker_name, style_name = get_current_style_details(
                     guild_id, user_id, t
                 )
-                # もち子さんの場合、特別なクレジット表記を使用
-                if speaker_name == "もち子さん":
-                    speaker_name = "もち子(cv 明日葉よもぎ)"
-                character_id = CHARACTORS_INFO.get(
-                    speaker_name, "unknown"
-                )  # キャラクターIDを取得
+                character_id, display_name = get_character_info(speaker_name)
                 url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
                 messages.append(
-                    f"**{voice_scope_description[t]}**: [VOICEVOX:{speaker_name}]({url}) {style_name}"
+                    f"**{voice_scope_description[t]}**: [{display_name}]({url}) {style_name}"
                 )
             await interaction.response.send_message("\n".join(messages))
             return
@@ -142,15 +135,10 @@ async def handle_voice_config_command(interaction, style_id: int, voice_scope: s
                 style_id, speaker_name, style_name = get_current_style_details(
                     guild_id, user_id, t
                 )
-                # もち子さんの場合、特別なクレジット表記を使用
-                if speaker_name == "もち子さん":
-                    speaker_name = "もち子(cv 明日葉よもぎ)"
-                character_id = CHARACTORS_INFO.get(
-                    speaker_name, "unknown"
-                )  # キャラクターIDを取得
+                character_id, display_name = get_character_info(speaker_name)
                 url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
                 messages.append(
-                    f"**{voice_scope_description[t]}**: [VOICEVOX:{speaker_name}]({url}) {style_name}"
+                    f"**{voice_scope_description[t]}**: [{display_name}]({url}) {style_name}"
                 )
             await interaction.response.send_message("\n".join(messages))
             return
@@ -280,26 +268,16 @@ def setup_commands(bot):
                 announcement_speaker_name, announcement_style_name = get_style_details(
                     announcement_style_id
                 )
-                # もち子さんの場合、特別なクレジット表記を使用
-                if announcement_speaker_name == "もち子さん":
-                    announcement_speaker_name = "もち子(cv 明日葉よもぎ)"
-                announcement_character_id = CHARACTORS_INFO.get(
-                    announcement_speaker_name, "unknown"
-                )  # キャラクターIDを取得
+                announcement_character_id, announcement_display_name = get_character_info(announcement_speaker_name)
                 announcement_url = f"https://voicevox.hiroshiba.jp/dormitory/{announcement_character_id}/"
                 user_speaker_name, user_style_name = get_style_details(user_style_id)
-                # もち子さんの場合、特別なクレジット表記を使用
-                if user_speaker_name == "もち子さん":
-                    user_speaker_name = "もち子(cv 明日葉よもぎ)"
-                user_character_id = CHARACTORS_INFO.get(
-                    user_speaker_name, "unknown"
-                )  # キャラクターIDを取得
+                user_character_id, user_tts_display_name = get_character_info(user_speaker_name)
                 user_url = (
                     f"https://voicevox.hiroshiba.jp/dormitory/{user_character_id}/"
                 )
                 welcome_message = (
-                    f"アナウンス音声「[VOICEVOX:{announcement_speaker_name}]({announcement_url}) {announcement_style_name}」\n"
-                    f"{user_display_name}さんのテキスト読み上げ音声「[VOICEVOX:{user_speaker_name}]({user_url}) {user_style_name}」"
+                    f"アナウンス音声「[{announcement_display_name}]({announcement_url}) {announcement_style_name}」\n"
+                    f"{user_display_name}さんのテキスト読み上げ音声「[{user_tts_display_name}]({user_url}) {user_style_name}」"
                 )
 
                 # メッセージとスタイルIDをキューに追加

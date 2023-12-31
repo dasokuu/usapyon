@@ -15,7 +15,17 @@ from settings import (
 from voice import clear_playback_queue, text_to_speech
 
 current_voice_client = None
+def get_character_info(speaker_name):
+    # もち子さんの特別な処理
+    if speaker_name == "もち子さん":
+        character_key = "もち子さん"  # CHARACTORS_INFOでのキー
+        display_name = "VOICEVOX:もち子(cv 明日葉よもぎ)"  # 特別な表示名
+    else:
+        character_key = speaker_name  # その他のスピーカーは通常通り処理
+        display_name = f"VOICEVOX:{speaker_name}"  # 標準の表示名
 
+    character_id = CHARACTORS_INFO.get(character_key, "unknown")  # キャラクターIDを取得
+    return character_id, display_name
 
 def validate_style_id(style_id):
     valid_style_ids = [
@@ -188,13 +198,10 @@ async def handle_voice_state_update(bot, member, before, after):
             "notify", ANNOUNCEMENT_DEFAULT_STYLE_ID
         )
         speaker_name, style_name = get_style_details(notify_style_id)
-        # もち子さんの場合、特別なクレジット表記を使用
-        if speaker_name == "もち子さん":
-            speaker_name = "もち子(cv 明日葉よもぎ)"
-        character_id = CHARACTORS_INFO.get(speaker_name, "unknown")  # キャラクターIDを取得
+        character_id, display_name = get_character_info(speaker_name)
         url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
         notify_message = (
-            f"{notify_voice}\n\n{member.display_name}さんのテキスト読み上げ音声「[VOICEVOX:{speaker_name}]({url}) {style_name}」"
+            f"{notify_voice}\n\n{member.display_name}さんのテキスト読み上げ音声「[{display_name}]({url}) {style_name}」"
         )
 
         # テキストチャンネルを取得してメッセージを送信
