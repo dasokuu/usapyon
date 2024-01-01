@@ -87,21 +87,53 @@ class PaginationView(View):
 
         # 最初のメッセージを送信
         await interaction.response.send_message(content=message, view=self)
+
+
 class SpeakerSelectionView(View):
-    def __init__(self, speakers):
+    def __init__(self, speakers, page=1):
         super().__init__()
         self.speakers = speakers
+        self.page = page
+        self.total_pages = max(1, len(speakers) // ITEMS_PER_PAGE + (1 if len(speakers) % ITEMS_PER_PAGE > 0 else 0))
 
-    async def on_select(self, interaction: discord.Interaction, speaker_name: str):
-        # 選択された話者のスタイル情報を取得
-        speaker = next((s for s in self.speakers if s['name'] == speaker_name), None)
-        if not speaker:
-            await interaction.response.send_message("選択した話者のデータが見つかりませんでした。")
-            return
+    @discord.ui.button(label="前へ", style=discord.ButtonStyle.primary)
+    async def previous(self, interaction: discord.Interaction, button: Button):
+        self.page = max(1, self.page - 1)
+        await self.update_message(interaction)
 
-        # スタイル選択のビューを作成して表示
-        view = StyleSelectionView(speaker)
-        await view.send_initial_message(interaction)
+    @discord.ui.button(label="次へ", style=discord.ButtonStyle.primary)
+    async def next(self, interaction: discord.Interaction, button: Button):
+        self.page = min(self.total_pages, self.page + 1)
+        await self.update_message(interaction)
+
+
+    async def send_initial_message(self, interaction):
+        message_content = self.create_message_content()
+        await interaction.response.send_message(content=message_content, view=self)
+
+    def create_message_content(self):
+        start_index = (self.page - 1) * ITEMS_PER_PAGE
+        end_index = start_index + ITEMS_PER_PAGE
+        message_content = f"**利用可能な話者 (ページ {self.page}/{self.total_pages}):**\n"
+        for speaker in self.speakers[start_index:end_index]:
+            message_content += f"- {speaker['name']}\n"
+        return message_content
+    async def update_message(self, interaction):
+        # 現在のページに応じてボタンの有効/無効を設定
+        self.children[0].disabled = self.page <= 1
+        self.children[1].disabled = self.page >= self.total_pages
+
+        # メッセージを更新
+        message_content = self.create_message_content()
+
+        if interaction.response.is_done():
+            await interaction.followup.edit_message(message_id=interaction.message.id, content=message_content, view=self)
+        else:
+            await interaction.response.edit_message(content=message_content, view=self)
+
+
+
+
 class StyleSelectionView(View):
     def __init__(self, speaker, user_id, guild_id):
         super().__init__()
@@ -111,7 +143,9 @@ class StyleSelectionView(View):
 
     async def on_select(self, interaction: discord.Interaction, style_id: int):
         # スタイル名を取得
-        style_name = next((s['name'] for s in self.speaker['styles'] if s['id'] == style_id), None)
+        style_name = next(
+            (s["name"] for s in self.speaker["styles"] if s["id"] == style_id), None
+        )
         if not style_name:
             await interaction.response.send_message("選択したスタイルIDが無効です。")
             return
@@ -120,7 +154,9 @@ class StyleSelectionView(View):
         update_style_setting(self.guild_id, self.user_id, style_id, "user")
 
         # ユーザーに更新を通知
-        await interaction.response.send_message(f"スタイルが「{self.speaker['name']} - {style_name}」に設定されました。")
+        await interaction.response.send_message(
+            f"スタイルが「{self.speaker['name']} - {style_name}」に設定されました。"
+        )
 
 
 async def handle_voice_config_command(interaction, style_id: int, voice_scope: str):
@@ -353,9 +389,7 @@ def setup_commands(bot):
         await view.send_initial_message(interaction)
 
     @bot.tree.command(
-        name="select_speaker",
-        guilds=APPROVED_GUILD_IDS,
-        description="話者を選択します。"
+        name="select_speaker", guilds=APPROVED_GUILD_IDS, description="話者を選択します。"
     )
     async def select_speaker(interaction: discord.Interaction):
         if not speakers:
@@ -365,8 +399,6 @@ def setup_commands(bot):
         # 話者選択のためのページネーションビューを作成
         view = SpeakerSelectionView(speakers)
         await view.send_initial_message(interaction)
-    
-
 
     @bot.tree.command(
         name="help", guilds=APPROVED_GUILD_IDS, description="利用可能なコマンドとその説明を表示します。"
