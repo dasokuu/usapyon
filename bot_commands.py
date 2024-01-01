@@ -146,18 +146,23 @@ class PaginationView(View):
         start_index = (self.page - 1) * ITEMS_PER_PAGE
         end_index = start_index + ITEMS_PER_PAGE
 
-        # メッセージを整形して作成
-        message = f"**利用可能な話者とスタイル (ページ {self.page}):**\n"
+        # メッセージを更新
+        message = f"**利用可能な話者とスタイル (ページ {self.page}/{self.total_pages}):**\n"
         for speaker in self.speakers[start_index:end_index]:
             name = speaker["name"]
             character_id, display_name = get_character_info(name)
             url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
             message += f"\n- [{display_name}]({url})"
+
         # 話者選択用のボタンを追加
         for i, speaker in enumerate(self.speakers[start_index:end_index]):
-            self.add_item(
-                Button(label=f'{speaker["name"]}を選択', custom_id=f"select_speaker_{i}")
+            button = Button(
+                label=f'{speaker["name"]}を選択',
+                custom_id=f"select_speaker_{i}",
+                style=discord.ButtonStyle.secondary
             )
+            button.callback = self.select_speaker
+            self.add_item(button)
         # 最初のメッセージを送信
         await interaction.response.send_message(content=message, view=self)
 
