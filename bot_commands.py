@@ -94,7 +94,11 @@ class SpeakerSelectionView(View):
         super().__init__()
         self.speakers = speakers
         self.page = page
-        self.total_pages = max(1, len(speakers) // ITEMS_PER_PAGE + (1 if len(speakers) % ITEMS_PER_PAGE > 0 else 0))
+        self.total_pages = max(
+            1,
+            len(speakers) // ITEMS_PER_PAGE
+            + (1 if len(speakers) % ITEMS_PER_PAGE > 0 else 0),
+        )
 
     @discord.ui.button(label="前へ", style=discord.ButtonStyle.primary)
     async def previous(self, interaction: discord.Interaction, button: Button):
@@ -105,7 +109,6 @@ class SpeakerSelectionView(View):
     async def next(self, interaction: discord.Interaction, button: Button):
         self.page = min(self.total_pages, self.page + 1)
         await self.update_message(interaction)
-
 
     async def send_initial_message(self, interaction):
         message_content = self.create_message_content()
@@ -118,6 +121,7 @@ class SpeakerSelectionView(View):
         for speaker in self.speakers[start_index:end_index]:
             message_content += f"- {speaker['name']}\n"
         return message_content
+
     async def update_message(self, interaction):
         # 現在のページに応じてボタンの有効/無効を設定
         self.children[0].disabled = self.page <= 1
@@ -127,11 +131,29 @@ class SpeakerSelectionView(View):
         message_content = self.create_message_content()
 
         if interaction.response.is_done():
-            await interaction.followup.edit_message(message_id=interaction.message.id, content=message_content, view=self)
+            await interaction.followup.edit_message(
+                message_id=interaction.message.id, content=message_content, view=self
+            )
         else:
             await interaction.response.edit_message(content=message_content, view=self)
+    def add_buttons(self):
+        start_index = (self.page - 1) * ITEMS_PER_PAGE
+        end_index = start_index + ITEMS_PER_PAGE
+        for speaker in self.speakers[start_index:end_index]:
+            button = Button(label=speaker['name'], style=discord.ButtonStyle.secondary)
+            self.add_item(button)
+            button.callback = lambda interaction, s=speaker: self.select_speaker(interaction, s)
 
+    async def select_speaker(self, interaction: discord.Interaction, speaker):
+        # ここで選択された話者に基づいて処理を行います。
+        # 例えば、スタイル選択ビューを表示するなど。
+        # ...
 
+        # 以下は一例です。
+        user_id = str(interaction.user.id)
+        guild_id = str(interaction.guild_id)
+        view = StyleSelectionView(speaker, user_id, guild_id)
+        await interaction.response.edit_message(content=f"**{speaker['name']}** のスタイルを選択してください。", view=view)
 
 
 class StyleSelectionView(View):
