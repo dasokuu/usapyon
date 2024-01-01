@@ -18,7 +18,7 @@ from discord import app_commands
 import discord
 from discord.ui import Button, View
 
-ITEMS_PER_PAGE = 1  # 1ページあたりのアイテム数
+ITEMS_PER_PAGE = 4  # 1ページあたりのアイテム数
 
 
 class StyleSelectionView(View):
@@ -71,7 +71,25 @@ class PaginationView(View):
     async def next(self, interaction: discord.Interaction, button: Button):
         self.page = min(self.total_pages, self.page + 1)
         await self.update_message(interaction)
+    
 
+    @discord.ui.button(label="Select", style=discord.ButtonStyle.secondary, custom_id="select_speaker")
+    async def select_speaker(self, interaction: discord.Interaction, button: Button):
+        try:
+            # interaction.response.defer() を使用して、処理時間を確保します
+            await interaction.response.defer()
+
+            # インデックスをボタンのcustom_idから取得します
+            selected_index = int(button.custom_id.split("_")[-1]) + (self.page - 1) * ITEMS_PER_PAGE
+            selected_speaker = self.speakers[selected_index]
+            view = StyleSelectionView(selected_speaker)
+            await view.send_initial_message(interaction)
+
+        except Exception as e:
+            # エラーメッセージをログに記録
+            print(f"Error in select_speaker: {e}")
+            # ユーザーにフィードバックを提供
+            await interaction.followup.send("話者の選択中にエラーが発生しました。")
     async def update_message(self, interaction):
         # 既存の話者選択ボタンをクリア
         self.clear_items()
@@ -122,24 +140,6 @@ class PaginationView(View):
             )
         else:
             await interaction.response.edit_message(content=message, view=self)
-
-    async def select_speaker(self, interaction: discord.Interaction, button: Button):
-        try:
-            # interaction.response.defer() を使用して、処理時間を確保します
-            await interaction.response.defer()
-
-            # インデックスをボタンのcustom_idから取得します
-            selected_index = int(button.custom_id.split("_")[-1]) + (self.page - 1) * ITEMS_PER_PAGE
-            selected_speaker = self.speakers[selected_index]
-            view = StyleSelectionView(selected_speaker)
-            await view.send_initial_message(interaction)
-
-        except Exception as e:
-            # エラーメッセージをログに記録
-            print(f"Error in select_speaker: {e}")
-            # ユーザーにフィードバックを提供
-            await interaction.followup.send("話者の選択中にエラーが発生しました。")
-
     async def send_initial_message(self, interaction):
         self.children[0].disabled = self.page <= 1
         self.children[1].disabled = self.page >= self.total_pages
