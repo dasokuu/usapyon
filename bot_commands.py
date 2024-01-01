@@ -118,6 +118,10 @@ class SpeakerSelectionView(View):
         self.clear_items()
         self.add_buttons()
 
+        # 現在のページに応じてボタンの有効/無効を設定
+        self.children[0].disabled = self.page <= 1
+        self.children[1].disabled = self.page >= self.total_pages
+
         # メッセージを更新
         message_content = self.create_message_content()
 
@@ -131,9 +135,6 @@ class SpeakerSelectionView(View):
     def add_buttons(self):
         start_index = (self.page - 1) * ITEMS_PER_PAGE
         end_index = start_index + ITEMS_PER_PAGE
-        # 現在のページに応じてボタンの有効/無効を設定
-        self.children[0].disabled = self.page <= 1
-        self.children[1].disabled = self.page >= self.total_pages
 
         @discord.ui.button(label="前へ", style=discord.ButtonStyle.primary)
         async def previous(self, interaction: discord.Interaction, button: Button):
