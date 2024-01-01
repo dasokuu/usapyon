@@ -128,7 +128,8 @@ class PaginationView(View):
             # interaction.response.defer() を使用して、処理時間を確保します
             await interaction.response.defer()
 
-            selected_index = int(button.custom_id.split("_")[-1])
+            # インデックスをボタンのcustom_idから取得します
+            selected_index = int(button.custom_id.split("_")[-1]) + (self.page - 1) * ITEMS_PER_PAGE
             selected_speaker = self.speakers[selected_index]
             view = StyleSelectionView(selected_speaker)
             await view.send_initial_message(interaction)
