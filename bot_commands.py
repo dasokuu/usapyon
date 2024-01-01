@@ -144,6 +144,15 @@ class SpeakerSelectionView(View):
     def add_buttons(self):
         start_index = (self.page - 1) * ITEMS_PER_PAGE
         end_index = start_index + ITEMS_PER_PAGE
+        @discord.ui.button(label="前へ", style=discord.ButtonStyle.primary)
+        async def previous(self, interaction: discord.Interaction, button: Button):
+            self.page = max(1, self.page - 1)
+            await self.update_message(interaction)
+
+        @discord.ui.button(label="次へ", style=discord.ButtonStyle.primary)
+        async def next(self, interaction: discord.Interaction, button: Button):
+            self.page = min(self.total_pages, self.page + 1)
+            await self.update_message(interaction)
         for speaker in self.speakers[start_index:end_index]:
             button = Button(label=speaker['name'], style=discord.ButtonStyle.secondary)
             self.add_item(button)
