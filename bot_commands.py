@@ -79,7 +79,6 @@ class PaginationView(View):
 
             # インデックスをボタンのcustom_idから取得します
             selected_index = int(button.custom_id.split("_")[-1])
-
             selected_speaker = self.speakers[selected_index]
             view = StyleSelectionView(selected_speaker)
             await view.send_initial_message(interaction)
@@ -88,7 +87,7 @@ class PaginationView(View):
             # エラーメッセージをログに記録
             print(f"Error in select_speaker: {e}")
             # ユーザーにフィードバックを提供
-            await interaction.followup.send("話者の選択中にエラーが発生しました。")
+            await interaction.followup.send("話者の選択中にエラーが発生しました.")
 
     async def update_message(self, interaction):
         # 既存の話者選択ボタンをクリア
