@@ -18,34 +18,7 @@ from discord import app_commands
 import discord
 from discord.ui import Button, View
 
-ITEMS_PER_PAGE = 4  # 1ページあたりのアイテム数
-
-
-class StyleSelectionView(View):
-    def __init__(self, speaker):
-        super().__init__()
-        self.speaker = speaker
-
-    async def send_initial_message(self, interaction):
-        message = f"**{self.speaker['name']}の利用可能なスタイル:**\n"
-        for style in self.speaker["styles"]:
-            self.add_item(
-                Button(label=style["name"], custom_id=f"select_style_{style['id']}")
-            )
-        await interaction.response.send_message(content=message, view=self)
-
-    async def interaction_check(self, interaction: discord.Interaction) -> bool:
-        for item in self.children:
-            if interaction.data["custom_id"] == item.custom_id:
-                style_id = int(item.custom_id.split("_")[-1])
-                await self.handle_style_selection(interaction, style_id)
-                return True  # 正常に処理されたことを示します
-        return False  # 何も一致しなかった場合
-
-    async def handle_style_selection(self, interaction: discord.Interaction, style_id):
-        print(f"Selected style ID: {style_id}")  # デバッグメッセージ
-        update_style_setting(str(interaction.user.id), style_id)
-        await interaction.followup.send(f"スタイルが更新されました: {style_id}")
+ITEMS_PER_PAGE = 10  # 1ページあたりのアイテム数
 
 
 class PaginationView(View):
@@ -69,48 +42,10 @@ class PaginationView(View):
         self.page = min(self.total_pages, self.page + 1)
         await self.update_message(interaction)
 
-    @discord.ui.button(
-        label="Select", style=discord.ButtonStyle.secondary, custom_id="select_speaker"
-    )
-    async def select_speaker(self, interaction: discord.Interaction, button: Button):
-        try:
-            # interaction.response.defer() を使用して、処理時間を確保します
-            await interaction.response.defer()
-
-            # インデックスをボタンのcustom_idから取得します
-            selected_index = int(button.custom_id.split("_")[-1])
-            selected_speaker = self.speakers[selected_index]
-            view = StyleSelectionView(selected_speaker)
-            await view.send_initial_message(interaction)
-
-        except Exception as e:
-            # エラーメッセージをログに記録
-            print(f"Error in select_speaker: {e}")
-            # ユーザーにフィードバックを提供
-            await interaction.followup.send("話者の選択中にエラーが発生しました.")
-
-
     async def update_message(self, interaction):
-        # 既存の話者選択ボタンをクリア
-        self.clear_items()
-
-        # 前へ/次へのボタンを再追加
-        self.add_item(
-            Button(
-                label="前へ",
-                style=discord.ButtonStyle.primary,
-                custom_id="previous",
-                disabled=self.page <= 1,
-            )
-        )
-        self.add_item(
-            Button(
-                label="次へ",
-                style=discord.ButtonStyle.primary,
-                custom_id="next",
-                disabled=self.page >= self.total_pages,
-            )
-        )
+        # 現在のページに応じてボタンの有効/無効を設定
+        self.children[0].disabled = self.page <= 1
+        self.children[1].disabled = self.page >= self.total_pages
 
         start_index = (self.page - 1) * ITEMS_PER_PAGE
         end_index = start_index + ITEMS_PER_PAGE
@@ -121,19 +56,11 @@ class PaginationView(View):
             name = speaker["name"]
             character_id, display_name = get_character_info(name)
             url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
-            message += f"\n- [{display_name}]({url})"
-
-        # 話者選択用のボタンを追加
-        for i, speaker in enumerate(self.speakers[start_index:end_index]):
-            button = Button(
-                label=f'{speaker["name"]}を選択',
-                custom_id=f"select_speaker_{i}",
-                style=discord.ButtonStyle.secondary,
+            styles_info = " ".join(
+                f"{style['name']} (ID: `{style['id']}`)" for style in speaker["styles"]
             )
-            button.callback = self.select_speaker
-            self.add_item(button)
+            message += f"\n[{display_name}]({url}): {styles_info}"
 
-        # メッセージを送信または更新
         if interaction.response.is_done():
             await interaction.followup.edit_message(
                 message_id=interaction.message.id, content=message, view=self
@@ -147,25 +74,53 @@ class PaginationView(View):
         start_index = (self.page - 1) * ITEMS_PER_PAGE
         end_index = start_index + ITEMS_PER_PAGE
 
-        # メッセージを更新
-        message = f"**利用可能な話者とスタイル (ページ {self.page}/{self.total_pages}):**\n"
+        # メッセージを整形して作成
+        message = f"**利用可能な話者とスタイル (ページ {self.page}):**\n"
         for speaker in self.speakers[start_index:end_index]:
             name = speaker["name"]
             character_id, display_name = get_character_info(name)
             url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
-            message += f"\n- [{display_name}]({url})"
-
-        # 話者選択用のボタンを追加
-        for i, speaker in enumerate(self.speakers[start_index:end_index]):
-            button = Button(
-                label=f'{speaker["name"]}を選択',
-                custom_id=f"select_speaker_{i}",
-                style=discord.ButtonStyle.secondary,
+            styles_info = " ".join(
+                f"{style['name']} (ID: `{style['id']}`)" for style in speaker["styles"]
             )
-            button.callback = self.select_speaker
-            self.add_item(button)
+            message += f"\n[{display_name}]({url}): {styles_info}"
+
         # 最初のメッセージを送信
         await interaction.response.send_message(content=message, view=self)
+class SpeakerSelectionView(View):
+    def __init__(self, speakers):
+        super().__init__()
+        self.speakers = speakers
+
+    async def on_select(self, interaction: discord.Interaction, speaker_name: str):
+        # 選択された話者のスタイル情報を取得
+        speaker = next((s for s in self.speakers if s['name'] == speaker_name), None)
+        if not speaker:
+            await interaction.response.send_message("選択した話者のデータが見つかりませんでした。")
+            return
+
+        # スタイル選択のビューを作成して表示
+        view = StyleSelectionView(speaker)
+        await view.send_initial_message(interaction)
+class StyleSelectionView(View):
+    def __init__(self, speaker, user_id, guild_id):
+        super().__init__()
+        self.speaker = speaker
+        self.user_id = user_id
+        self.guild_id = guild_id
+
+    async def on_select(self, interaction: discord.Interaction, style_id: int):
+        # スタイル名を取得
+        style_name = next((s['name'] for s in self.speaker['styles'] if s['id'] == style_id), None)
+        if not style_name:
+            await interaction.response.send_message("選択したスタイルIDが無効です。")
+            return
+
+        # スタイル設定を更新
+        update_style_setting(self.guild_id, self.user_id, style_id, "user")
+
+        # ユーザーに更新を通知
+        await interaction.response.send_message(f"スタイルが「{self.speaker['name']} - {style_name}」に設定されました。")
 
 
 async def handle_voice_config_command(interaction, style_id: int, voice_scope: str):
@@ -396,6 +351,22 @@ def setup_commands(bot):
         # 最初のページを表示
         view = PaginationView(speakers)
         await view.send_initial_message(interaction)
+
+    @bot.tree.command(
+        name="select_speaker",
+        guilds=APPROVED_GUILD_IDS,
+        description="話者を選択します。"
+    )
+    async def select_speaker(interaction: discord.Interaction):
+        if not speakers:
+            await interaction.response.send_message("話者のデータを取得できませんでした。")
+            return
+
+        # 話者選択のためのページネーションビューを作成
+        view = SpeakerSelectionView(speakers)
+        await view.send_initial_message(interaction)
+    
+
 
     @bot.tree.command(
         name="help", guilds=APPROVED_GUILD_IDS, description="利用可能なコマンドとその説明を表示します。"
