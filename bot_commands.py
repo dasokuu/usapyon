@@ -89,6 +89,7 @@ class PaginationView(View):
             # ユーザーにフィードバックを提供
             await interaction.followup.send("話者の選択中にエラーが発生しました.")
 
+
     async def update_message(self, interaction):
         # 既存の話者選択ボタンをクリア
         self.clear_items()
