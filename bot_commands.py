@@ -78,9 +78,8 @@ class PaginationView(View):
             await interaction.response.defer()
 
             # インデックスをボタンのcustom_idから取得します
-            selected_index = (
-                int(button.custom_id.split("_")[-1]) + (self.page - 1) * ITEMS_PER_PAGE
-            )
+            selected_index = int(button.custom_id.split("_")[-1])
+
             selected_speaker = self.speakers[selected_index]
             view = StyleSelectionView(selected_speaker)
             await view.send_initial_message(interaction)
@@ -134,7 +133,13 @@ class PaginationView(View):
             button.callback = self.select_speaker
             self.add_item(button)
 
-        await interaction.response.edit_message(content=message, view=self)
+        # メッセージを送信または更新
+        if interaction.response.is_done():
+            await interaction.followup.edit_message(
+                message_id=interaction.message.id, content=message, view=self
+            )
+        else:
+            await interaction.response.edit_message(content=message, view=self)
 
     async def send_initial_message(self, interaction):
         self.children[0].disabled = self.page <= 1
