@@ -134,10 +134,6 @@ class SpeakerSelectionView(View):
         self.clear_items()
         self.add_buttons()
 
-        # 現在のページに応じてボタンの有効/無効を設定
-        self.children[0].disabled = self.page <= 1
-        self.children[1].disabled = self.page >= self.total_pages
-
         # メッセージを更新
         message_content = self.create_message_content()
 
