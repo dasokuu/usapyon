@@ -99,7 +99,17 @@ class SpeakerSelectionView(View):
             len(speakers) // ITEMS_PER_PAGE
             + (1 if len(speakers) % ITEMS_PER_PAGE > 0 else 0),
         )
-        self.add_buttons()
+        self.add_buttons()  # Call this method to initially add buttons.
+
+    # @discord.ui.button(label="前へ", style=discord.ButtonStyle.primary)
+    # async def previous(self, interaction: discord.Interaction, button: Button):
+    #     self.page = max(1, self.page - 1)
+    #     await self.update_message(interaction)
+
+    # @discord.ui.button(label="次へ", style=discord.ButtonStyle.primary)
+    # async def next(self, interaction: discord.Interaction, button: Button):
+    #     self.page = min(self.total_pages, self.page + 1)
+    #     await self.update_message(interaction)
 
     async def send_initial_message(self, interaction):
         message_content = self.create_message_content()
@@ -136,22 +146,42 @@ class SpeakerSelectionView(View):
         start_index = (self.page - 1) * ITEMS_PER_PAGE
         end_index = start_index + ITEMS_PER_PAGE
 
-        @discord.ui.button(label="前へ", style=discord.ButtonStyle.primary)
-        async def previous(self, interaction: discord.Interaction, button: Button):
-            self.page = max(1, self.page - 1)
-            await self.update_message(interaction)
-
-        @discord.ui.button(label="次へ", style=discord.ButtonStyle.primary)
-        async def next(self, interaction: discord.Interaction, button: Button):
-            self.page = min(self.total_pages, self.page + 1)
-            await self.update_message(interaction)
-
         for speaker in self.speakers[start_index:end_index]:
-            button = Button(label=speaker["name"], style=discord.ButtonStyle.secondary)
-            self.add_item(button)
-            button.callback = lambda interaction, s=speaker: self.select_speaker(
-                interaction, s
+            button = discord.ui.Button(
+                label=speaker["name"], style=discord.ButtonStyle.secondary
             )
+            button.callback = self.create_button_callback(speaker)
+            self.add_item(button)
+
+        # 'Previous' button を作成。
+        previous_button = discord.ui.Button(
+            label="前へ", style=discord.ButtonStyle.primary
+        )
+        previous_button.disabled = self.page <= 1
+        previous_button.callback = self.on_previous_button_click  # 引数なしで修正
+
+        # 'Next' button を作成。
+        next_button = discord.ui.Button(label="次へ", style=discord.ButtonStyle.primary)
+        next_button.disabled = self.page >= self.total_pages
+        next_button.callback = self.on_next_button_click  # 引数なしで修正
+
+        # Add buttons to the view.
+        self.add_item(previous_button)
+        self.add_item(next_button)
+
+    async def on_previous_button_click(self, interaction: discord.Interaction):
+        self.page = max(1, self.page - 1)
+        await self.update_message(interaction)
+
+    async def on_next_button_click(self, interaction: discord.Interaction):
+        self.page = min(self.total_pages, self.page + 1)
+        await self.update_message(interaction)
+
+    def create_button_callback(self, speaker):
+        async def button_callback(interaction: discord.Interaction):
+            await self.select_speaker(interaction, speaker)
+
+        return button_callback
 
     async def select_speaker(self, interaction: discord.Interaction, speaker):
         # ここで選択された話者に基づいて処理を行います。
@@ -173,11 +203,30 @@ class StyleSelectionView(View):
         self.speaker = speaker
         self.user_id = user_id
         self.guild_id = guild_id
+        self.add_style_buttons()  # Call this method to add style buttons.
+
+    def add_style_buttons(self):
+        # スタイル情報に基づいてボタンを動的に生成
+        for style in self.speaker['styles']:
+            style_name = style['name']
+            style_id = style['id']
+            button = discord.ui.Button(
+                label=f"{style_name} (ID: {style_id})", style=discord.ButtonStyle.secondary
+            )
+            button.callback = self.create_button_callback(style_id)
+            self.add_item(button)
+
+    def create_button_callback(self, style_id):
+        # コールバック関数を動的に生成
+        async def button_callback(interaction: discord.Interaction):
+            await self.on_select(interaction, style_id)
+
+        return button_callback
 
     async def on_select(self, interaction: discord.Interaction, style_id: int):
-        # スタイル名を取得
+        # スタイル選択時の処理
         style_name = next(
-            (s["name"] for s in self.speaker["styles"] if s["id"] == style_id), None
+            (style['name'] for style in self.speaker['styles'] if style['id'] == style_id), None
         )
         if not style_name:
             await interaction.response.send_message("選択したスタイルIDが無効です。")
