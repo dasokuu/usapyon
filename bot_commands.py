@@ -103,17 +103,7 @@ class SpeakerSelectionView(View):
             len(speakers) // ITEMS_PER_PAGE
             + (1 if len(speakers) % ITEMS_PER_PAGE > 0 else 0),
         )
-        self.add_buttons()  # Call this method to initially add buttons.
-
-    # @discord.ui.button(label="前へ", style=discord.ButtonStyle.primary)
-    # async def previous(self, interaction: discord.Interaction, button: Button):
-    #     self.page = max(1, self.page - 1)
-    #     await self.update_message(interaction)
-
-    # @discord.ui.button(label="次へ", style=discord.ButtonStyle.primary)
-    # async def next(self, interaction: discord.Interaction, button: Button):
-    #     self.page = min(self.total_pages, self.page + 1)
-    #     await self.update_message(interaction)
+        self.add_buttons()
 
     async def send_initial_message(self, interaction):
         message_content = self.create_message_content()
