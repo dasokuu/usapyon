@@ -1,4 +1,6 @@
 import discord
+from discord.ui import Button, View
+from discord import app_commands
 from settings import (
     APPROVED_GUILD_IDS,
     CHARACTORS_INFO,
@@ -14,14 +16,14 @@ from utils import (
     validate_style_id,
 )
 from voice import clear_playback_queue, text_to_speech
-from discord import app_commands
-import discord
-from discord.ui import Button, View
 
 ITEMS_PER_PAGE = 10  # 1ページあたりのアイテム数
 
 
+# ページネーションのビュークラス
 class PaginationView(View):
+    """A view for paginating through a list of speakers."""
+
     def __init__(self, speakers, page=1):
         super().__init__()
         self.speakers = speakers
@@ -93,7 +95,10 @@ class PaginationView(View):
         )
 
 
+# 話者選択のビュークラス
 class SpeakerSelectionView(View):
+    """A view for selecting a speaker from a list."""
+
     def __init__(self, speakers, page=1):
         super().__init__()
         self.speakers = speakers
@@ -189,13 +194,16 @@ class SpeakerSelectionView(View):
         )
 
 
+# スタイル選択のビュークラス
 class StyleSelectionView(View):
+    """A view for selecting a voice style for a given speaker."""
+
     def __init__(self, speaker, user_id, guild_id):
         super().__init__()
         self.speaker = speaker
         self.user_id = user_id
         self.guild_id = guild_id
-        self.add_style_buttons()  # Call this method to add style buttons.
+        self.add_style_buttons()
 
     def add_style_buttons(self):
         # スタイル情報に基づいてボタンを動的に生成
