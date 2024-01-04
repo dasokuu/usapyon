@@ -4,6 +4,7 @@ import jaconv
 import re
 import discord
 from settings import (
+    BOT_PREFIX,
     CHARACTORS_INFO,
     USER_DEFAULT_STYLE_ID,
     ANNOUNCEMENT_DEFAULT_STYLE_ID,
@@ -131,52 +132,6 @@ async def replace_content(text, message):
     return text
 
 
-async def handle_message(bot, message):
-    guild_id = str(message.guild.id)
-    # ボイスチャンネルに接続されていない、またはメッセージがコマンドの場合は無視
-    voice_client = message.guild.voice_client
-    # 設定されたテキストチャンネルIDを取得（存在しない場合はNone）
-    allowed_text_channel_id = speaker_settings.get(guild_id, {}).get("text_channel")
-    if (
-        not voice_client
-        or not voice_client.channel
-        or not message.author.voice
-        or message.author.voice.channel != voice_client.channel
-        or message.content.startswith("!")
-        or str(message.channel.id)
-        != allowed_text_channel_id  # メッセージが指定されたテキストチャンネルからでなければ無視
-    ):
-        return
-
-    if len(message.content) > MAX_MESSAGE_LENGTH:
-        # テキストチャンネルに警告を送信
-        await message.channel.send(
-            f"申し訳ありません、メッセージが長すぎて読み上げられません！（最大 {MAX_MESSAGE_LENGTH} 文字）"
-        )
-        return  # このメッセージのTTS処理をスキップ
-
-    guild_id = str(message.guild.id)
-    # Initialize default settings for the server if none exist
-    if guild_id not in speaker_settings:
-        speaker_settings[guild_id] = {"user_default": USER_DEFAULT_STYLE_ID}
-
-    # Use get to safely access 'default' key
-    default_style_id = speaker_settings[guild_id].get("user_default", USER_DEFAULT_STYLE_ID)
-
-    style_id = speaker_settings.get(str(message.author.id), default_style_id)
-
-    # メッセージ内容を置換
-    message_content = await replace_content(message.content, message)
-    # テキストメッセージがある場合、それに対する音声合成を行います。
-    if message_content.strip():
-        await text_to_speech(voice_client, message_content, style_id, guild_id)
-
-    # 添付ファイルがある場合、「ファイルを投稿しました」というメッセージに対する音声合成を行います。
-    if message.attachments:
-        file_message = "ファイルを投稿しました。"
-        await text_to_speech(voice_client, file_message, style_id, guild_id)
-
-
 async def handle_voice_state_update(bot, member, before, after):
     guild_id = str(member.guild.id)
     # ボット自身の状態変更を無視
@@ -255,3 +210,60 @@ emoji_ja = fetch_json(
 )
 # 特別な置き換え規則
 special_cases = {"🇵🇸": "パレスチナ"}
+
+
+async def handle_message(bot, message):
+    guild_id = str(message.guild.id)
+
+    # 早期リターンを利用してネストを減らす
+    if not should_process_message(message, guild_id):
+        return
+
+    # メッセージ処理
+    try:
+        message_content = await replace_content(message.content, message)
+        if message_content.strip():
+            await text_to_speech(
+                message.guild.voice_client,
+                message_content,
+                get_style_id(message.author.id, guild_id),
+                guild_id,
+            )
+        if message.attachments:
+            await announce_file_post(message)
+    except Exception as e:
+        print(f"Error in handle_message: {e}")  # ロギング改善の余地あり
+
+
+def should_process_message(message, guild_id):
+    """メッセージが処理対象かどうかを判断します。"""
+    voice_client = message.guild.voice_client
+    allowed_text_channel_id = speaker_settings.get(guild_id, {}).get("text_channel")
+    return (
+        voice_client
+        and voice_client.channel
+        and message.author.voice
+        and message.author.voice.channel == voice_client.channel
+        and not message.content.startswith(BOT_PREFIX)
+        and str(message.channel.id) == allowed_text_channel_id
+    )
+
+
+async def announce_file_post(message):
+    """ファイル投稿をアナウンスします。"""
+    file_message = "ファイルを投稿しました。"
+    guild_id = str(message.guild.id)
+    await text_to_speech(
+        message.guild.voice_client,
+        file_message,
+        get_style_id(message.author.id, guild_id),
+        guild_id,
+    )
+
+
+def get_style_id(user_id, guild_id):
+    """ユーザーまたはギルドのスタイルIDを取得します。"""
+    return speaker_settings.get(
+        str(user_id),
+        speaker_settings[guild_id].get("user_default", USER_DEFAULT_STYLE_ID),
+    )

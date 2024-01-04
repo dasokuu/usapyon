@@ -13,19 +13,22 @@ if __name__ == "__main__":
     intents.guilds = True
     intents.voice_states = True
     intents.message_content = True
-    bot = commands.Bot(
-        command_prefix=BOT_PREFIX, intents=intents
-    )
+    bot = commands.Bot(command_prefix=BOT_PREFIX, intents=intents)
     setup_commands(bot)
 
     @bot.event
     async def on_ready():
-        print(f"Logged in as {bot.user.name}")
-        await bot.change_presence(activity=discord.Game(name=GAME_NAME))  # ボットのステータスを設定
-        for guild in APPROVED_GUILD_IDS:
-            await bot.tree.sync(guild=guild)
-        for guild in bot.guilds:
-            bot.loop.create_task(process_playback_queue(str(guild.id)))
+        try:
+            print(f"Logged in as {bot.user.name}")
+            await bot.change_presence(
+                activity=discord.Game(name=GAME_NAME)
+            )  # ボットのステータスを設定
+            for guild in APPROVED_GUILD_IDS:
+                await bot.tree.sync(guild=guild)
+            for guild in bot.guilds:
+                bot.loop.create_task(process_playback_queue(str(guild.id)))
+        except Exception as e:
+            print(f"エラーが発生しました: {e}")
 
     @bot.event
     async def on_message(message):

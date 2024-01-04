@@ -67,16 +67,15 @@ async def synthesis(speaker, query_data):
 
 
 async def text_to_speech(voice_client, text, style_id, guild_id):
-    try:
-        if not voice_client or not voice_client.is_connected():
-            return  # Stop processing if not connected.
+    """テキストを音声に変換して再生します。"""
+    if not voice_client or not voice_client.is_connected():
+        return  # 接続されていない場合は処理を中断
 
+    try:
         lines = text.split("\n")
-        for line in lines:
-            if line.strip():
-                guild_queue = get_guild_playback_queue(guild_id)
-                # Add text lines to the guild-specific queue
-                await guild_queue.put((voice_client, line, style_id))
+        for line in filter(None, lines):  # 空行を除外
+            guild_queue = get_guild_playback_queue(guild_id)
+            await guild_queue.put((voice_client, line, style_id))
     except Exception as e:
         print(f"Error in text_to_speech: {e}")
 

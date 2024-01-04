@@ -86,7 +86,11 @@ class PaginationView(View):
             message += f"\n[{display_name}]({url}): {styles_info}"
 
         # 最初のメッセージを送信
-        await interaction.response.send_message(content=message, view=self)
+        await interaction.response.send_message(
+            content=message,
+            view=self,
+            ephemeral=True,
+        )
 
 
 class SpeakerSelectionView(View):
@@ -113,7 +117,9 @@ class SpeakerSelectionView(View):
 
     async def send_initial_message(self, interaction):
         message_content = self.create_message_content()
-        await interaction.response.send_message(content=message_content, view=self)
+        await interaction.response.send_message(
+            content=message_content, view=self, ephemeral=True
+        )
 
     def create_message_content(self):
         start_index = (self.page - 1) * ITEMS_PER_PAGE
@@ -207,11 +213,12 @@ class StyleSelectionView(View):
 
     def add_style_buttons(self):
         # スタイル情報に基づいてボタンを動的に生成
-        for style in self.speaker['styles']:
-            style_name = style['name']
-            style_id = style['id']
+        for style in self.speaker["styles"]:
+            style_name = style["name"]
+            style_id = style["id"]
             button = discord.ui.Button(
-                label=f"{style_name} (ID: {style_id})", style=discord.ButtonStyle.secondary
+                label=f"{style_name} (ID: {style_id})",
+                style=discord.ButtonStyle.secondary,
             )
             button.callback = self.create_button_callback(style_id)
             self.add_item(button)
@@ -226,10 +233,15 @@ class StyleSelectionView(View):
     async def on_select(self, interaction: discord.Interaction, style_id: int):
         # スタイル選択時の処理
         style_name = next(
-            (style['name'] for style in self.speaker['styles'] if style['id'] == style_id), None
+            (
+                style["name"]
+                for style in self.speaker["styles"]
+                if style["id"] == style_id
+            ),
+            None,
         )
         if not style_name:
-            await interaction.response.send_message("選択したスタイルIDが無効です。")
+            await interaction.response.send_message("選択したスタイルIDが無効です。", ephemeral=True)
             return
 
         # スタイル設定を更新
@@ -499,73 +511,3 @@ def setup_commands(bot):
         各コマンドの詳細については、コマンドを入力時に表示される説明を参照してください。
         """
         await interaction.response.send_message(help_text)
-
-    # @bot.command(name="remove_command")
-    # async def remove_command(ctx, command_name: str):
-    #     # このコマンドを使用すると、指定されたコマンド名のスラッシュコマンドを削除します。
-    #     guild_id = ctx.guild.id  # コマンドを削除したいギルドのID
-    #     guild = discord.Object(id=guild_id)
-    #     for cmd in await bot.tree.fetch_commands(guild=guild):
-    #         if cmd.name == command_name:
-    #             await bot.tree.remove_command(cmd.name, guild=guild)
-    #             await ctx.send(f"コマンド {command_name} を削除しました。")
-    #             break
-    #     else:
-    #         await ctx.send(f"コマンド {command_name} が見つかりませんでした。")
-
-    # @bot.command(name="remove_global_command")
-    # async def remove_global_command(ctx, command_name: str):
-    #     try:
-    #         commands = await bot.tree.fetch_commands()  # Fetch all global commands
-    #         for cmd in commands:
-    #             if cmd.name == command_name:
-    #                 if cmd is None:
-    #                     await ctx.send("Error: Command object is None.")
-    #                     return
-
-    #                 # Attempt to remove the command
-    #                 removal_result = bot.tree.remove_command(cmd)
-    #                 if asyncio.iscoroutine(removal_result):
-    #                     await removal_result
-    #                 else:
-    #                     # If it's not a coroutine, it's possible that the command was removed without needing to await anything
-    #                     pass
-
-    #                 await ctx.send(f"グローバルコマンド {command_name} を削除しました。")
-    #                 return
-    #         await ctx.send(f"グローバルコマンド {command_name} が見つかりませんでした。")
-    #     except Exception as e:
-    #         await ctx.send(f"コマンドを削除中にエラーが発生しました: {e}")
-    # @bot.tree.command(
-    #     name="display_current_settings",
-    #     guilds=APPROVED_GUILD_IDS,
-    #     description="現在のスタイル設定を表示します。",
-    # )
-    # async def display_current_settings(interaction: discord.Interaction):
-    #     guild_id = str(interaction.guild_id)
-    #     user_id = str(interaction.user.id)
-
-    #     # Dictionary to map style types to more user-friendly descriptions
-    #     voice_scope_descriptions = {
-    #         "user": "ユーザー特有のスタイル",
-    #         "announcement": "VC入退室時の通知",
-    #         "user_default": "ユーザーデフォルト",
-    #     }
-
-    #     # Prepare messages for each style type
-    #     messages = []
-    #     for voice_scope, description in voice_scope_descriptions.items():
-    #         style_id, speaker_name, style_name = get_current_style_details(
-    #             guild_id, user_id, voice_scope
-    #         )
-    #         messages.append(
-    #             f"**{description}**: {speaker_name} {style_name} (スタイルID: {style_id})"
-    #         )
-
-    #     # Send the compiled message
-    #     if messages:
-    #         await interaction.response.send_message(
-    #             "以下は現在のスタイル設定です:\n" + "\n".join(messages)
-    #         )
-    #     else:
-    #         await interaction.response.send_message("現在のスタイル設定はありません。")
