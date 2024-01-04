@@ -1,13 +1,12 @@
 import discord
 from discord.ext import commands
 import os
-from utils import fetch_json, handle_message, handle_voice_state_update
+from utils import handle_message, handle_voice_state_update
 from voice import process_playback_queue
 from bot_commands import setup_commands
-from settings import APPROVED_GUILD_IDS, BOT_PREFIX, GAME_NAME, TEST_GUILD_ID
+from settings import APPROVED_GUILD_IDS, BOT_PREFIX, GAME_NAME
 
 if __name__ == "__main__":
-    # Initialize bot with intents and prefix
     intents = discord.Intents.default()
     intents.messages = True
     intents.guilds = True
@@ -20,23 +19,18 @@ if __name__ == "__main__":
     async def on_ready():
         try:
             print(f"Logged in as {bot.user.name}")
-            await bot.change_presence(
-                activity=discord.Game(name=GAME_NAME)
-            )  # ボットのステータスを設定
+            await bot.change_presence(activity=discord.Game(name=GAME_NAME))
             for guild in APPROVED_GUILD_IDS:
                 await bot.tree.sync(guild=guild)
             for guild in bot.guilds:
                 bot.loop.create_task(process_playback_queue(str(guild.id)))
         except Exception as e:
-            print(f"エラーが発生しました: {e}")
+            print(f"Error occurred: {e}")
 
     @bot.event
     async def on_message(message):
-        # ボット自身のメッセージは無視
         if message.author == bot.user:
             return
-
-        # コマンド処理を妨げないようにする
         await bot.process_commands(message)
         await handle_message(bot, message)
 
