@@ -6,6 +6,8 @@ from settings import (
     ANNOUNCEMENT_URL_BASE,
     APPROVED_GUILD_IDS,
     CHARACTORS_INFO,
+    ERROR_MESSAGES,
+    ITEMS_PER_PAGE,
     USER_DEFAULT_STYLE_ID,
     ANNOUNCEMENT_DEFAULT_STYLE_ID,
 )
@@ -18,10 +20,7 @@ from utils import (
     validate_style_id,
 )
 
-ITEMS_PER_PAGE = 10  # 1ページあたりのアイテム数
-# エラーメッセージの定数化
-ERROR_MESSAGE_CONNECTION = "ボイスチャンネルに接続できませんでした。ユーザーがボイスチャンネルにいることを確認してください。"
-ERROR_MESSAGE_INVALID_STYLE = "選択したスタイルIDが無効です。"
+
 
 
 # ページネーションのビュークラス
@@ -67,12 +66,7 @@ class PaginationView(View):
             )
             message += f"\n[{display_name}]({url}): {styles_info}"
 
-        if interaction.response.is_done():
-            await interaction.followup.edit_message(
-                message_id=interaction.message.id, content=message, view=self
-            )
-        else:
-            await interaction.response.edit_message(content=message, view=self)
+        await interaction.response.edit_message(content=message, view=self)
 
     async def send_initial_message(self, interaction):
         self.children[0].disabled = self.page <= 1
@@ -239,7 +233,7 @@ class StyleSelectionView(View):
         )
         if not style_name:
             await interaction.response.send_message(
-                ERROR_MESSAGE_INVALID_STYLE, ephemeral=True
+                ERROR_MESSAGES["invalid_style"], ephemeral=True
             )
             return
         speaker_manager = SpeakerManager()
@@ -272,7 +266,7 @@ async def handle_voice_config_command(interaction, style_id: int, voice_scope: s
             valid, speaker_name, style_name = validate_style_id(style_id)
             if not valid:
                 await interaction.response.send_message(
-                    ERROR_MESSAGE_INVALID_STYLE,
+                    ERROR_MESSAGES["invalid_style"],
                     ephemeral=True,
                 )
                 return
@@ -330,7 +324,7 @@ async def handle_voice_config_command(interaction, style_id: int, voice_scope: s
 
     except Exception as e:
         await interaction.response.send_message(f"エラーが発生しました: {e}")
-        logging.error(f"Error in handle_voice_config_command: {e}")
+        logging.error(f"Error in handle_voice_config_command: {e}", exc_info=True)
 
 
 class SpeakerManager:
@@ -415,7 +409,7 @@ def setup_commands(server, bot):
         # defer the response to keep the interaction alive
         await interaction.response.defer()
         if not interaction.user.voice or not interaction.user.voice.channel:
-            await interaction.followup.send(ERROR_MESSAGE_CONNECTION)
+            await interaction.followup.send(ERROR_MESSAGES["connection"])
             return
         try:
             channel = interaction.user.voice.channel
