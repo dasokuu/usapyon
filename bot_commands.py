@@ -236,9 +236,9 @@ class StyleSelectionView(View):
         if not style_name:
             await interaction.response.send_message("選択したスタイルIDが無効です。", ephemeral=True)
             return
-
+        speaker_manager = SpeakerManager()
         # スタイル設定を更新
-        update_style_setting(self.guild_id, self.user_id, style_id, "user")
+        speaker_manager.update_style_setting(self.guild_id, self.user_id, style_id, "user")
 
         # ユーザーに更新を通知
         await interaction.response.send_message(
@@ -323,15 +323,25 @@ async def handle_voice_config_command(interaction, style_id: int, voice_scope: s
     return None  # Return None if there's no response
 
 
-def update_style_setting(guild_id, user_id, style_id, voice_scope):
-    if voice_scope == "user_default":
-        speaker_settings[guild_id]["user_default"] = style_id
-    elif voice_scope == "announcement":
-        speaker_settings[guild_id]["announcement"] = style_id
-    elif voice_scope == "user":
-        speaker_settings[user_id] = style_id
-    save_style_settings()
+class SpeakerManager:
+    def __init__(self):
+        self.speaker_settings = {}
 
+    def update_style_setting(self, guild_id, user_id, style_id, voice_scope):
+        try:
+            if voice_scope not in ["user_default", "announcement", "user"]:
+                raise ValueError("無効なvoice_scopeが指定されました。")
+            if voice_scope == "user_default":
+                self.speaker_settings[guild_id]["user_default"] = style_id
+            elif voice_scope == "announcement":
+                self.speaker_settings[guild_id]["announcement"] = style_id
+            elif voice_scope == "user":
+                self.speaker_settings[user_id] = style_id
+            # ここで設定を保存するロジックを追加
+        except KeyError as e:
+            print(f"キーが見つかりません: {e}")
+        except ValueError as e:
+            print(e)
 
 def get_current_style_details(guild_id, user_id, voice_scope):
     if voice_scope == "user_default":
