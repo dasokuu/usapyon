@@ -105,16 +105,16 @@ async def replace_content(text, message):
         return channel.name + "チャンネル" if channel else match.group(0)
 
     def replace_keywords_with_short_name(text, symbol_dict, special_cases):
-        # 絵文字かどうかを判定
-        if emoji.emoji_count(symbol) > 0:
-            for symbol, data in symbol_dict.items():
+        for symbol, data in symbol_dict.items():
+            # 絵文字かどうかを判定
+            if emoji.emoji_count(symbol) > 0:
                 # 特別なケースを先に処理
                 if symbol in special_cases:
                     text = text.replace(symbol, special_cases[symbol])
                     continue
 
                 text = text.replace(symbol, data["short_name"])
-            return text
+                return text
 
     def replace_custom_emoji_name_to_kana(match):
         emoji_name = match.group(1)
