@@ -1,3 +1,4 @@
+import logging
 import discord
 from discord.ui import Button, View
 from discord import app_commands
@@ -342,9 +343,9 @@ class SpeakerManager:
                 self.speaker_settings[user_id] = style_id
             # ここで設定を保存するロジックを追加
         except KeyError as e:
-            print(f"キーが見つかりません: {e}")
+            logging.error(f"キーが見つかりません: {e}")
         except ValueError as e:
-            print(e)
+            logging.error(e)
 
 
 def get_current_style_details(guild_id, user_id, voice_scope):

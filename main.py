@@ -1,3 +1,4 @@
+import logging
 import discord
 from discord.ext import commands
 import os
@@ -17,14 +18,14 @@ if __name__ == "__main__":
     @bot.event
     async def on_ready():
         try:
-            print(f"Logged in as {bot.user.name}")
+            logging.info(f"Logged in as {bot.user.name}")
             await bot.change_presence(activity=discord.Game(name=GAME_NAME))
             for guild in APPROVED_GUILD_IDS:
                 await bot.tree.sync(guild=guild)
             for guild in bot.guilds:
                 bot.loop.create_task(server.process_playback_queue(str(guild.id)))
         except Exception as e:
-            print(f"Error occurred: {e}")
+            logging.error(f"Error occurred: {e}")
 
     @bot.event
     async def on_message(message):

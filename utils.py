@@ -106,12 +106,10 @@ async def replace_content(text, message):
         for symbol, data in symbol_dict.items():
             # 特別なケースを先に処理
             if symbol in special_cases:
-                # print(f"特別なケースを処理: {symbol} -> {special_cases[symbol]}")
                 text = text.replace(symbol, special_cases[symbol])
                 continue
 
             text = text.replace(symbol, data["short_name"])
-            # print(f"シンボル置換後のテキスト: {text}")
         return text
 
     def replace_custom_emoji_name_to_kana(match):
@@ -195,7 +193,7 @@ async def handle_voice_state_update(server, bot, member, before, after):
                 # テキストチャンネルIDの設定をクリア
                 del speaker_settings[guild_id]["text_channel"]
                 save_style_settings()  # 変更を保存
-                print(f"テキストチャンネルの設定をクリアしました: サーバーID {guild_id}")
+                logging.info(f"テキストチャンネルの設定をクリアしました: サーバーID {guild_id}")
             await member.guild.voice_client.disconnect()
 
 
@@ -226,7 +224,7 @@ async def handle_message(server, bot, message):
         if message.attachments:
             await announce_file_post(server, message)
     except Exception as e:
-        print(f"Error in handle_message: {e}")  # ロギング改善の余地あり
+        logging.error(f"Error in handle_message: {e}")  # ロギング改善の余地あり
 
 
 def should_process_message(message, guild_id):
