@@ -1,3 +1,4 @@
+import logging
 import aiohttp
 import asyncio
 import json
@@ -30,7 +31,7 @@ class VoiceSynthServer:
                 ):
                     await self.speak_line(voice_client, line, style_id, guild_id)
             except Exception as e:
-                print(e)  # Log the error or handle it as needed.
+                logging.error(e)  # Log the error or handle it as needed.
             finally:
                 guild_queue.task_done()
 
@@ -45,7 +46,7 @@ class VoiceSynthServer:
                     return await response.json()
                 elif response.status == 422:
                     error_detail = await response.text()
-                    print(f"処理できないエンティティ: {error_detail}")
+                    logging.error(f"処理できないエンティティ: {error_detail}")
                     return None
 
     async def synthesis(self, speaker, query_data):
@@ -74,7 +75,7 @@ class VoiceSynthServer:
                 guild_queue = self.get_guild_playback_queue(guild_id)
                 await guild_queue.put((voice_client, line, style_id))
         except Exception as e:
-            print(f"Error in text_to_speech: {e}")
+            logging.error(f"Error in text_to_speech: {e}")
 
     async def speak_line(self, voice_client, line, style_id, guild_id):
         query_data = await self.audio_query(line, style_id)
