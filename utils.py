@@ -13,7 +13,6 @@ from settings import (
     SPEAKERS_URL,
     STYLE_SETTINGS_FILE,
 )
-from voice import clear_playback_queue, text_to_speech
 
 current_voice_client = None
 
@@ -131,7 +130,7 @@ async def replace_content(text, message):
     return text
 
 
-async def handle_voice_state_update(bot, member, before, after):
+async def handle_voice_state_update(server, bot, member, before, after):
     guild_id = str(member.guild.id)
     # ボット自身の状態変更を無視
     if member == bot.user:
@@ -163,7 +162,7 @@ async def handle_voice_state_update(bot, member, before, after):
         announcement_style_id = speaker_settings.get(guild_id, {}).get(
             "notify", ANNOUNCEMENT_DEFAULT_STYLE_ID
         )
-        await text_to_speech(
+        await server.text_to_speech(
             voice_client, announcement_voice, announcement_style_id, guild_id
         )
 
@@ -175,7 +174,7 @@ async def handle_voice_state_update(bot, member, before, after):
         announcement_style_id = speaker_settings.get(str(member.guild.id), {}).get(
             "announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID
         )
-        await text_to_speech(
+        await server.text_to_speech(
             voice_client, announcement_voice, announcement_style_id, guild_id
         )
 
@@ -188,7 +187,7 @@ async def handle_voice_state_update(bot, member, before, after):
                 current_voice_client.stop()
 
             # キューをクリアする
-            await clear_playback_queue(guild_id)
+            await server.clear_playback_queue(guild_id)
             if (
                 guild_id in speaker_settings
                 and "text_channel" in speaker_settings[guild_id]
@@ -207,7 +206,7 @@ emoji_ja = fetch_json(EMOJI_JA_URL)
 special_cases = {"🇵🇸": "パレスチナ"}
 
 
-async def handle_message(bot, message):
+async def handle_message(server, bot, message):
     guild_id = str(message.guild.id)
 
     # 早期リターンを利用してネストを減らす
@@ -218,14 +217,14 @@ async def handle_message(bot, message):
     try:
         message_content = await replace_content(message.content, message)
         if message_content.strip():
-            await text_to_speech(
+            await server.text_to_speech(
                 message.guild.voice_client,
                 message_content,
                 get_style_id(message.author.id, guild_id),
                 guild_id,
             )
         if message.attachments:
-            await announce_file_post(message)
+            await announce_file_post(server, message)
     except Exception as e:
         print(f"Error in handle_message: {e}")  # ロギング改善の余地あり
 
@@ -244,11 +243,11 @@ def should_process_message(message, guild_id):
     )
 
 
-async def announce_file_post(message):
+async def announce_file_post(server, message):
     """ファイル投稿をアナウンスします。"""
     file_message = "ファイルを投稿しました。"
     guild_id = str(message.guild.id)
-    await text_to_speech(
+    await server.text_to_speech(
         message.guild.voice_client,
         file_message,
         get_style_id(message.author.id, guild_id),

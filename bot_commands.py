@@ -15,7 +15,6 @@ from utils import (
     get_style_details,
     validate_style_id,
 )
-from voice import clear_playback_queue, text_to_speech
 
 ITEMS_PER_PAGE = 10  # 1ページあたりのアイテム数
 
@@ -238,7 +237,9 @@ class StyleSelectionView(View):
             return
         speaker_manager = SpeakerManager()
         # スタイル設定を更新
-        speaker_manager.update_style_setting(self.guild_id, self.user_id, style_id, "user")
+        speaker_manager.update_style_setting(
+            self.guild_id, self.user_id, style_id, "user"
+        )
 
         # ユーザーに更新を通知
         await interaction.response.send_message(
@@ -307,7 +308,9 @@ async def handle_voice_config_command(interaction, style_id: int, voice_scope: s
                 )
             await interaction.response.send_message("\n".join(messages))
             return
-        update_style_setting(guild_id, user_id, style_id, voice_scope)
+        speaker_manager = SpeakerManager()
+        # スタイル設定を更新
+        speaker_manager.update_style_setting(guild_id, user_id, style_id, voice_scope)
         # もち子さんの場合、特別なクレジット表記を使用
         if speaker_name == "もち子さん":
             speaker_name = "もち子(cv 明日葉よもぎ)"
@@ -343,6 +346,7 @@ class SpeakerManager:
         except ValueError as e:
             print(e)
 
+
 def get_current_style_details(guild_id, user_id, voice_scope):
     if voice_scope == "user_default":
         style_id = speaker_settings[guild_id].get("user_default", USER_DEFAULT_STYLE_ID)
@@ -357,14 +361,14 @@ def get_current_style_details(guild_id, user_id, voice_scope):
     return style_id, speaker_name, style_name
 
 
-def setup_commands(bot):
+def setup_commands(server, bot):
     @bot.tree.command(
         name="leave", guilds=APPROVED_GUILD_IDS, description="ボットをボイスチャンネルから切断します。"
     )
     async def leave(interaction: discord.Interaction):
         if interaction.guild.voice_client:
             guild_id = str(interaction.guild_id)
-            await clear_playback_queue(guild_id)  # キューをクリア
+            await server.clear_playback_queue(guild_id)  # キューをクリア
             if "text_channel" in speaker_settings.get(guild_id, {}):
                 del speaker_settings[guild_id]["text_channel"]
             await interaction.guild.voice_client.disconnect()  # 切断
@@ -460,7 +464,7 @@ def setup_commands(bot):
             )
 
             # メッセージとスタイルIDをキューに追加
-            await text_to_speech(
+            await server.text_to_speech(
                 voice_client, welcome_voice, announcement_style_id, guild_id
             )
             await interaction.followup.send(welcome_message)
