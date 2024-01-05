@@ -395,8 +395,8 @@ def setup_commands(bot):
         await interaction.response.defer()
         if not interaction.user.voice or not interaction.user.voice.channel:
             await interaction.followup.send(
-                    "ボイスチャンネルに接続できませんでした。ユーザーがボイスチャンネルにいることを確認してください。"
-                )
+                "ボイスチャンネルに接続できませんでした。ユーザーがボイスチャンネルにいることを確認してください。"
+            )
             return
         try:
             channel = interaction.user.voice.channel
@@ -407,9 +407,7 @@ def setup_commands(bot):
 
             guild_id = str(interaction.guild_id)
             user_id = str(interaction.user.id)  # コマンド使用者のユーザーID
-            user_display_name = (
-                interaction.user.display_name
-            )  # Corrected variable name
+            user_display_name = interaction.user.display_name  # Corrected variable name
             text_channel_id = str(interaction.channel_id)  # このコマンドを使用したテキストチャンネルID
 
             # サーバー設定が存在しない場合は初期化
@@ -428,9 +426,7 @@ def setup_commands(bot):
             # ユーザーのスタイルIDを取得
             user_style_id = speaker_settings.get(
                 user_id,
-                speaker_settings[guild_id].get(
-                    "user_default", USER_DEFAULT_STYLE_ID
-                ),
+                speaker_settings[guild_id].get("user_default", USER_DEFAULT_STYLE_ID),
             )
 
             # クレジットをメッセージに追加
@@ -441,14 +437,14 @@ def setup_commands(bot):
                 announcement_character_id,
                 announcement_display_name,
             ) = get_character_info(announcement_speaker_name)
-            announcement_url = f"https://voicevox.hiroshiba.jp/dormitory/{announcement_character_id}/"
+            announcement_url = (
+                f"https://voicevox.hiroshiba.jp/dormitory/{announcement_character_id}/"
+            )
             user_speaker_name, user_style_name = get_style_details(user_style_id)
             user_character_id, user_tts_display_name = get_character_info(
                 user_speaker_name
             )
-            user_url = (
-                f"https://voicevox.hiroshiba.jp/dormitory/{user_character_id}/"
-            )
+            user_url = f"https://voicevox.hiroshiba.jp/dormitory/{user_character_id}/"
             welcome_message = (
                 f"アナウンス音声「[{announcement_display_name}]({announcement_url}) {announcement_style_name}」\n"
                 f"{user_display_name}さんのテキスト読み上げ音声「[{user_tts_display_name}]({user_url}) {user_style_name}」"
