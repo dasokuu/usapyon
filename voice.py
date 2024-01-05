@@ -4,16 +4,19 @@ import json
 import discord
 import io
 from settings import SYNTHESIS_URL, AUDIO_QUERY_URL
+import logging
+
+# Loggerの設定
+logging.basicConfig(level=logging.INFO)
 
 
 class VoiceSynthServer:
     def __init__(self):
-        # Initialize global variables
         self.guild_playback_queues = {}
         self.headers = {"Content-Type": "application/json"}
+        self.session = aiohttp.ClientSession()  # セッションを一つだけ作成
 
     def get_guild_playback_queue(self, guild_id):
-        """指定されたギルドIDのplayback_queueを取得または作成します。"""
         if guild_id not in self.guild_playback_queues:
             self.guild_playback_queues[guild_id] = asyncio.Queue()
         return self.guild_playback_queues[guild_id]
@@ -23,45 +26,45 @@ class VoiceSynthServer:
         while True:
             voice_client, line, style_id = await guild_queue.get()
             try:
-                if (
-                    voice_client
-                    and voice_client.is_connected()
-                    and not voice_client.is_playing()
-                ):
-                    await self.speak_line(voice_client, line, style_id, guild_id)
+                # タイムアウトを設定してspeak_lineメソッドを呼び出す
+                await asyncio.wait_for(
+                    self.speak_line(voice_client, line, style_id, guild_id), timeout=10
+                )
+            except asyncio.TimeoutError:
+                logging.error("speak_line() timed out")
             except Exception as e:
-                print(e)  # Log the error or handle it as needed.
+                logging.error(f"Error in process_playback_queue: {e}")
             finally:
                 guild_queue.task_done()
 
     async def audio_query(self, text, style_id):
-        # 音声合成用のクエリを作成します。
         query_payload = {"text": text, "speaker": style_id}
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                AUDIO_QUERY_URL, headers=self.headers, params=query_payload
-            ) as response:
-                if response.status == 200:
-                    return await response.json()
-                elif response.status == 422:
-                    error_detail = await response.text()
-                    print(f"処理できないエンティティ: {error_detail}")
-                    return None
+        async with self.session.post(
+            AUDIO_QUERY_URL, headers=self.headers, json=query_payload
+        ) as response:
+            if response.status == 200:
+                return await response.json()
+            else:
+                error_detail = await response.text()
+                logging.warning(
+                    f"audio_query failed: {response.status}, {error_detail}"
+                )
+                return None
 
     async def synthesis(self, speaker, query_data):
-        # 音声合成を行います。
         synth_payload = {"speaker": speaker}
         headers = {"Content-Type": "application/json", "Accept": "audio/wav"}
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                SYNTHESIS_URL,
-                headers=headers,
-                params=synth_payload,
-                data=json.dumps(query_data),
-            ) as response:
-                if response.status == 200:
-                    return await response.read()
+        async with self.session.post(
+            SYNTHESIS_URL, headers=headers, json=query_data
+        ) as response:
+            if response.status == 200:
+                return await response.read()
+            else:
+                logging.warning(f"synthesis failed: {response.status}")
                 return None
+
+    async def close(self):
+        await self.session.close()  # セッションを閉じる
 
     async def text_to_speech(self, voice_client, text, style_id, guild_id):
         """テキストを音声に変換して再生します。"""
