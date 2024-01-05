@@ -194,10 +194,8 @@ class SpeakerSelectionView(View):
         )
 
 
-# スタイル選択のビュークラス
+# スタイル選択のビュークラスの例
 class StyleSelectionView(View):
-    """A view for selecting a voice style for a given speaker."""
-
     def __init__(self, speaker, user_id, guild_id):
         super().__init__()
         self.speaker = speaker
@@ -206,16 +204,17 @@ class StyleSelectionView(View):
         self.add_style_buttons()
 
     def add_style_buttons(self):
-        # スタイル情報に基づいてボタンを動的に生成
         for style in self.speaker["styles"]:
-            style_name = style["name"]
-            style_id = style["id"]
-            button = discord.ui.Button(
-                label=f"{style_name} (ID: {style_id})",
-                style=discord.ButtonStyle.secondary,
-            )
-            button.callback = self.create_button_callback(style_id)
-            self.add_item(button)
+            self.add_item(self.create_style_button(style))
+
+    def create_style_button(self, style):
+        style_name = style["name"]
+        style_id = style["id"]
+        button = discord.ui.Button(
+            label=f"{style_name} (ID: {style_id})", style=discord.ButtonStyle.secondary
+        )
+        button.callback = self.create_button_callback(style_id)
+        return button
 
     def create_button_callback(self, style_id):
         # コールバック関数を動的に生成
