@@ -261,7 +261,15 @@ async def handle_voice_config_command(interaction, style_id: int, voice_scope: s
 
     try:
         # If style_id and voice_scope are None, display all settings
-        if style_id is None and voice_scope is None:
+        if style_id is not None and voice_scope is not None:
+            valid, speaker_name, style_name = validate_style_id(style_id)
+            if not valid:
+                await interaction.response.send_message(
+                    f"スタイルID {style_id} は無効です。`/list`で有効なIDを確認し、正しいIDを入力してください。",
+                    ephemeral=True,
+                )
+                return
+        elif style_id is None and voice_scope is None:
             messages = []
             for t in voice_scope_description:
                 style_id, speaker_name, style_name = get_current_style_details(
@@ -300,24 +308,16 @@ async def handle_voice_config_command(interaction, style_id: int, voice_scope: s
                 )
             await interaction.response.send_message("\n".join(messages))
             return
-        elif style_id is not None and voice_scope is not None:
-            valid, speaker_name, style_name = validate_style_id(style_id)
-            if not valid:
-                await interaction.response.send_message(
-                    f"スタイルID {style_id} は無効です。`/list`で有効なIDを確認し、正しいIDを入力してください。",
-                    ephemeral=True,
-                )
-                return
-            update_style_setting(guild_id, user_id, style_id, voice_scope)
-            # もち子さんの場合、特別なクレジット表記を使用
-            if speaker_name == "もち子さん":
-                speaker_name = "もち子(cv 明日葉よもぎ)"
-            character_id = CHARACTORS_INFO.get(speaker_name, "unknown")  # キャラクターIDを取得
-            url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
-            await interaction.response.send_message(
-                f"{voice_scope_description[voice_scope]}が「[VOICEVOX:{speaker_name}]({url}) {style_name}」に更新されました。"
-            )
-            return
+        update_style_setting(guild_id, user_id, style_id, voice_scope)
+        # もち子さんの場合、特別なクレジット表記を使用
+        if speaker_name == "もち子さん":
+            speaker_name = "もち子(cv 明日葉よもぎ)"
+        character_id = CHARACTORS_INFO.get(speaker_name, "unknown")  # キャラクターIDを取得
+        url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
+        await interaction.response.send_message(
+            f"{voice_scope_description[voice_scope]}が「[VOICEVOX:{speaker_name}]({url}) {style_name}」に更新されました。"
+        )
+        return
 
     except Exception as e:
         await interaction.response.send_message(f"エラーが発生しました: {e}")
@@ -393,73 +393,72 @@ def setup_commands(bot):
     async def join(interaction: discord.Interaction):
         # defer the response to keep the interaction alive
         await interaction.response.defer()
-
-        try:
-            if interaction.user.voice and interaction.user.voice.channel:
-                channel = interaction.user.voice.channel
-                voice_client = await channel.connect(self_deaf=True)
-                # 接続成功時の処理
-                # 接続メッセージの読み上げ
-                welcome_voice = "読み上げを開始します。"
-
-                guild_id = str(interaction.guild_id)
-                user_id = str(interaction.user.id)  # コマンド使用者のユーザーID
-                user_display_name = (
-                    interaction.user.display_name
-                )  # Corrected variable name
-                text_channel_id = str(interaction.channel_id)  # このコマンドを使用したテキストチャンネルID
-
-                # サーバー設定が存在しない場合は初期化
-                if guild_id not in speaker_settings:
-                    speaker_settings[guild_id] = {"text_channel": text_channel_id}
-                else:
-                    # 既にサーバー設定が存在する場合はテキストチャンネルIDを更新
-                    speaker_settings[guild_id]["text_channel"] = text_channel_id
-
-                save_style_settings()  # 変更を保存
-
-                # 通知スタイルIDを取得
-                announcement_style_id = speaker_settings.get(guild_id, {}).get(
-                    "announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID
-                )
-                # ユーザーのスタイルIDを取得
-                user_style_id = speaker_settings.get(
-                    user_id,
-                    speaker_settings[guild_id].get(
-                        "user_default", USER_DEFAULT_STYLE_ID
-                    ),
-                )
-
-                # クレジットをメッセージに追加
-                announcement_speaker_name, announcement_style_name = get_style_details(
-                    announcement_style_id
-                )
-                (
-                    announcement_character_id,
-                    announcement_display_name,
-                ) = get_character_info(announcement_speaker_name)
-                announcement_url = f"https://voicevox.hiroshiba.jp/dormitory/{announcement_character_id}/"
-                user_speaker_name, user_style_name = get_style_details(user_style_id)
-                user_character_id, user_tts_display_name = get_character_info(
-                    user_speaker_name
-                )
-                user_url = (
-                    f"https://voicevox.hiroshiba.jp/dormitory/{user_character_id}/"
-                )
-                welcome_message = (
-                    f"アナウンス音声「[{announcement_display_name}]({announcement_url}) {announcement_style_name}」\n"
-                    f"{user_display_name}さんのテキスト読み上げ音声「[{user_tts_display_name}]({user_url}) {user_style_name}」"
-                )
-
-                # メッセージとスタイルIDをキューに追加
-                await text_to_speech(
-                    voice_client, welcome_voice, announcement_style_id, guild_id
-                )
-                await interaction.followup.send(welcome_message)
-            else:
-                await interaction.followup.send(
+        if not interaction.user.voice or not interaction.user.voice.channel:
+            await interaction.followup.send(
                     "ボイスチャンネルに接続できませんでした。ユーザーがボイスチャンネルにいることを確認してください。"
                 )
+            return
+        try:
+            channel = interaction.user.voice.channel
+            voice_client = await channel.connect(self_deaf=True)
+            # 接続成功時の処理
+            # 接続メッセージの読み上げ
+            welcome_voice = "読み上げを開始します。"
+
+            guild_id = str(interaction.guild_id)
+            user_id = str(interaction.user.id)  # コマンド使用者のユーザーID
+            user_display_name = (
+                interaction.user.display_name
+            )  # Corrected variable name
+            text_channel_id = str(interaction.channel_id)  # このコマンドを使用したテキストチャンネルID
+
+            # サーバー設定が存在しない場合は初期化
+            if guild_id not in speaker_settings:
+                speaker_settings[guild_id] = {"text_channel": text_channel_id}
+            else:
+                # 既にサーバー設定が存在する場合はテキストチャンネルIDを更新
+                speaker_settings[guild_id]["text_channel"] = text_channel_id
+
+            save_style_settings()  # 変更を保存
+
+            # 通知スタイルIDを取得
+            announcement_style_id = speaker_settings.get(guild_id, {}).get(
+                "announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID
+            )
+            # ユーザーのスタイルIDを取得
+            user_style_id = speaker_settings.get(
+                user_id,
+                speaker_settings[guild_id].get(
+                    "user_default", USER_DEFAULT_STYLE_ID
+                ),
+            )
+
+            # クレジットをメッセージに追加
+            announcement_speaker_name, announcement_style_name = get_style_details(
+                announcement_style_id
+            )
+            (
+                announcement_character_id,
+                announcement_display_name,
+            ) = get_character_info(announcement_speaker_name)
+            announcement_url = f"https://voicevox.hiroshiba.jp/dormitory/{announcement_character_id}/"
+            user_speaker_name, user_style_name = get_style_details(user_style_id)
+            user_character_id, user_tts_display_name = get_character_info(
+                user_speaker_name
+            )
+            user_url = (
+                f"https://voicevox.hiroshiba.jp/dormitory/{user_character_id}/"
+            )
+            welcome_message = (
+                f"アナウンス音声「[{announcement_display_name}]({announcement_url}) {announcement_style_name}」\n"
+                f"{user_display_name}さんのテキスト読み上げ音声「[{user_tts_display_name}]({user_url}) {user_style_name}」"
+            )
+
+            # メッセージとスタイルIDをキューに追加
+            await text_to_speech(
+                voice_client, welcome_voice, announcement_style_id, guild_id
+            )
+            await interaction.followup.send(welcome_message)
         except Exception as e:
             # エラーメッセージをユーザーに通知
             await interaction.followup.send(f"接続中にエラーが発生しました: {e}")
