@@ -19,6 +19,9 @@ from utils import (
 )
 
 ITEMS_PER_PAGE = 10  # 1ページあたりのアイテム数
+# エラーメッセージの定数化
+ERROR_MESSAGE_CONNECTION = "ボイスチャンネルに接続できませんでした。ユーザーがボイスチャンネルにいることを確認してください。"
+ERROR_MESSAGE_INVALID_STYLE = "選択したスタイルIDが無効です。"
 
 
 # ページネーションのビュークラス
@@ -235,7 +238,9 @@ class StyleSelectionView(View):
             None,
         )
         if not style_name:
-            await interaction.response.send_message("選択したスタイルIDが無効です。", ephemeral=True)
+            await interaction.response.send_message(
+                ERROR_MESSAGE_INVALID_STYLE, ephemeral=True
+            )
             return
         speaker_manager = SpeakerManager()
         # スタイル設定を更新
@@ -267,7 +272,7 @@ async def handle_voice_config_command(interaction, style_id: int, voice_scope: s
             valid, speaker_name, style_name = validate_style_id(style_id)
             if not valid:
                 await interaction.response.send_message(
-                    f"スタイルID {style_id} は無効です。`/list`で有効なIDを確認し、正しいIDを入力してください。",
+                    ERROR_MESSAGE_INVALID_STYLE,
                     ephemeral=True,
                 )
                 return
@@ -325,7 +330,7 @@ async def handle_voice_config_command(interaction, style_id: int, voice_scope: s
 
     except Exception as e:
         await interaction.response.send_message(f"エラーが発生しました: {e}")
-    return None  # Return None if there's no response
+        logging.error(f"Error in handle_voice_config_command: {e}")
 
 
 class SpeakerManager:
@@ -333,9 +338,12 @@ class SpeakerManager:
         self.speaker_settings = {}
 
     def update_style_setting(self, guild_id, user_id, style_id, voice_scope):
+        valid_scopes = ["user_default", "announcement", "user"]
+        if voice_scope not in valid_scopes:
+            logging.error(f"無効なvoice_scopeが指定されました: {voice_scope}")
+            return
+
         try:
-            if voice_scope not in ["user_default", "announcement", "user"]:
-                raise ValueError("無効なvoice_scopeが指定されました。")
             if voice_scope == "user_default":
                 self.speaker_settings[guild_id]["user_default"] = style_id
             elif voice_scope == "announcement":
@@ -345,8 +353,6 @@ class SpeakerManager:
             # ここで設定を保存するロジックを追加
         except KeyError as e:
             logging.error(f"キーが見つかりません: {e}")
-        except ValueError as e:
-            logging.error(e)
 
 
 def get_current_style_details(guild_id, user_id, voice_scope):
@@ -409,9 +415,7 @@ def setup_commands(server, bot):
         # defer the response to keep the interaction alive
         await interaction.response.defer()
         if not interaction.user.voice or not interaction.user.voice.channel:
-            await interaction.followup.send(
-                "ボイスチャンネルに接続できませんでした。ユーザーがボイスチャンネルにいることを確認してください。"
-            )
+            await interaction.followup.send(ERROR_MESSAGE_CONNECTION)
             return
         try:
             channel = interaction.user.voice.channel
@@ -452,9 +456,7 @@ def setup_commands(server, bot):
                 announcement_character_id,
                 announcement_display_name,
             ) = get_character_info(announcement_speaker_name)
-            announcement_url = (
-                f"{ANNOUNCEMENT_URL_BASE}/{announcement_character_id}/"
-            )
+            announcement_url = f"{ANNOUNCEMENT_URL_BASE}/{announcement_character_id}/"
             user_speaker_name, user_style_name = get_style_details(user_style_id)
             user_character_id, user_tts_display_name = get_character_info(
                 user_speaker_name
