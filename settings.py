@@ -54,3 +54,5 @@ CHARACTORS_INFO = {
     "琴詠ニア": "kotoyomi_nia",
 }
 EMOJI_JA_URL = "https://raw.githubusercontent.com/yagays/emoji-ja/master/data/emoji_ja.json"
+
+ANNOUNCEMENT_URL_BASE = "https://voicevox.hiroshiba.jp/dormitory"

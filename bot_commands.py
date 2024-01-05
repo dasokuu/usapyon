@@ -3,6 +3,7 @@ import discord
 from discord.ui import Button, View
 from discord import app_commands
 from settings import (
+    ANNOUNCEMENT_URL_BASE,
     APPROVED_GUILD_IDS,
     CHARACTORS_INFO,
     USER_DEFAULT_STYLE_ID,
@@ -57,7 +58,7 @@ class PaginationView(View):
         for speaker in self.speakers[start_index:end_index]:
             name = speaker["name"]
             character_id, display_name = get_character_info(name)
-            url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
+            url = f"{ANNOUNCEMENT_URL_BASE}/{character_id}/"
             styles_info = " ".join(
                 f"{style['name']} (ID: `{style['id']}`)" for style in speaker["styles"]
             )
@@ -81,7 +82,7 @@ class PaginationView(View):
         for speaker in self.speakers[start_index:end_index]:
             name = speaker["name"]
             character_id, display_name = get_character_info(name)
-            url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
+            url = f"{ANNOUNCEMENT_URL_BASE}/{character_id}/"
             styles_info = " ".join(
                 f"{style['name']} (ID: `{style['id']}`)" for style in speaker["styles"]
             )
@@ -277,7 +278,7 @@ async def handle_voice_config_command(interaction, style_id: int, voice_scope: s
                     guild_id, user_id, t
                 )
                 character_id, display_name = get_character_info(speaker_name)
-                url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
+                url = f"{ANNOUNCEMENT_URL_BASE}/{character_id}/"
                 messages.append(
                     f"**{voice_scope_description[t]}**: [{display_name}]({url}) {style_name}"
                 )
@@ -292,7 +293,7 @@ async def handle_voice_config_command(interaction, style_id: int, voice_scope: s
             if speaker_name == "もち子さん":
                 speaker_name = "もち子(cv 明日葉よもぎ)"
             character_id = CHARACTORS_INFO.get(speaker_name, "unknown")  # キャラクターIDを取得
-            url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
+            url = f"{ANNOUNCEMENT_URL_BASE}/{character_id}/"
             await interaction.response.send_message(
                 f"現在の{voice_scope_description[voice_scope]}は「[VOICEVOX:{speaker_name}]({url}) {style_name}」です。"
             )
@@ -303,7 +304,7 @@ async def handle_voice_config_command(interaction, style_id: int, voice_scope: s
                     guild_id, user_id, t
                 )
                 character_id, display_name = get_character_info(speaker_name)
-                url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
+                url = f"{ANNOUNCEMENT_URL_BASE}/{character_id}/"
                 messages.append(
                     f"**{voice_scope_description[t]}**: [{display_name}]({url}) {style_name}"
                 )
@@ -316,7 +317,7 @@ async def handle_voice_config_command(interaction, style_id: int, voice_scope: s
         if speaker_name == "もち子さん":
             speaker_name = "もち子(cv 明日葉よもぎ)"
         character_id = CHARACTORS_INFO.get(speaker_name, "unknown")  # キャラクターIDを取得
-        url = f"https://voicevox.hiroshiba.jp/dormitory/{character_id}/"
+        url = f"{ANNOUNCEMENT_URL_BASE}/{character_id}/"
         await interaction.response.send_message(
             f"{voice_scope_description[voice_scope]}が「[VOICEVOX:{speaker_name}]({url}) {style_name}」に更新されました。"
         )
@@ -452,13 +453,13 @@ def setup_commands(server, bot):
                 announcement_display_name,
             ) = get_character_info(announcement_speaker_name)
             announcement_url = (
-                f"https://voicevox.hiroshiba.jp/dormitory/{announcement_character_id}/"
+                f"{ANNOUNCEMENT_URL_BASE}/{announcement_character_id}/"
             )
             user_speaker_name, user_style_name = get_style_details(user_style_id)
             user_character_id, user_tts_display_name = get_character_info(
                 user_speaker_name
             )
-            user_url = f"https://voicevox.hiroshiba.jp/dormitory/{user_character_id}/"
+            user_url = f"{ANNOUNCEMENT_URL_BASE}/{user_character_id}/"
             welcome_message = (
                 f"アナウンス音声「[{announcement_display_name}]({announcement_url}) {announcement_style_name}」\n"
                 f"{user_display_name}さんのテキスト読み上げ音声「[{user_tts_display_name}]({user_url}) {user_style_name}」"
