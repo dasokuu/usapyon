@@ -1,3 +1,4 @@
+import logging
 import requests
 import json
 import jaconv
@@ -6,9 +7,9 @@ import discord
 from settings import (
     BOT_PREFIX,
     CHARACTORS_INFO,
+    EMOJI_JA_URL,
     USER_DEFAULT_STYLE_ID,
     ANNOUNCEMENT_DEFAULT_STYLE_ID,
-    MAX_MESSAGE_LENGTH,
     SPEAKERS_URL,
     STYLE_SETTINGS_FILE,
 )
@@ -45,11 +46,9 @@ def fetch_json(url):
         response = requests.get(url)
         response.raise_for_status()
         return response.json()
-    except requests.HTTPError as http_err:
-        print(f"HTTP error occurred: {http_err}")
-    except Exception as err:
-        print(f"An error occurred: {err}")
-    return None
+    except requests.RequestException as err:
+        logging.error(f"Request error: {err}")
+        return None
 
 
 def get_style_details(style_id, default_name="デフォルト"):
@@ -201,13 +200,9 @@ async def handle_voice_state_update(bot, member, before, after):
             await member.guild.voice_client.disconnect()
 
 
-# Initialize global variables
-guild_playback_queues = {}
 speakers = fetch_json(SPEAKERS_URL)  # URL is now from settings
 speaker_settings = load_style_settings()
-emoji_ja = fetch_json(
-    "https://raw.githubusercontent.com/yagays/emoji-ja/master/data/emoji_ja.json"
-)
+emoji_ja = fetch_json(EMOJI_JA_URL)
 # 特別な置き換え規則
 special_cases = {"🇵🇸": "パレスチナ"}
 

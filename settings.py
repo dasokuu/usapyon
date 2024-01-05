@@ -53,3 +53,4 @@ CHARACTORS_INFO = {
     "満別花丸": "manbetsu_hanamaru",
     "琴詠ニア": "kotoyomi_nia",
 }
+EMOJI_JA_URL = "https://raw.githubusercontent.com/yagays/emoji-ja/master/data/emoji_ja.json"
