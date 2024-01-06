@@ -184,7 +184,7 @@ def setup_commands(server, bot):
                     )
                     speaker_url = f"{DORMITORY_URL_BASE}/{speaker_character_id}/"
                     await interaction.response.send_message(
-                        f"{voice_scope_description[self.voice_scope]}が「[VOICEVOX:{speaker_display_name}]({speaker_url}) {style_name}」に更新されました。"
+                        f"{voice_scope_description[self.voice_scope]}が「[{speaker_display_name}]({speaker_url}) {style_name}」に更新されました。"
                     )
 
                 # Capture the current button and style_id using default arguments
