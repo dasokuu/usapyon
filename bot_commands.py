@@ -62,9 +62,9 @@ def setup_commands(server, bot):
     )
     async def config(interaction: discord.Interaction):
         voice_scope_description = {
-            "user": f"{interaction.user.display_name}さんのテキスト読み上げ音声",
-            "announcement": "アナウンス音声",
-            "user_default": "ユーザーデフォルトテキスト読み上げ音声",
+            "user": f"{interaction.user.display_name}さん専用の読み上げ音声",
+            "announcement": "入退出時の読み上げ音声",
+            "user_default": "サーバーの標準読み上げ音声",
         }
         # ボタンとビューの設定
         view = View()
@@ -126,9 +126,9 @@ def setup_commands(server, bot):
 
         async def update_speaker_list(self, interaction: discord.Interaction):
             voice_scope_description = {
-                "user": f"{interaction.user.display_name}さんのテキスト読み上げ音声",
-                "announcement": "アナウンス音声",
-                "user_default": "ユーザーデフォルトテキスト読み上げ音声",
+                "user": f"{interaction.user.display_name}さん専用の読み上げ音声",
+                "announcement": "入退出時の読み上げ音声",
+                "user_default": "サーバーの標準読み上げ音声",
             }
             # 'interaction'を正しく使ってメッセージを編集
             speaker_name = self.speakers[self.current_page]["name"]
@@ -201,9 +201,9 @@ def setup_commands(server, bot):
 
     async def initiate_speaker_paging(interaction: discord.Interaction, voice_scope):
         voice_scope_description = {
-            "user": f"{interaction.user.display_name}さんのテキスト読み上げ音声",
-            "announcement": "アナウンス音声",
-            "user_default": "ユーザーデフォルトテキスト読み上げ音声",
+            "user": f"{interaction.user.display_name}さん専用の読み上げ音声",
+            "announcement": "入退出時の読み上げ音声",
+            "user_default": "サーバーの標準読み上げ音声",
         }
         # 初期ページングビューを作成
         view = PagingView(speakers, voice_scope)
@@ -318,7 +318,7 @@ async def welcome_user(server, interaction, voice_client):
     # 歓迎メッセージを作成
     welcome_message = (
         f"アナウンス音声「[{announcement_display_name}]({announcement_url}) {announcement_style_name}」\n"
-        f"{user_display_name}さんのテキスト読み上げ音声「[{user_tts_display_name}]({user_url}) {user_style_name}」"
+        f"{user_display_name}さん専用の読み上げ音声「[{user_tts_display_name}]({user_url}) {user_style_name}」"
     )
 
     # メッセージとスタイルIDをキューに追加し、読み上げ
