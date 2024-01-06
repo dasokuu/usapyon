@@ -55,7 +55,7 @@ CHARACTORS_INFO = {
 }
 EMOJI_JA_URL = "https://raw.githubusercontent.com/yagays/emoji-ja/master/data/emoji_ja.json"
 
-ANNOUNCEMENT_URL_BASE = "https://voicevox.hiroshiba.jp/dormitory"
+DORMITORY_URL_BASE = "https://voicevox.hiroshiba.jp/dormitory"
 
 ITEMS_PER_PAGE = 10  # 1ページあたりのアイテム数
 # エラーメッセージを一元管理

@@ -2,7 +2,7 @@ import logging
 import discord
 from discord.ui import Button, View
 from settings import (
-    ANNOUNCEMENT_URL_BASE,
+    DORMITORY_URL_BASE,
     APPROVED_GUILD_IDS,
     ERROR_MESSAGES,
     USER_DEFAULT_STYLE_ID,
@@ -90,6 +90,7 @@ def setup_commands(server, bot):
         await interaction.response.send_message(
             "音声スコープを選んでください：", view=view, ephemeral=True
         )
+
     class PagingView(discord.ui.View):
         def __init__(self, speakers, scope):
             super().__init__()
@@ -97,44 +98,44 @@ def setup_commands(server, bot):
             self.scope = scope
             self.current_page = 0
 
-        @discord.ui.button(label="Previous", style=discord.ButtonStyle.blurple)
+        @discord.ui.button(label="前へ", style=discord.ButtonStyle.blurple)
         async def previous_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-            # Correctly using 'interaction' to navigate pages
+            # 正しく'interaction'を使ってページをナビゲート
             if self.current_page > 0:
                 self.current_page -= 1
                 await self.update_speaker_list(interaction)
 
-        @discord.ui.button(label="Next", style=discord.ButtonStyle.blurple)
+        @discord.ui.button(label="次へ", style=discord.ButtonStyle.blurple)
         async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-            # Correctly using 'interaction' to navigate pages
+            # 正しく'interaction'を使ってページをナビゲート
             if self.current_page < len(self.speakers) - 1:
                 self.current_page += 1
                 await self.update_speaker_list(interaction)
 
         async def update_speaker_list(self, interaction: discord.Interaction):
-            # Properly using 'interaction' to edit the message
+            # 'interaction'を正しく使ってメッセージを編集
             speaker_name = self.speakers[self.current_page]["name"]
-            content = f"Page {self.current_page + 1} of {len(self.speakers)}\n"
+            content = f"{self.current_page + 1}ページ目 / 全{len(self.speakers)}ページ\n"
             speaker_character_id, speaker_display_name = get_character_info(speaker_name)
-            speaker_url = f"{ANNOUNCEMENT_URL_BASE}/{speaker_character_id}/"
+            speaker_url = f"{DORMITORY_URL_BASE}/{speaker_character_id}/"
 
             # 歓迎メッセージを作成
             content += (
                 f"[{speaker_display_name}]({speaker_url})"
             )
-            # Remove old style buttons before adding new ones
+            # 古いスタイルのボタンを削除して新しいものを追加
             self.clear_items()
 
-            # Add navigation buttons back
+            # ナビゲーションボタンを追加
             self.add_item(self.previous_button)
             self.add_item(self.next_button)
 
-            # Loop through each style of the current speaker and add a button for it
+            # 現在の話者の各スタイルに対応するボタンを追加
             for style in self.speakers[self.current_page]['styles']:
                 style_button = discord.ui.Button(label=style['name'], style=discord.ButtonStyle.secondary)
-                # Define what happens when the button is clicked
+                # ボタンが押されたときの処理を定義
                 async def on_style_button_click(interaction: discord.Interaction, button: discord.ui.Button):
-                    # Handle style change here
+                    # スタイル変更をここで処理
                     pass
                 style_button.callback = on_style_button_click
                 self.add_item(style_button)
@@ -142,25 +143,24 @@ def setup_commands(server, bot):
 
 
     async def initiate_speaker_paging(interaction: discord.Interaction, scope):
-
         # 初期ページングビューを作成
         view = PagingView(speakers, scope)
         # 最初の話者を表示
-        first_speaker = speakers[0] if speakers else "No speakers available"
-        content = f"Page 1 of {len(speakers)}\n"
+        first_speaker = speakers[0] if speakers else "利用可能な話者がいません"
+        content = f"1ページ目 / 全{len(speakers)}ページ\n"
         speaker_character_id, speaker_display_name = get_character_info(first_speaker["name"])
-        speaker_url = f"{ANNOUNCEMENT_URL_BASE}/{speaker_character_id}/"
+        speaker_url = f"{DORMITORY_URL_BASE}/{speaker_character_id}/"
 
         # 歓迎メッセージを作成
         content += (
             f"[{speaker_display_name}]({speaker_url})"
         )
-        # Loop through each style of the first speaker and add a button for it
-        for style in speakers[0]['styles']:  # Assuming 'styles' is a list of style dicts for each speaker
+        # 最初の話者の各スタイルに対応するボタンを追加
+        for style in speakers[0]['styles']:  # 'styles'は各話者のスタイル辞書のリストと仮定
             style_button = discord.ui.Button(label=style['name'], style=discord.ButtonStyle.secondary)
-            # Define what happens when the button is clicked (You might want to define a separate function)
+            # ボタンが押されたときの処理を定義（別の関数を定義することも検討してください）
             async def on_style_button_click(interaction: discord.Interaction, button: discord.ui.Button):
-                # Handle style change here
+                # スタイル変更をここで処理
                 pass
             style_button.callback = on_style_button_click
             view.add_item(style_button)
@@ -213,10 +213,10 @@ async def welcome_user(server, interaction, voice_client):
     announcement_character_id, announcement_display_name = get_character_info(
         announcement_speaker_name
     )
-    announcement_url = f"{ANNOUNCEMENT_URL_BASE}/{announcement_character_id}/"
+    announcement_url = f"{DORMITORY_URL_BASE}/{announcement_character_id}/"
     user_speaker_name, user_style_name = get_style_details(user_style_id)
     user_character_id, user_tts_display_name = get_character_info(user_speaker_name)
-    user_url = f"{ANNOUNCEMENT_URL_BASE}/{user_character_id}/"
+    user_url = f"{DORMITORY_URL_BASE}/{user_character_id}/"
 
     # 歓迎メッセージを作成
     welcome_message = (
