@@ -1,5 +1,6 @@
 import logging
 import discord
+from discord.ui import Button, View
 from settings import (
     ANNOUNCEMENT_URL_BASE,
     APPROVED_GUILD_IDS,
@@ -12,6 +13,7 @@ from utils import (
     speaker_settings,
     save_style_settings,
     get_style_details,
+    speakers
 )
 
 # voice_scope_description = {
@@ -52,77 +54,58 @@ def setup_commands(server, bot):
         except discord.ClientException as e:
             logging.error(f"Connection error: {e}")
             await interaction.followup.send(f"接続中にエラーが発生しました: {e}")
-    import discord
-from discord.ui import Button, View
 
-# 話者情報をページングするためのクラス
-class SpeakerPaginator:
-    def __init__(self, speakers):
-        self.speakers = speakers
-        self.current_index = 0
+    # 話者情報の取得と表示コマンド
+    @bot.tree.command(name="select_speaker", guilds=APPROVED_GUILD_IDS, description="読み上げに使用する話者とスタイルを選択します。")
+    async def select_speaker(interaction: discord.Interaction):
+        current_index = 0  # 現在表示している話者のインデックス
 
-    def get_current_speaker(self):
-        speaker_name, _ = get_style_details(self.speakers[self.current_index])
-        character_id, display_name = get_character_info(speaker_name)
-        return character_id, display_name
+        def generate_view():
+            # ページングとスタイル選択のためのビューを生成する関数
+            view = View()
+            speaker = speakers[current_index]
 
-    def next_speaker(self):
-        self.current_index = (self.current_index + 1) % len(self.speakers)
+            # 前の話者へのボタン
+            view.add_item(Button(label="前へ", style=discord.ButtonStyle.primary, custom_id="previous"))
 
-    def previous_speaker(self):
-        self.current_index = (self.current_index - 1) % len(self.speakers)
+            # 次の話者へのボタン
+            view.add_item(Button(label="次へ", style=discord.ButtonStyle.primary, custom_id="next"))
 
-# ページングボタンとスタイル選択ボタンを含むビュー
-class SpeakerView(View):
-    def __init__(self, paginator: SpeakerPaginator, guild_id: str):
-        super().__init__()
-        self.paginator = paginator
-        self.guild_id = guild_id
+            # スタイル選択ボタン
+            for style in speaker["styles"]:
+                view.add_item(Button(label=style["name"], style=discord.ButtonStyle.secondary, custom_id=f"select_style_{style['id']}"))
 
-        # 前へボタン
-        self.add_item(Button(label="前へ", style=discord.ButtonStyle.primary, custom_id="previous"))
+            return view
 
-        # 次へボタン
-        self.add_item(Button(label="次へ", style=discord.ButtonStyle.primary, custom_id="next"))
+        # ボタンのイベントハンドラ
+        async def button_callback(interaction: discord.Interaction):
+            nonlocal current_index
+            custom_id = interaction.data.get('custom_id')
 
-        # スタイル選択ボタン
-        self.add_item(Button(label="このスタイルを選択", style=discord.ButtonStyle.success, custom_id="select"))
+            if custom_id == "previous":
+                # 前の話者を表示
+                current_index = max(0, current_index - 1)
+            elif custom_id == "next":
+                # 次の話者を表示
+                current_index = min(len(speakers) - 1, current_index + 1)
+            else:
+                # スタイルが選択された場合
+                style_id = custom_id.split('_')[-1]
+                # 選択されたスタイルを設定する処理をここに記述
 
-    # ボタンインタラクションのコールバック
-    async def interaction_check(self, interaction: discord.Interaction) -> bool:
-        # 前へボタンが押された場合
-        if interaction.data.custom_id == "previous":
-            self.paginator.previous_speaker()
-        # 次へボタンが押された場合
-        elif interaction.data.custom_id == "next":
-            self.paginator.next_speaker()
-        # 選択ボタンが押された場合
-        elif interaction.data.custom_id == "select":
-            character_id, display_name = self.paginator.get_current_speaker()
-            # スタイルをサーバー設定に保存
-            speaker_settings[self.guild_id]['announcement'] = character_id
-            save_style_settings()
-            await interaction.response.send_message(f"{display_name}のスタイルを選択しました。", ephemeral=True)
-            return True
+            # 更新された情報でメッセージを編集
+            speaker = speakers[current_index]
+            character_info = get_character_info(speaker["name"])
+            await interaction.response.edit_message(content=f"{character_info[1]}のスタイルを選択してください。", view=generate_view())
 
-        # メッセージを更新
-        character_id, display_name = self.paginator.get_current_speaker()
-        await interaction.response.edit_message(content=f"選択された話者: [{display_name}](https://example.com/{character_id})", view=self)
-        return True
+        # 最初の表示
+        view = generate_view()
+        for item in view.children:
+            item.callback = button_callback
 
-    # コマンドを設定する関数
-    def setup_commands(server, bot):
-        @bot.tree.command(name="select_speaker", guilds=APPROVED_GUILD_IDS, description="話者のスタイルを選択します。")
-        async def select_speaker(interaction: discord.Interaction):
-            # スタイルのリストを取得
-            styles = get_all_styles()  # この関数はすべてのスタイルIDを返すと仮定
-
-            paginator = SpeakerPaginator(styles)
-            view = SpeakerView(paginator, str(interaction.guild_id))
-
-            character_id, display_name = paginator.get_current_speaker()
-            await interaction.response.send_message(f"選択された話者: [{display_name}](https://example.com/{character_id})", view=view)
-
+        speaker = speakers[current_index]
+        character_info = get_character_info(speaker["name"])
+        await interaction.response.send_message(content=f"{character_info[1]}のスタイルを選択してください。", view=view)
 # ボイスチャンネルに接続する関数
 async def connect_to_voice_channel(interaction):
     channel = interaction.user.voice.channel
