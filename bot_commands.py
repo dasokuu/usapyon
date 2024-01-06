@@ -63,7 +63,7 @@ def setup_commands(server, bot):
     async def config(interaction: discord.Interaction):
         voice_scope_description = {
             "user": f"{interaction.user.display_name}さん専用の読み上げ音声",
-            "announcement": "入退出時の読み上げ音声",
+            "announcement": "入退出時のアナウンス音声",
             "user_default": "サーバーの標準読み上げ音声",
         }
         # ボタンとビューの設定
@@ -127,7 +127,7 @@ def setup_commands(server, bot):
         async def update_speaker_list(self, interaction: discord.Interaction):
             voice_scope_description = {
                 "user": f"{interaction.user.display_name}さん専用の読み上げ音声",
-                "announcement": "入退出時の読み上げ音声",
+                "announcement": "入退出時のアナウンス音声",
                 "user_default": "サーバーの標準読み上げ音声",
             }
             # 'interaction'を正しく使ってメッセージを編集
@@ -202,7 +202,7 @@ def setup_commands(server, bot):
     async def initiate_speaker_paging(interaction: discord.Interaction, voice_scope):
         voice_scope_description = {
             "user": f"{interaction.user.display_name}さん専用の読み上げ音声",
-            "announcement": "入退出時の読み上げ音声",
+            "announcement": "入退出時のアナウンス音声",
             "user_default": "サーバーの標準読み上げ音声",
         }
         # 初期ページングビューを作成
