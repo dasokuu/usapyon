@@ -306,7 +306,6 @@ def setup_commands(server, bot):
 
         # 設定の詳細を表示するメッセージを作成
         info_message = (
-            f"読み上げ音声スコープと設定:\n"
             f"テキストチャンネル: <#{text_channel_id}>\n"
             f"{interaction.user.display_name}さん専用の読み上げ音声: [{user_display_name}] - {user_style_name}\n"
             f"アナウンス音声: [{announcement_display_name}] - {announcement_style_name}\n"
