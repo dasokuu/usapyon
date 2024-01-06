@@ -263,3 +263,20 @@ def get_style_id(user_id, guild_id):
         str(user_id),
         speaker_settings[guild_id].get("user_default", USER_DEFAULT_STYLE_ID),
     )
+
+
+def update_style_setting(guild_id, user_id, style_id, voice_scope):
+    # Ensure the guild_id exists in the speaker_settings
+    if guild_id not in speaker_settings:
+        speaker_settings[guild_id] = {}
+
+    # Ensure the specific voice_scope exists for this guild
+    if voice_scope not in speaker_settings[guild_id]:
+        speaker_settings[guild_id][voice_scope] = {}
+    if voice_scope == "user_default":
+        speaker_settings[guild_id]["user_default"] = style_id
+    elif voice_scope == "announcement":
+        speaker_settings[guild_id]["announcement"] = style_id
+    elif voice_scope == "user":
+        speaker_settings[user_id] = style_id
+    save_style_settings()
