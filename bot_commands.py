@@ -140,7 +140,7 @@ def setup_commands(server, bot):
             }
             # 'interaction'を正しく使ってメッセージを編集
             speaker_name = self.speakers[self.current_page]["name"]
-            content = f"「>」「<」ボタンで使用するキャラクターを選択し、スタイルを選んでください：\nページ {self.current_page + 1} / {len(self.speakers)}\n"
+            content = f"矢印ボタンで使用するキャラクターを選択し、スタイルを選んでください：\nページ {self.current_page + 1} / {len(self.speakers)}\n"
             speaker_character_id, speaker_display_name = get_character_info(
                 speaker_name
             )
@@ -219,7 +219,7 @@ def setup_commands(server, bot):
         view = PagingView(speakers, voice_scope)
         # 最初の話者を表示
         speaker_name = speakers[0]["name"] if speakers else "利用可能な話者がいません"
-        content = f"「>」「<」ボタンで使用するキャラクターを選択し、スタイルを選んでください：\nページ 1 / {len(speakers)}\n"
+        content = f"矢印ボタンで使用するキャラクターを選択し、スタイルを選んでください：\nページ 1 / {len(speakers)}\n"
         speaker_character_id, speaker_display_name = get_character_info(speaker_name)
         speaker_url = f"{DORMITORY_URL_BASE}/{speaker_character_id}/"
 
