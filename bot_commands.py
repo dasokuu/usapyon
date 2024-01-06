@@ -106,26 +106,30 @@ def setup_commands(server, bot):
             self.voice_scope = voice_scope
             self.current_page = 0
 
-        @discord.ui.button(label="前へ", style=discord.ButtonStyle.blurple)
-        async def previous_button(
-            self, interaction: discord.Interaction, button: discord.ui.Button
-        ):
-            # ページをナビゲートします。最初のページなら最後のページへ移動します。
+        @discord.ui.button(label="<<", style=discord.ButtonStyle.blurple)
+        async def first_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+            self.current_page = 0
+            await self.update_speaker_list(interaction)
+
+        @discord.ui.button(label="<", style=discord.ButtonStyle.blurple)
+        async def previous_button(self, interaction: discord.Interaction, button: discord.ui.Button):
             if self.current_page > 0:
                 self.current_page -= 1
             else:
                 self.current_page = len(self.speakers) - 1
             await self.update_speaker_list(interaction)
 
-        @discord.ui.button(label="次へ", style=discord.ButtonStyle.blurple)
-        async def next_button(
-            self, interaction: discord.Interaction, button: discord.ui.Button
-        ):
-            # ページをナビゲートします。最後のページなら最初のページへ移動します。
+        @discord.ui.button(label=">", style=discord.ButtonStyle.blurple)
+        async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
             if self.current_page < len(self.speakers) - 1:
                 self.current_page += 1
             else:
                 self.current_page = 0
+            await self.update_speaker_list(interaction)
+
+        @discord.ui.button(label=">>", style=discord.ButtonStyle.blurple)
+        async def last_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+            self.current_page = len(self.speakers) - 1
             await self.update_speaker_list(interaction)
 
         async def update_speaker_list(self, interaction: discord.Interaction):
@@ -136,7 +140,7 @@ def setup_commands(server, bot):
             }
             # 'interaction'を正しく使ってメッセージを編集
             speaker_name = self.speakers[self.current_page]["name"]
-            content = f"「次へ」「前へ」ボタンで使用するキャラクターを選択し、スタイルを選んでください：\nページ {self.current_page + 1} / {len(self.speakers)}\n"
+            content = f"「>」「<」ボタンで使用するキャラクターを選択し、スタイルを選んでください：\nページ {self.current_page + 1} / {len(self.speakers)}\n"
             speaker_character_id, speaker_display_name = get_character_info(
                 speaker_name
             )
@@ -148,8 +152,10 @@ def setup_commands(server, bot):
             self.clear_items()
 
             # ナビゲーションボタンを追加
+            self.add_item(self.first_button)
             self.add_item(self.previous_button)
             self.add_item(self.next_button)
+            self.add_item(self.last_button)
 
             # 現在の話者の各スタイルに対応するボタンを追加
             for style in self.speakers[self.current_page]["styles"]:
@@ -213,7 +219,7 @@ def setup_commands(server, bot):
         view = PagingView(speakers, voice_scope)
         # 最初の話者を表示
         speaker_name = speakers[0]["name"] if speakers else "利用可能な話者がいません"
-        content = f"「次へ」「前へ」ボタンで使用するキャラクターを選択し、スタイルを選んでください：\nページ 1 / {len(speakers)}\n"
+        content = f"「>」「<」ボタンで使用するキャラクターを選択し、スタイルを選んでください：\nページ 1 / {len(speakers)}\n"
         speaker_character_id, speaker_display_name = get_character_info(speaker_name)
         speaker_url = f"{DORMITORY_URL_BASE}/{speaker_character_id}/"
 
