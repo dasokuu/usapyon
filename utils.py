@@ -1,4 +1,5 @@
 import logging
+import pickle
 import requests
 import json
 import jaconv
@@ -64,17 +65,18 @@ def get_style_details(style_id, default_name="デフォルト"):
 
 def save_style_settings():
     """スタイル設定を保存します。"""
-    with open(STYLE_SETTINGS_FILE, "w") as f:
-        json.dump(speaker_settings, f)
+    with open(STYLE_SETTINGS_FILE, "wb") as f:  # wbモードで開く
+        pickle.dump(speaker_settings, f)  # speaker_settingsをpickleで保存
 
 
 def load_style_settings():
     """スタイル設定をロードします。"""
     try:
-        with open(STYLE_SETTINGS_FILE, "r") as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {}
+        with open(STYLE_SETTINGS_FILE, "rb") as f:  # rbモードで開く
+            return pickle.load(f)  # ファイルからpickleオブジェクトをロード
+    except (FileNotFoundError, pickle.UnpicklingError):
+        return {}  # ファイルが見つからないか、pickle読み込みエラーの場合は空の辞書を返す
+
 
 
 async def replace_content(text, message):
@@ -133,7 +135,7 @@ async def replace_content(text, message):
 
 
 async def handle_voice_state_update(server, bot, member, before, after):
-    guild_id = str(member.guild.id)
+    guild_id = member.guild.id
     # ボット自身の状態変更を無視
     if member == bot.user:
         return
@@ -149,7 +151,7 @@ async def handle_voice_state_update(server, bot, member, before, after):
         announcement_voice = f"{member.display_name}さんが入室しました。"
         # ユーザーのスタイルIDを取得
         user_style_id = speaker_settings.get(
-            str(member.id),
+            member.id,
             speaker_settings[guild_id].get("user_default", USER_DEFAULT_STYLE_ID),
         )
         user_speaker_name, user_style_name = get_style_details(user_style_id)
@@ -175,7 +177,7 @@ async def handle_voice_state_update(server, bot, member, before, after):
         before.channel == voice_client.channel and after.channel != voice_client.channel
     ):
         announcement_voice = f"{member.display_name}さんが退室しました。"
-        announcement_style_id = speaker_settings.get(str(member.guild.id), {}).get(
+        announcement_style_id = speaker_settings.get(member.guild.id, {}).get(
             "announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID
         )
         await server.text_to_speech(
@@ -211,7 +213,7 @@ special_cases = {"🇵🇸": "パレスチナ"}
 
 
 async def handle_message(server, bot, message):
-    guild_id = str(message.guild.id)
+    guild_id = message.guild.id
 
     # 早期リターンを利用してネストを減らす
     if not should_process_message(message, guild_id):
@@ -243,14 +245,14 @@ def should_process_message(message, guild_id):
         and message.author.voice
         and message.author.voice.channel == voice_client.channel
         and not message.content.startswith(BOT_PREFIX)
-        and str(message.channel.id) == allowed_text_channel_id
+        and message.channel.id == allowed_text_channel_id
     )
 
 
 async def announce_file_post(server, message):
     """ファイル投稿をアナウンスします。"""
     file_message = "ファイルを投稿しました。"
-    guild_id = str(message.guild.id)
+    guild_id = message.guild.id
     await server.text_to_speech(
         message.guild.voice_client,
         file_message,
@@ -262,7 +264,7 @@ async def announce_file_post(server, message):
 def get_style_id(user_id, guild_id):
     """ユーザーまたはギルドのスタイルIDを取得します。"""
     return speaker_settings.get(
-        str(user_id),
+        user_id,
         speaker_settings[guild_id].get("user_default", USER_DEFAULT_STYLE_ID),
     )
 

@@ -11,6 +11,7 @@ from settings import (
 )
 from utils import (
     get_character_info,
+    load_style_settings,
     speaker_settings,
     save_style_settings,
     get_style_details,
@@ -30,7 +31,7 @@ def setup_commands(server, bot):
     async def leave(interaction: discord.Interaction):
         # ボイスクライアントが存在するか確認
         if interaction.guild.voice_client:
-            guild_id = str(interaction.guild_id)
+            guild_id = interaction.guild_id
             await server.clear_playback_queue(guild_id)  # キューをクリア
             if "text_channel" in speaker_settings.get(guild_id, {}):
                 del speaker_settings[guild_id]["text_channel"]
@@ -64,7 +65,7 @@ def setup_commands(server, bot):
         voice_scope_description = {
             "user": f"{interaction.user.display_name}さん専用の読み上げ音声",
             "announcement": "入退出時のアナウンス音声",
-            "user_default": "サーバーの標準読み上げ音声",
+            "user_default": "未設定ユーザーの読み上げ音声",
         }
         # ボタンとビューの設定
         view = View()
@@ -128,11 +129,11 @@ def setup_commands(server, bot):
             voice_scope_description = {
                 "user": f"{interaction.user.display_name}さん専用の読み上げ音声",
                 "announcement": "入退出時のアナウンス音声",
-                "user_default": "サーバーの標準読み上げ音声",
+                "user_default": "未設定ユーザーの読み上げ音声",
             }
             # 'interaction'を正しく使ってメッセージを編集
             speaker_name = self.speakers[self.current_page]["name"]
-            content = f"ページ {self.current_page + 1} / {len(self.speakers)}\n"
+            content = f"「次へ」「前へ」ボタンで使用するキャラクターを選択し、スタイルを選んでください：\nページ {self.current_page + 1} / {len(self.speakers)}\n"
             speaker_character_id, speaker_display_name = get_character_info(
                 speaker_name
             )
@@ -179,6 +180,8 @@ def setup_commands(server, bot):
                         style_id,
                         self.voice_scope,
                     )
+                    global speaker_settings
+                    speaker_settings = load_style_settings()
                     speaker_character_id, speaker_display_name = get_character_info(
                         speaker_name
                     )
@@ -203,7 +206,7 @@ def setup_commands(server, bot):
         voice_scope_description = {
             "user": f"{interaction.user.display_name}さん専用の読み上げ音声",
             "announcement": "入退出時のアナウンス音声",
-            "user_default": "サーバーの標準読み上げ音声",
+            "user_default": "未設定ユーザーの読み上げ音声",
         }
         # 初期ページングビューを作成
         view = PagingView(speakers, voice_scope)
@@ -244,6 +247,8 @@ def setup_commands(server, bot):
                 update_style_setting(
                     interaction.guild.id, interaction.user.id, style_id, voice_scope
                 )
+                global speaker_settings
+                speaker_settings = load_style_settings()
                 speaker_character_id, speaker_display_name = get_character_info(
                     speaker_name
                 )
@@ -269,8 +274,8 @@ def setup_commands(server, bot):
         description="現在の読み上げ音声スコープと設定を表示します。",
     )
     async def info(interaction: discord.Interaction):
-        guild_id = str(interaction.guild_id)
-        user_id = str(interaction.user.id)
+        guild_id = interaction.guild_id
+        user_id = interaction.user.id
         
         # サーバーの設定を取得
         guild_settings = speaker_settings.get(guild_id, {})
@@ -309,7 +314,7 @@ def setup_commands(server, bot):
             f"テキストチャンネル: <#{text_channel_id}>\n"
             f"{interaction.user.display_name}さん専用の読み上げ音声: [{user_display_name}] - {user_style_name}\n"
             f"アナウンス音声: [{announcement_display_name}] - {announcement_style_name}\n"
-            f"サーバーの標準読み上げ音声: [{user_default_display_name}] - {user_default_style_name}\n"
+            f"未設定ユーザーの標準読み上げ音声: [{user_default_display_name}] - {user_default_style_name}\n"
         )
 
         # ユーザーに設定の詳細を表示
@@ -327,10 +332,10 @@ async def welcome_user(server, interaction, voice_client):
     # 接続メッセージの読み上げ
     welcome_voice = "読み上げを開始します。"
 
-    guild_id = str(interaction.guild_id)
-    user_id = str(interaction.user.id)  # コマンド使用者のユーザーID
+    guild_id = interaction.guild_id
+    user_id = interaction.user.id  # コマンド使用者のユーザーID
     user_display_name = interaction.user.display_name  # コマンド使用者の表示名
-    text_channel_id = str(interaction.channel_id)  # コマンドを使用したテキストチャンネルID
+    text_channel_id = interaction.channel_id  # コマンドを使用したテキストチャンネルID
 
     # サーバー設定が存在しない場合は初期化
     if guild_id not in speaker_settings:
