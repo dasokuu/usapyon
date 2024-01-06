@@ -318,7 +318,7 @@ def setup_commands(server, bot):
             f"テキストチャンネル: <#{text_channel_id}>\n"
             f"{interaction.user.display_name}さん専用の読み上げ音声: [{user_display_name}] - {user_style_name}\n"
             f"アナウンス音声: [{announcement_display_name}] - {announcement_style_name}\n"
-            f"未設定ユーザーの標準読み上げ音声: [{user_default_display_name}] - {user_default_style_name}\n"
+            f"未設定ユーザーの読み上げ音声: [{user_default_display_name}] - {user_default_style_name}\n"
         )
 
         # ユーザーに設定の詳細を表示
