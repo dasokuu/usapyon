@@ -148,7 +148,10 @@ async def handle_voice_state_update(server, bot, member, before, after):
     if before.channel != voice_client.channel and after.channel == voice_client.channel:
         announcement_voice = f"{member.display_name}さんが入室しました。"
         # ユーザーのスタイルIDを取得
-        user_style_id = speaker_settings.get(str(member.id), USER_DEFAULT_STYLE_ID)
+        user_style_id = speaker_settings.get(
+            str(member.id),
+            speaker_settings[guild_id].get("user_default", USER_DEFAULT_STYLE_ID),
+        )
         user_speaker_name, user_style_name = get_style_details(user_style_id)
         user_character_id, user_display_name = get_character_info(user_speaker_name)
         user_url = f"https://voicevox.hiroshiba.jp/dormitory/{user_character_id}/"
