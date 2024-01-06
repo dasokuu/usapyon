@@ -160,9 +160,8 @@ async def handle_voice_state_update(server, bot, member, before, after):
             text_channel = bot.get_channel(int(text_channel_id))
             if text_channel:
                 await text_channel.send(announcement_message)
-        # アナウンス用の音声スタイルIDを取得
-        announcement_style_id = speaker_settings.get(guild_id, {}).get(
-            "notify", ANNOUNCEMENT_DEFAULT_STYLE_ID
+        announcement_style_id = speaker_settings[guild_id].get(
+            "announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID
         )
         await server.text_to_speech(
             voice_client, announcement_voice, announcement_style_id, guild_id
