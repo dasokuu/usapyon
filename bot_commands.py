@@ -11,7 +11,6 @@ from settings import (
 )
 from utils import (
     get_character_info,
-    load_style_settings,
     config_pickle,
     save_style_settings,
     get_style_details,
