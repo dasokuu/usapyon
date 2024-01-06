@@ -71,7 +71,10 @@ def setup_commands(server, bot):
         view = View()
         for voice_scope, label in voice_scope_description.items():
             # 各スコープに対応するボタンを作成
-            button = Button(style=discord.ButtonStyle.primary, label=label)
+            if voice_scope == "user":
+                button = Button(style=discord.ButtonStyle.primary, label=label)
+            else:
+                button = Button(style=discord.ButtonStyle.secondary, label=label)
 
             # ボタンが押されたときの処理を定義
             async def on_button_click(
