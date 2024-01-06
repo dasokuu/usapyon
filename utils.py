@@ -76,7 +76,6 @@ def load_style_settings():
         return {}  # ファイルが見つからないか、pickle読み込みエラーの場合は空の辞書を返す
 
 
-
 async def replace_content(text, message):
     # ユーザーメンションを検出する正規表現パターン
     user_mention_pattern = re.compile(r"<@!?(\d+)>")
@@ -103,7 +102,6 @@ async def replace_content(text, message):
         channel_id = int(match.group(1))
         channel = message.guild.get_channel(channel_id)
         return channel.name + "チャンネル" if channel else match.group(0)
-
 
     def replace_custom_emoji_name_to_kana(match):
         emoji_name = match.group(1)
@@ -181,10 +179,7 @@ async def handle_voice_state_update(server, bot, member, before, after):
 
             # キューをクリアする
             await server.clear_playback_queue(guild_id)
-            if (
-                guild_id in config_pickle
-                and "text_channel" in config_pickle[guild_id]
-            ):
+            if guild_id in config_pickle and "text_channel" in config_pickle[guild_id]:
                 # テキストチャンネルIDの設定をクリア
                 del config_pickle[guild_id]["text_channel"]
                 save_style_settings()  # 変更を保存
