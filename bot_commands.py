@@ -180,8 +180,6 @@ def setup_commands(server, bot):
                         style_id,
                         self.voice_scope,
                     )
-                    global config_pickle
-                    config_pickle = load_style_settings()
                     speaker_character_id, speaker_display_name = get_character_info(
                         speaker_name
                     )
@@ -247,8 +245,6 @@ def setup_commands(server, bot):
                 update_style_setting(
                     interaction.guild.id, interaction.user.id, style_id, voice_scope
                 )
-                global config_pickle
-                config_pickle = load_style_settings()
                 speaker_character_id, speaker_display_name = get_character_info(
                     speaker_name
                 )
