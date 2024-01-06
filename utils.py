@@ -1,14 +1,12 @@
 import logging
 import pickle
 import requests
-import json
 import jaconv
 import re
 import discord
 from settings import (
     BOT_PREFIX,
     CHARACTORS_INFO,
-    EMOJI_JA_URL,
     USER_DEFAULT_STYLE_ID,
     ANNOUNCEMENT_DEFAULT_STYLE_ID,
     SPEAKERS_URL,
@@ -106,17 +104,6 @@ async def replace_content(text, message):
         channel = message.guild.get_channel(channel_id)
         return channel.name + "チャンネル" if channel else match.group(0)
 
-    def replace_keywords_with_short_name(text, symbol_dict, special_cases):
-        for symbol, data in symbol_dict.items():
-            # 絵文字かどうかを判定
-            if emoji.emoji_count(symbol) > 0:
-                # 特別なケースを先に処理
-                if symbol in special_cases:
-                    text = text.replace(symbol, special_cases[symbol])
-                    continue
-
-                text = text.replace(symbol, data["short_name"])
-                return text
 
     def replace_custom_emoji_name_to_kana(match):
         emoji_name = match.group(1)
@@ -129,7 +116,7 @@ async def replace_content(text, message):
     text = channel_pattern.sub(replace_channel_mention, text)
     text = url_pattern.sub("URL省略", text)
     text = custom_emoji_pattern.sub(replace_custom_emoji_name_to_kana, text)
-    text = replace_keywords_with_short_name(text, emoji_ja, special_cases)
+    text = emoji.demojize(text, language="ja")
 
     return text
 
@@ -207,9 +194,6 @@ async def handle_voice_state_update(server, bot, member, before, after):
 
 speakers = fetch_json(SPEAKERS_URL)  # URL is now from settings
 config_pickle = load_style_settings()
-emoji_ja = fetch_json(EMOJI_JA_URL)
-# 特別な置き換え規則
-special_cases = {"🇵🇸": "パレスチナ"}
 
 
 async def handle_message(server, bot, message):
