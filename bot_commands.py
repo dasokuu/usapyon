@@ -13,14 +13,9 @@ from utils import (
     speaker_settings,
     save_style_settings,
     get_style_details,
-    speakers
+    speakers,
 )
 
-# voice_scope_description = {
-#     "user": f"{user_display_name}さんのテキスト読み上げ音声",
-#     "announcement": "アナウンス音声",
-#     "user_default": "ユーザーデフォルトTTS音声",
-# }
 
 # # もち子さんの場合、特別なクレジット表記を使用
 # if speaker_name == "もち子さん":
@@ -28,7 +23,9 @@ from utils import (
 # コマンド設定関数
 def setup_commands(server, bot):
     # ボットをボイスチャンネルから切断するコマンド
-    @bot.tree.command(name="leave", guilds=APPROVED_GUILD_IDS, description="ボットをボイスチャンネルから切断します。")
+    @bot.tree.command(
+        name="leave", guilds=APPROVED_GUILD_IDS, description="ボットをボイスチャンネルから切断します。"
+    )
     async def leave(interaction: discord.Interaction):
         # ボイスクライアントが存在するか確認
         if interaction.guild.voice_client:
@@ -40,7 +37,11 @@ def setup_commands(server, bot):
             await interaction.response.send_message("ボイスチャンネルから切断しました。")
 
     # ボットをボイスチャンネルに接続するコマンド
-    @bot.tree.command(name="join", guilds=APPROVED_GUILD_IDS, description="ボットをボイスチャンネルに接続し、読み上げを開始します。")
+    @bot.tree.command(
+        name="join",
+        guilds=APPROVED_GUILD_IDS,
+        description="ボットをボイスチャンネルに接続し、読み上げを開始します。",
+    )
     async def join(interaction: discord.Interaction):
         # defer the response to keep the interaction alive
         await interaction.response.defer()
@@ -55,62 +56,123 @@ def setup_commands(server, bot):
             logging.error(f"Connection error: {e}")
             await interaction.followup.send(f"接続中にエラーが発生しました: {e}")
 
-    # 話者情報の取得と表示コマンド
-    @bot.tree.command(name="select_speaker", guilds=APPROVED_GUILD_IDS, description="読み上げに使用する話者とスタイルを選択します。")
-    async def select_speaker(interaction: discord.Interaction):
-        current_index = 0  # 現在表示している話者のインデックス
+    @bot.tree.command(
+        name="set_voice_scope", guilds=APPROVED_GUILD_IDS, description="音声スコープを設定します。"
+    )
+    async def set_voice_scope(interaction: discord.Interaction):
+        voice_scope_description = {
+            "user": f"{interaction.user.display_name}さんのテキスト読み上げ音声",
+            "announcement": "アナウンス音声",
+            "user_default": "ユーザーデフォルトテキスト読み上げ音声",
+        }
+        # ボタンとビューの設定
+        view = View()
+        for scope, label in voice_scope_description.items():
+            # 各スコープに対応するボタンを作成
+            button = Button(style=discord.ButtonStyle.primary, label=label)
 
-        def generate_view():
-            # ページングとスタイル選択のためのビューを生成する関数
-            view = View()
-            speaker = speakers[current_index]
+            # ボタンが押されたときの処理を定義
+            async def on_button_click(
+                interaction: discord.Interaction, button: Button, scope=scope
+            ):
+                # ここで話者のページングを開始
+                await initiate_speaker_paging(interaction, scope)
 
-            # 前の話者へのボタン
-            view.add_item(Button(label="前へ", style=discord.ButtonStyle.primary, custom_id="previous"))
+            # on_button_click関数をボタンのコールバックとして設定
+            button.callback = lambda interaction, button=button: on_button_click(
+                interaction, button, scope
+            )
 
-            # 次の話者へのボタン
-            view.add_item(Button(label="次へ", style=discord.ButtonStyle.primary, custom_id="next"))
+            # ビューにボタンを追加
+            view.add_item(button)
 
-            # スタイル選択ボタン
-            for style in speaker["styles"]:
-                view.add_item(Button(label=style["name"], style=discord.ButtonStyle.secondary, custom_id=f"select_style_{style['id']}"))
+        # ユーザーにボタンを表示
+        await interaction.response.send_message(
+            "音声スコープを選んでください：", view=view, ephemeral=True
+        )
+    class PagingView(discord.ui.View):
+        def __init__(self, speakers, scope):
+            super().__init__()
+            self.speakers = speakers
+            self.scope = scope
+            self.current_page = 0
 
-            return view
+        @discord.ui.button(label="Previous", style=discord.ButtonStyle.blurple)
+        async def previous_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+            # Correctly using 'interaction' to navigate pages
+            if self.current_page > 0:
+                self.current_page -= 1
+                await self.update_speaker_list(interaction)
 
-        # ボタンのイベントハンドラ
-        async def button_callback(interaction: discord.Interaction):
-            nonlocal current_index
-            custom_id = interaction.data.get('custom_id')
+        @discord.ui.button(label="Next", style=discord.ButtonStyle.blurple)
+        async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+            # Correctly using 'interaction' to navigate pages
+            if self.current_page < len(self.speakers) - 1:
+                self.current_page += 1
+                await self.update_speaker_list(interaction)
 
-            if custom_id == "previous":
-                # 前の話者を表示
-                current_index = max(0, current_index - 1)
-            elif custom_id == "next":
-                # 次の話者を表示
-                current_index = min(len(speakers) - 1, current_index + 1)
-            else:
-                # スタイルが選択された場合
-                style_id = custom_id.split('_')[-1]
-                # 選択されたスタイルを設定する処理をここに記述
+        async def update_speaker_list(self, interaction: discord.Interaction):
+            # Properly using 'interaction' to edit the message
+            speaker_name = self.speakers[self.current_page]["name"]
+            content = f"Page {self.current_page + 1} of {len(self.speakers)}\n"
+            speaker_character_id, speaker_display_name = get_character_info(speaker_name)
+            speaker_url = f"{ANNOUNCEMENT_URL_BASE}/{speaker_character_id}/"
 
-            # 更新された情報でメッセージを編集
-            speaker = speakers[current_index]
-            character_info = get_character_info(speaker["name"])
-            await interaction.response.edit_message(content=f"{character_info[1]}のスタイルを選択してください。", view=generate_view())
+            # 歓迎メッセージを作成
+            content += (
+                f"[{speaker_display_name}]({speaker_url})"
+            )
+            # Remove old style buttons before adding new ones
+            self.clear_items()
 
-        # 最初の表示
-        view = generate_view()
-        for item in view.children:
-            item.callback = button_callback
+            # Add navigation buttons back
+            self.add_item(self.previous_button)
+            self.add_item(self.next_button)
 
-        speaker = speakers[current_index]
-        character_info = get_character_info(speaker["name"])
-        await interaction.response.send_message(content=f"{character_info[1]}のスタイルを選択してください。", view=view)
+            # Loop through each style of the current speaker and add a button for it
+            for style in self.speakers[self.current_page]['styles']:
+                style_button = discord.ui.Button(label=style['name'], style=discord.ButtonStyle.secondary)
+                # Define what happens when the button is clicked
+                async def on_style_button_click(interaction: discord.Interaction, button: discord.ui.Button):
+                    # Handle style change here
+                    pass
+                style_button.callback = on_style_button_click
+                self.add_item(style_button)
+            await interaction.response.edit_message(content=content, view=self)
+
+
+    async def initiate_speaker_paging(interaction: discord.Interaction, scope):
+
+        # 初期ページングビューを作成
+        view = PagingView(speakers, scope)
+        # 最初の話者を表示
+        first_speaker = speakers[0] if speakers else "No speakers available"
+        content = f"Page 1 of {len(speakers)}\n"
+        speaker_character_id, speaker_display_name = get_character_info(first_speaker["name"])
+        speaker_url = f"{ANNOUNCEMENT_URL_BASE}/{speaker_character_id}/"
+
+        # 歓迎メッセージを作成
+        content += (
+            f"[{speaker_display_name}]({speaker_url})"
+        )
+        # Loop through each style of the first speaker and add a button for it
+        for style in speakers[0]['styles']:  # Assuming 'styles' is a list of style dicts for each speaker
+            style_button = discord.ui.Button(label=style['name'], style=discord.ButtonStyle.secondary)
+            # Define what happens when the button is clicked (You might want to define a separate function)
+            async def on_style_button_click(interaction: discord.Interaction, button: discord.ui.Button):
+                # Handle style change here
+                pass
+            style_button.callback = on_style_button_click
+            view.add_item(style_button)
+        await interaction.response.edit_message(content=content, view=view)
+
+
 # ボイスチャンネルに接続する関数
 async def connect_to_voice_channel(interaction):
     channel = interaction.user.voice.channel
     voice_client = await channel.connect(self_deaf=True)
     return voice_client
+
 
 async def welcome_user(server, interaction, voice_client):
     # 接続成功時の処理
@@ -145,8 +207,12 @@ async def welcome_user(server, interaction, voice_client):
     )
 
     # キャラクターとスタイルの詳細を取得
-    announcement_speaker_name, announcement_style_name = get_style_details(announcement_style_id)
-    announcement_character_id, announcement_display_name = get_character_info(announcement_speaker_name)
+    announcement_speaker_name, announcement_style_name = get_style_details(
+        announcement_style_id
+    )
+    announcement_character_id, announcement_display_name = get_character_info(
+        announcement_speaker_name
+    )
     announcement_url = f"{ANNOUNCEMENT_URL_BASE}/{announcement_character_id}/"
     user_speaker_name, user_style_name = get_style_details(user_style_id)
     user_character_id, user_tts_display_name = get_character_info(user_speaker_name)
@@ -159,6 +225,7 @@ async def welcome_user(server, interaction, voice_client):
     )
 
     # メッセージとスタイルIDをキューに追加し、読み上げ
-    await server.text_to_speech(voice_client, welcome_voice, announcement_style_id, guild_id)
+    await server.text_to_speech(
+        voice_client, welcome_voice, announcement_style_id, guild_id
+    )
     await interaction.followup.send(welcome_message)
-
