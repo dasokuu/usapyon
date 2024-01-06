@@ -12,7 +12,7 @@ from settings import (
     USER_DEFAULT_STYLE_ID,
     ANNOUNCEMENT_DEFAULT_STYLE_ID,
     SPEAKERS_URL,
-    STYLE_SETTINGS_FILE,
+    CONFIG_PICKLE_FILE,
 )
 import emoji  # 絵文字の判定を行うためのライブラリ
 
@@ -65,14 +65,14 @@ def get_style_details(style_id, default_name="デフォルト"):
 
 def save_style_settings():
     """スタイル設定を保存します。"""
-    with open(STYLE_SETTINGS_FILE, "wb") as f:  # wbモードで開く
-        pickle.dump(speaker_settings, f)  # speaker_settingsをpickleで保存
+    with open(CONFIG_PICKLE_FILE, "wb") as f:  # wbモードで開く
+        pickle.dump(config_pickle, f)  # config_pickleをpickleで保存
 
 
 def load_style_settings():
     """スタイル設定をロードします。"""
     try:
-        with open(STYLE_SETTINGS_FILE, "rb") as f:  # rbモードで開く
+        with open(CONFIG_PICKLE_FILE, "rb") as f:  # rbモードで開く
             return pickle.load(f)  # ファイルからpickleオブジェクトをロード
     except (FileNotFoundError, pickle.UnpicklingError):
         return {}  # ファイルが見つからないか、pickle読み込みエラーの場合は空の辞書を返す
@@ -150,9 +150,9 @@ async def handle_voice_state_update(server, bot, member, before, after):
     if before.channel != voice_client.channel and after.channel == voice_client.channel:
         announcement_voice = f"{member.display_name}さんが入室しました。"
         # ユーザーのスタイルIDを取得
-        user_style_id = speaker_settings.get(
+        user_style_id = config_pickle.get(
             member.id,
-            speaker_settings[guild_id].get("user_default", USER_DEFAULT_STYLE_ID),
+            config_pickle[guild_id].get("user_default", USER_DEFAULT_STYLE_ID),
         )
         user_speaker_name, user_style_name = get_style_details(user_style_id)
         user_character_id, user_display_name = get_character_info(user_speaker_name)
@@ -160,12 +160,12 @@ async def handle_voice_state_update(server, bot, member, before, after):
         announcement_message = f"{member.display_name}さんのテキスト読み上げ音声「[{user_display_name}]({user_url}) {user_style_name}」"
 
         # テキストチャンネルを取得してメッセージを送信
-        text_channel_id = speaker_settings[guild_id].get("text_channel")
+        text_channel_id = config_pickle[guild_id].get("text_channel")
         if text_channel_id:
             text_channel = bot.get_channel(int(text_channel_id))
             if text_channel:
                 await text_channel.send(announcement_message)
-        announcement_style_id = speaker_settings[guild_id].get(
+        announcement_style_id = config_pickle[guild_id].get(
             "announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID
         )
         await server.text_to_speech(
@@ -177,7 +177,7 @@ async def handle_voice_state_update(server, bot, member, before, after):
         before.channel == voice_client.channel and after.channel != voice_client.channel
     ):
         announcement_voice = f"{member.display_name}さんが退室しました。"
-        announcement_style_id = speaker_settings.get(member.guild.id, {}).get(
+        announcement_style_id = config_pickle.get(member.guild.id, {}).get(
             "announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID
         )
         await server.text_to_speech(
@@ -195,18 +195,18 @@ async def handle_voice_state_update(server, bot, member, before, after):
             # キューをクリアする
             await server.clear_playback_queue(guild_id)
             if (
-                guild_id in speaker_settings
-                and "text_channel" in speaker_settings[guild_id]
+                guild_id in config_pickle
+                and "text_channel" in config_pickle[guild_id]
             ):
                 # テキストチャンネルIDの設定をクリア
-                del speaker_settings[guild_id]["text_channel"]
+                del config_pickle[guild_id]["text_channel"]
                 save_style_settings()  # 変更を保存
                 logging.info(f"テキストチャンネルの設定をクリアしました: サーバーID {guild_id}")
             await member.guild.voice_client.disconnect()
 
 
 speakers = fetch_json(SPEAKERS_URL)  # URL is now from settings
-speaker_settings = load_style_settings()
+config_pickle = load_style_settings()
 emoji_ja = fetch_json(EMOJI_JA_URL)
 # 特別な置き換え規則
 special_cases = {"🇵🇸": "パレスチナ"}
@@ -238,7 +238,7 @@ async def handle_message(server, bot, message):
 def should_process_message(message, guild_id):
     """メッセージが処理対象かどうかを判断します。"""
     voice_client = message.guild.voice_client
-    allowed_text_channel_id = speaker_settings.get(guild_id, {}).get("text_channel")
+    allowed_text_channel_id = config_pickle.get(guild_id, {}).get("text_channel")
     return (
         voice_client
         and voice_client.channel
@@ -263,24 +263,24 @@ async def announce_file_post(server, message):
 
 def get_style_id(user_id, guild_id):
     """ユーザーまたはギルドのスタイルIDを取得します。"""
-    return speaker_settings.get(
+    return config_pickle.get(
         user_id,
-        speaker_settings[guild_id].get("user_default", USER_DEFAULT_STYLE_ID),
+        config_pickle[guild_id].get("user_default", USER_DEFAULT_STYLE_ID),
     )
 
 
 def update_style_setting(guild_id, user_id, style_id, voice_scope):
-    # Ensure the guild_id exists in the speaker_settings
-    if guild_id not in speaker_settings:
-        speaker_settings[guild_id] = {}
+    # Ensure the guild_id exists in the config_pickle
+    if guild_id not in config_pickle:
+        config_pickle[guild_id] = {}
 
     # Ensure the specific voice_scope exists for this guild
-    if voice_scope not in speaker_settings[guild_id]:
-        speaker_settings[guild_id][voice_scope] = {}
+    if voice_scope not in config_pickle[guild_id]:
+        config_pickle[guild_id][voice_scope] = {}
     if voice_scope == "user_default":
-        speaker_settings[guild_id]["user_default"] = style_id
+        config_pickle[guild_id]["user_default"] = style_id
     elif voice_scope == "announcement":
-        speaker_settings[guild_id]["announcement"] = style_id
+        config_pickle[guild_id]["announcement"] = style_id
     elif voice_scope == "user":
-        speaker_settings[user_id] = style_id
+        config_pickle[user_id] = style_id
     save_style_settings()

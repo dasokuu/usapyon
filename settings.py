@@ -9,7 +9,7 @@ VOICEVOX_ENGINE_URL = "http://127.0.0.1:50021/"
 SPEAKERS_URL = VOICEVOX_ENGINE_URL + "speakers"
 AUDIO_QUERY_URL = VOICEVOX_ENGINE_URL + "audio_query"
 SYNTHESIS_URL = VOICEVOX_ENGINE_URL + "synthesis"
-STYLE_SETTINGS_FILE = "style_settings.json"
+CONFIG_PICKLE_FILE = "config.pkl"
 TEST_GUILD_ID = discord.Object(id="1189256965172514836")
 APPROVED_GUILD_IDS = [
     discord.Object(id="1189256965172514836"),  # くーさーばー１

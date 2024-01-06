@@ -12,7 +12,7 @@ from settings import (
 from utils import (
     get_character_info,
     load_style_settings,
-    speaker_settings,
+    config_pickle,
     save_style_settings,
     get_style_details,
     speakers,
@@ -33,8 +33,8 @@ def setup_commands(server, bot):
         if interaction.guild.voice_client:
             guild_id = interaction.guild_id
             await server.clear_playback_queue(guild_id)  # キューをクリア
-            if "text_channel" in speaker_settings.get(guild_id, {}):
-                del speaker_settings[guild_id]["text_channel"]
+            if "text_channel" in config_pickle.get(guild_id, {}):
+                del config_pickle[guild_id]["text_channel"]
             await interaction.guild.voice_client.disconnect()  # 切断
             await interaction.response.send_message("ボイスチャンネルから切断しました。")
 
@@ -180,8 +180,8 @@ def setup_commands(server, bot):
                         style_id,
                         self.voice_scope,
                     )
-                    global speaker_settings
-                    speaker_settings = load_style_settings()
+                    global config_pickle
+                    config_pickle = load_style_settings()
                     speaker_character_id, speaker_display_name = get_character_info(
                         speaker_name
                     )
@@ -247,8 +247,8 @@ def setup_commands(server, bot):
                 update_style_setting(
                     interaction.guild.id, interaction.user.id, style_id, voice_scope
                 )
-                global speaker_settings
-                speaker_settings = load_style_settings()
+                global config_pickle
+                config_pickle = load_style_settings()
                 speaker_character_id, speaker_display_name = get_character_info(
                     speaker_name
                 )
@@ -278,11 +278,11 @@ def setup_commands(server, bot):
         user_id = interaction.user.id
         
         # サーバーの設定を取得
-        guild_settings = speaker_settings.get(guild_id, {})
+        guild_settings = config_pickle.get(guild_id, {})
         text_channel_id = guild_settings.get("text_channel", "未設定")
 
         # 各スコープのスタイルIDを取得
-        user_style_id = speaker_settings.get(
+        user_style_id = config_pickle.get(
             user_id, guild_settings.get("user_default", USER_DEFAULT_STYLE_ID)
         )
         announcement_style_id = guild_settings.get(
@@ -338,11 +338,11 @@ async def welcome_user(server, interaction, voice_client):
     text_channel_id = interaction.channel_id  # コマンドを使用したテキストチャンネルID
 
     # サーバー設定が存在しない場合は初期化
-    if guild_id not in speaker_settings:
-        speaker_settings[guild_id] = {"text_channel": text_channel_id}
+    if guild_id not in config_pickle:
+        config_pickle[guild_id] = {"text_channel": text_channel_id}
     else:
         # 既にサーバー設定が存在する場合はテキストチャンネルIDを更新
-        speaker_settings[guild_id]["text_channel"] = text_channel_id
+        config_pickle[guild_id]["text_channel"] = text_channel_id
     try:
         # 設定を保存
         save_style_settings()
@@ -350,12 +350,12 @@ async def welcome_user(server, interaction, voice_client):
         logging.error(f"Failed to save settings: {e}")
 
     # 通知スタイルIDを取得
-    announcement_style_id = speaker_settings[guild_id].get(
+    announcement_style_id = config_pickle[guild_id].get(
         "announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID
     )
     # ユーザーのスタイルIDを取得
-    user_style_id = speaker_settings.get(
-        user_id, speaker_settings[guild_id].get("user_default", USER_DEFAULT_STYLE_ID)
+    user_style_id = config_pickle.get(
+        user_id, config_pickle[guild_id].get("user_default", USER_DEFAULT_STYLE_ID)
     )
 
     # キャラクターとスタイルの詳細を取得
