@@ -58,9 +58,9 @@ def setup_commands(server, bot):
             await interaction.followup.send(f"接続中にエラーが発生しました: {e}")
 
     @bot.tree.command(
-        name="set_voice_scope", guilds=APPROVED_GUILD_IDS, description="音声スコープを設定します。"
+        name="config", guilds=APPROVED_GUILD_IDS, description="読み上げ音声を設定します。"
     )
-    async def set_voice_scope(interaction: discord.Interaction):
+    async def config(interaction: discord.Interaction):
         voice_scope_description = {
             "user": f"{interaction.user.display_name}さんのテキスト読み上げ音声",
             "announcement": "アナウンス音声",
@@ -92,7 +92,7 @@ def setup_commands(server, bot):
 
         # ユーザーにボタンを表示
         await interaction.response.send_message(
-            "音声スコープを選んでください：", view=view, ephemeral=True
+            "設定対象を選んでください：", view=view, ephemeral=True
         )
 
     class PagingView(discord.ui.View):
@@ -106,19 +106,23 @@ def setup_commands(server, bot):
         async def previous_button(
             self, interaction: discord.Interaction, button: discord.ui.Button
         ):
-            # 正しく'interaction'を使ってページをナビゲート
+            # ページをナビゲートします。最初のページなら最後のページへ移動します。
             if self.current_page > 0:
                 self.current_page -= 1
-                await self.update_speaker_list(interaction)
+            else:
+                self.current_page = len(self.speakers) - 1
+            await self.update_speaker_list(interaction)
 
         @discord.ui.button(label="次へ", style=discord.ButtonStyle.blurple)
         async def next_button(
             self, interaction: discord.Interaction, button: discord.ui.Button
         ):
-            # 正しく'interaction'を使ってページをナビゲート
+            # ページをナビゲートします。最後のページなら最初のページへ移動します。
             if self.current_page < len(self.speakers) - 1:
                 self.current_page += 1
-                await self.update_speaker_list(interaction)
+            else:
+                self.current_page = 0
+            await self.update_speaker_list(interaction)
 
         async def update_speaker_list(self, interaction: discord.Interaction):
             voice_scope_description = {
@@ -128,7 +132,7 @@ def setup_commands(server, bot):
             }
             # 'interaction'を正しく使ってメッセージを編集
             speaker_name = self.speakers[self.current_page]["name"]
-            content = f"{self.current_page + 1}ページ目 / 全{len(self.speakers)}ページ\n"
+            content = f"ページ {self.current_page + 1} / {len(self.speakers)}\n"
             speaker_character_id, speaker_display_name = get_character_info(
                 speaker_name
             )
@@ -205,7 +209,7 @@ def setup_commands(server, bot):
         view = PagingView(speakers, voice_scope)
         # 最初の話者を表示
         speaker_name = speakers[0]["name"] if speakers else "利用可能な話者がいません"
-        content = f"1ページ目 / 全{len(speakers)}ページ\n"
+        content = f"「次へ」「前へ」ボタンで使用するキャラクターを選択し、スタイルを選んでください：\nページ 1 / {len(speakers)}\n"
         speaker_character_id, speaker_display_name = get_character_info(speaker_name)
         speaker_url = f"{DORMITORY_URL_BASE}/{speaker_character_id}/"
 
