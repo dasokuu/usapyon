@@ -263,7 +263,57 @@ def setup_commands(server, bot):
 
             view.add_item(style_button)
         await interaction.response.edit_message(content=content, view=view)
+    @bot.tree.command(
+        name="info",
+        guilds=APPROVED_GUILD_IDS,
+        description="現在の読み上げ音声スコープと設定を表示します。",
+    )
+    async def info(interaction: discord.Interaction):
+        guild_id = str(interaction.guild_id)
+        user_id = str(interaction.user.id)
+        
+        # サーバーの設定を取得
+        guild_settings = speaker_settings.get(guild_id, {})
+        text_channel_id = guild_settings.get("text_channel", "未設定")
 
+        # 各スコープのスタイルIDを取得
+        user_style_id = speaker_settings.get(
+            user_id, guild_settings.get("user_default", USER_DEFAULT_STYLE_ID)
+        )
+        announcement_style_id = guild_settings.get(
+            "announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID
+        )
+        user_default_style_id = guild_settings.get("user_default", USER_DEFAULT_STYLE_ID)
+
+        # 各スコープのキャラクターとスタイルの詳細を取得
+        user_speaker_name, user_style_name = get_style_details(user_style_id)
+        user_character_id, user_display_name = get_character_info(user_speaker_name)
+
+        announcement_speaker_name, announcement_style_name = get_style_details(
+            announcement_style_id
+        )
+        announcement_character_id, announcement_display_name = get_character_info(
+            announcement_speaker_name
+        )
+
+        user_default_speaker_name, user_default_style_name = get_style_details(
+            user_default_style_id
+        )
+        user_default_character_id, user_default_display_name = get_character_info(
+            user_default_speaker_name
+        )
+
+        # 設定の詳細を表示するメッセージを作成
+        info_message = (
+            f"読み上げ音声スコープと設定:\n"
+            f"テキストチャンネル: <#{text_channel_id}>\n"
+            f"{interaction.user.display_name}さん専用の読み上げ音声: [{user_display_name}] - {user_style_name}\n"
+            f"アナウンス音声: [{announcement_display_name}] - {announcement_style_name}\n"
+            f"サーバーの標準読み上げ音声: [{user_default_display_name}] - {user_default_style_name}\n"
+        )
+
+        # ユーザーに設定の詳細を表示
+        await interaction.response.send_message(info_message, ephemeral=True)
 
 # ボイスチャンネルに接続する関数
 async def connect_to_voice_channel(interaction):
