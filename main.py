@@ -23,7 +23,7 @@ if __name__ == "__main__":
             for guild in APPROVED_GUILD_IDS:
                 await bot.tree.sync(guild=guild)
             for guild in bot.guilds:
-                bot.loop.create_task(server.process_playback_queue(str(guild.id)))
+                bot.loop.create_task(server.process_playback_queue(guild.id))
         except Exception as e:
             logging.error(f"Error occurred: {e}")
 
