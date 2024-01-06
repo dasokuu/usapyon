@@ -296,8 +296,7 @@ async def welcome_user(server, interaction, voice_client):
     )
     # ユーザーのスタイルIDを取得
     user_style_id = speaker_settings.get(
-        user_id,
-        speaker_settings[guild_id].get("user_default", USER_DEFAULT_STYLE_ID),
+        user_id, speaker_settings[guild_id].get("user_default", USER_DEFAULT_STYLE_ID)
     )
 
     # キャラクターとスタイルの詳細を取得
