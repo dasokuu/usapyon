@@ -74,6 +74,33 @@ def setup_config_command(bot, voice_config):
             except ValueError:
                 await interaction.response.send_message("数字を入力してください。", ephemeral=True)
 
+    class SpeakerSearchModal(discord.ui.Modal):
+        def __init__(self, view):
+            super().__init__(title="話者を検索")
+            self.view = view  # Reference to the PagingView
+
+        speaker_input = discord.ui.TextInput(
+            label="話者名",
+            style=discord.TextStyle.short,
+            placeholder="例: ひまり",
+            min_length=1,
+            max_length=50,
+        )
+
+        async def on_submit(self, interaction: discord.Interaction):
+            # Convert input to a string
+            speaker_name_query = self.speaker_input.value.strip().lower()
+            for i, speaker in enumerate(self.view.speakers):
+                if speaker_name_query in speaker["name"].lower():
+                    self.view.current_page = i
+                    await self.view.update_speaker_list(interaction)
+                    return
+
+            # If no speaker found, send a message
+            await interaction.response.send_message(
+                f"「{speaker_name_query}」に一致する話者が見つかりませんでした。", ephemeral=True
+            )
+
     class PagingView(discord.ui.View):
         def __init__(self, speakers, voice_scope):
             super().__init__()
@@ -116,13 +143,13 @@ def setup_config_command(bot, voice_config):
             await self.update_speaker_list(interaction)
 
         @discord.ui.button(
-            label="→", style=discord.ButtonStyle.green, custom_id="go_to_page"
+            label="話者を検索", style=discord.ButtonStyle.green, custom_id="search_speaker"
         )
         async def go_button(
             self, interaction: discord.Interaction, button: discord.ui.Button
         ):
             # Open the modal when the 'Go' button is clicked
-            modal = PageNumberModal(self)
+            modal = SpeakerSearchModal(self)
             await interaction.response.send_modal(modal)
 
         async def update_speaker_list(self, interaction: discord.Interaction):
