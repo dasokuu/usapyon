@@ -74,7 +74,7 @@ class VoiceSynthConfig:
             # テキストチャンネルを取得してメッセージを送信
             text_channel_id = self.config_pickle[guild_id].get("text_channel")
             if text_channel_id:
-                text_channel = bot.get_channel(int(text_channel_id))
+                text_channel = bot.get_channel(text_channel_id)
                 if text_channel:
                     await text_channel.send(announcement_message)
             announcement_style_id = self.config_pickle[guild_id].get(
