@@ -37,6 +37,7 @@ def setup_commands(
         # テキストチャンネル設定を削除
         if "text_channel" in voice_config.config_pickle.get(guild_id, {}):
             del voice_config.config_pickle[guild_id]["text_channel"]
+        voice_config.save_style_settings()
 
         # ボイスクライアントを切断
         await interaction.guild.voice_client.disconnect()
