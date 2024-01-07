@@ -35,7 +35,7 @@ class VoiceSynthServer:
                     and voice_client.is_connected()
                     and not voice_client.is_playing()
                 ):
-                    await self.speak_line(voice_client, line, style_id, guild_id)
+                    await self.speak_line(voice_client, line, style_id)
             except Exception as e:
                 logging.error(e)  # Log the error or handle it as needed.
             finally:
@@ -84,17 +84,18 @@ class VoiceSynthServer:
         except Exception as e:
             logging.error(f"Error in text_to_speech: {e}")
 
-    async def speak_line(self, voice_client, line, style_id, guild_id):
-        query_data = await self.audio_query(line, style_id)
-        if query_data:
-            voice_data = await self.synthesis(style_id, query_data)
-            if voice_data:
-                audio_source = discord.FFmpegPCMAudio(io.BytesIO(voice_data), pipe=True)
-                voice_client.play(audio_source)
-
-                # Wait for the current audio to finish playing before returning
-                while voice_client.is_playing():
-                    await asyncio.sleep(0.1)
+    async def speak_line(self, voice_client, line, style_id):
+        try:
+            query_data = await self.audio_query(line, style_id)
+            if query_data:
+                voice_data = await self.synthesis(style_id, query_data)
+                if voice_data:
+                    audio_source = discord.FFmpegPCMAudio(io.BytesIO(voice_data), pipe=True)
+                    voice_client.play(audio_source)
+                    while voice_client.is_playing():
+                        await asyncio.sleep(0.1)
+        except Exception as e:
+            logging.error(f"Error in speak_line: {e}")
 
     async def clear_playback_queue(self, guild_id):
         guild_queue = self.get_guild_playback_queue(guild_id)
