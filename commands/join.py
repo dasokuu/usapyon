@@ -1,10 +1,11 @@
 import logging
 import discord
 from settings import APPROVED_GUILD_OBJECTS, ERROR_MESSAGES
-from utils import connect_to_voice_channel, welcome_user
+from utils import VoiceSynthConfig, connect_to_voice_channel, welcome_user
+from voice import VoiceSynthServer
 
 
-def setup_join_command(bot, server, voice_config):
+def setup_join_command(bot, server: VoiceSynthServer, voice_config: VoiceSynthConfig):
     # ボットをボイスチャンネルに接続するコマンド
     @bot.tree.command(
         name="join",

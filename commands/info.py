@@ -1,9 +1,9 @@
 import discord
 from settings import APPROVED_GUILD_OBJECTS
-from utils import create_info_message, get_speaker_details, get_style_ids
+from utils import VoiceSynthConfig, create_info_message, get_speaker_details, get_style_ids
 
 
-def setup_info_command(bot, voice_config):
+def setup_info_command(bot, voice_config: VoiceSynthConfig):
     @bot.tree.command(
         name="info",
         guilds=APPROVED_GUILD_OBJECTS,

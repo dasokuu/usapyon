@@ -3,10 +3,10 @@ import discord
 from settings import APPROVED_GUILD_OBJECTS, DORMITORY_URL_BASE
 from discord.ui import Button, View
 
-from utils import get_character_info
+from utils import VoiceSynthConfig, get_character_info
 
 
-def setup_config_command(bot, voice_config):
+def setup_config_command(bot, voice_config: VoiceSynthConfig):
     @bot.tree.command(
         name="config", guilds=APPROVED_GUILD_OBJECTS, description="読み上げ音声を設定します。"
     )
@@ -24,14 +24,14 @@ def setup_config_command(bot, voice_config):
             "user_default": "未設定ユーザーの読み上げ音声",
         }
 
-    def create_config_view(interaction, voice_scope_description):
+    def create_config_view(interaction: discord.Interaction, voice_scope_description):
         view = View()
         for voice_scope, label in voice_scope_description.items():
             button = create_scope_button(interaction, label, voice_scope)
             view.add_item(button)
         return view
 
-    def create_scope_button(interaction, label, voice_scope):
+    def create_scope_button(interaction: discord.Interaction, label, voice_scope):
         button = Button(
             style=discord.ButtonStyle.primary
             if voice_scope == "user"
@@ -41,7 +41,7 @@ def setup_config_command(bot, voice_config):
         button.callback = create_button_callback(interaction, button, voice_scope)
         return button
 
-    def create_button_callback(interaction, button, voice_scope):
+    def create_button_callback(interaction: discord.Interaction, button, voice_scope):
         async def on_button_click(interaction: discord.Interaction):
             await initiate_speaker_paging(interaction, voice_scope)
 
