@@ -28,14 +28,22 @@ def setup_commands(server, bot):
         name="leave", guilds=APPROVED_GUILD_OBJECTS, description="ボットをボイスチャンネルから切断します。"
     )
     async def leave(interaction: discord.Interaction):
-        # ボイスクライアントが存在するか確認
-        if interaction.guild.voice_client:
-            guild_id = interaction.guild_id
-            await server.clear_playback_queue(guild_id)  # キューをクリア
-            if "text_channel" in config_pickle.get(guild_id, {}):
-                del config_pickle[guild_id]["text_channel"]
-            await interaction.guild.voice_client.disconnect()  # 切断
-            await interaction.response.send_message("ボイスチャンネルから切断しました。")
+        # ボイスクライアントが存在しない場合、何もせずに終了
+        if not interaction.guild.voice_client:
+            await interaction.response.send_message("ボットはボイスチャンネルに接続されていません。")
+            return
+
+        guild_id = interaction.guild_id
+        # キューをクリア
+        await server.clear_playback_queue(guild_id)
+
+        # テキストチャンネル設定を削除
+        if "text_channel" in config_pickle.get(guild_id, {}):
+            del config_pickle[guild_id]["text_channel"]
+
+        # ボイスクライアントを切断
+        await interaction.guild.voice_client.disconnect()
+        await interaction.response.send_message("ボイスチャンネルから切断しました。")
 
     # ボットをボイスチャンネルに接続するコマンド
     @bot.tree.command(
