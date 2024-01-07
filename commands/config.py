@@ -76,13 +76,13 @@ def setup_config_command(bot, voice_config):
 
     class SpeakerSearchModal(discord.ui.Modal):
         def __init__(self, view):
-            super().__init__(title="話者を検索")
+            super().__init__(title="キャラクターを検索")
             self.view = view  # Reference to the PagingView
 
         speaker_input = discord.ui.TextInput(
-            label="話者名",
+            label="キャラクター名",
             style=discord.TextStyle.short,
-            placeholder="例: ひまり",
+            placeholder="例: ずんだ",
             min_length=1,
             max_length=50,
         )
@@ -98,7 +98,7 @@ def setup_config_command(bot, voice_config):
 
             # If no speaker found, send a message
             await interaction.response.send_message(
-                f"「{speaker_name_query}」に一致する話者が見つかりませんでした。", ephemeral=True
+                f"「{speaker_name_query}」に一致するキャラクターが見つかりませんでした。", ephemeral=True
             )
 
     class PagingView(discord.ui.View):
@@ -143,7 +143,7 @@ def setup_config_command(bot, voice_config):
             await self.update_speaker_list(interaction)
 
         @discord.ui.button(
-            label="話者を検索", style=discord.ButtonStyle.green, custom_id="search_speaker"
+            label="検索", style=discord.ButtonStyle.blurple, custom_id="search_speaker"
         )
         async def go_button(
             self, interaction: discord.Interaction, button: discord.ui.Button
@@ -160,7 +160,7 @@ def setup_config_command(bot, voice_config):
             voice_scope_description = get_voice_scope_description(interaction)
             # 'interaction'を正しく使ってメッセージを編集
             speaker_name = self.speakers[self.current_page]["name"]
-            content = f"矢印ボタンで使用するキャラクターを選択し、スタイルを選んでください：\nページ {self.current_page + 1} / {len(self.speakers)}\n"
+            content = f"使用するキャラクターを選択し、スタイルを選んでください：\nページ {self.current_page + 1} / {len(self.speakers)}\n"
             speaker_character_id, speaker_display_name = get_character_info(
                 speaker_name
             )
@@ -178,7 +178,7 @@ def setup_config_command(bot, voice_config):
             self.add_item(self.last_button)
             self.add_item(self.go_button)  # Make sure this is added back
 
-            # 現在の話者の各スタイルに対応するボタンを追加
+            # 現在のキャラクターの各スタイルに対応するボタンを追加
             for style in self.speakers[self.current_page]["styles"]:
                 style_button = discord.ui.Button(
                     label=style["name"], style=discord.ButtonStyle.secondary
@@ -237,19 +237,19 @@ def setup_config_command(bot, voice_config):
         # 初期ページングビューを作成
         view = PagingView(voice_config.speakers, voice_scope)
 
-        # 最初の話者を表示
+        # 最初のキャラクターを表示
         speaker_name = (
             voice_config.speakers[0]["name"]
             if voice_config.speakers
-            else "利用可能な話者がいません"
+            else "利用可能なキャラクターがいません"
         )
-        content = f"矢印ボタンで使用するキャラクターを選択し、スタイルを選んでください：\nページ 1 / {len(voice_config.speakers)}\n"
+        content = f"使用するキャラクターを選択し、スタイルを選んでください：\nページ 1 / {len(voice_config.speakers)}\n"
         speaker_character_id, speaker_display_name = get_character_info(speaker_name)
         speaker_url = f"{DORMITORY_URL_BASE}/{speaker_character_id}/"
 
         content += f"[{speaker_display_name}]({speaker_url})"
-        # 最初の話者の各スタイルに対応するボタンを追加
-        for style in voice_config.speakers[0]["styles"]:  # 'styles'は各話者のスタイル辞書のリストと仮定
+        # 最初のキャラクターの各スタイルに対応するボタンを追加
+        for style in voice_config.speakers[0]["styles"]:  # 'styles'は各キャラクターのスタイル辞書のリストと仮定
             style_button = discord.ui.Button(
                 label=style["name"], style=discord.ButtonStyle.secondary
             )
