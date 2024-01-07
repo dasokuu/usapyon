@@ -1,9 +1,10 @@
 import discord
 from settings import APPROVED_GUILD_OBJECTS
 from utils import VoiceSynthConfig
+from voice import VoiceSynthServer
 
 
-def setup_leave_command(bot, server, voice_config: VoiceSynthConfig):
+def setup_leave_command(bot, server: VoiceSynthServer, voice_config: VoiceSynthConfig):
     # ボットをボイスチャンネルから切断するコマンド
     @bot.tree.command(
         name="leave", guilds=APPROVED_GUILD_OBJECTS, description="ボットをボイスチャンネルから切断します。"

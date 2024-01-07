@@ -265,7 +265,7 @@ async def replace_content(text, message: discord.Message):
     return text
 
 
-async def welcome_user(server: VoiceSynthServer, interaction: discord.Interaction, voice_client, voice_config: VoiceSynthConfig):
+async def welcome_user(server: VoiceSynthServer, interaction: discord.Interaction, voice_client: discord.VoiceClient, voice_config: VoiceSynthConfig):
     guild_id, text_channel_id = get_and_update_guild_settings(interaction, voice_config)
     style_ids = get_style_ids(guild_id, interaction.user.id, voice_config)
     speaker_details = get_speaker_details(voice_config, *style_ids)
