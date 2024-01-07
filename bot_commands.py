@@ -347,7 +347,15 @@ def setup_commands(
 
         # サーバーの設定を取得
         guild_settings = voice_config.config_pickle.get(guild_id, {})
-        text_channel_id = guild_settings.get("text_channel", "未設定")
+        text_channel_id = interaction.text_channel.id
+        # サーバー設定が存在しない場合は初期化
+        if guild_id not in voice_config.config_pickle:
+            voice_config.config_pickle[guild_id] = {"text_channel": text_channel_id}
+        else:
+            # 既にサーバー設定が存在する場合はテキストチャンネルIDを更新
+            voice_config.config_pickle[guild_id]["text_channel"] = text_channel_id
+
+        voice_config.save_style_settings()  # 変更を保存
 
         # 各スコープのスタイルIDを取得
         user_style_id = voice_config.config_pickle.get(
@@ -381,14 +389,6 @@ def setup_commands(
         user_default_character_id, user_default_display_name = get_character_info(
             user_default_speaker_name
         )
-        # サーバー設定が存在しない場合は初期化
-        if guild_id not in voice_config.config_pickle:
-            voice_config.config_pickle[guild_id] = {"text_channel": text_channel_id}
-        else:
-            # 既にサーバー設定が存在する場合はテキストチャンネルIDを更新
-            voice_config.config_pickle[guild_id]["text_channel"] = text_channel_id
-
-        voice_config.save_style_settings()  # 変更を保存
 
         # 設定の詳細を表示するメッセージを作成
         info_message = (
