@@ -336,51 +336,49 @@ async def welcome_user(server, interaction, voice_client):
     welcome_voice = "読み上げを開始します。"
 
     guild_id = interaction.guild_id
-    user_id = interaction.user.id  # コマンド使用者のユーザーID
-    user_display_name = interaction.user.display_name  # コマンド使用者の表示名
-    text_channel_id = interaction.channel_id  # コマンドを使用したテキストチャンネルID
+    user_id = interaction.user.id
+    
+    # サーバーの設定を取得
+    guild_settings = config_pickle.get(guild_id, {})
+    text_channel_id = guild_settings.get("text_channel", "未設定")
 
-    # サーバー設定が存在しない場合は初期化
-    if guild_id not in config_pickle:
-        config_pickle[guild_id] = {"text_channel": text_channel_id}
-    else:
-        # 既にサーバー設定が存在する場合はテキストチャンネルIDを更新
-        config_pickle[guild_id]["text_channel"] = text_channel_id
-    try:
-        # 設定を保存
-        save_style_settings()
-    except IOError as e:
-        logging.error(f"Failed to save settings: {e}")
-
-    # 通知スタイルIDを取得
-    announcement_style_id = config_pickle[guild_id].get(
+    # 各スコープのスタイルIDを取得
+    user_style_id = config_pickle.get(
+        user_id, guild_settings.get("user_default", USER_DEFAULT_STYLE_ID)
+    )
+    announcement_style_id = guild_settings.get(
         "announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID
     )
-    # ユーザーのスタイルIDを取得
-    user_style_id = config_pickle.get(
-        user_id, config_pickle[guild_id].get("user_default", USER_DEFAULT_STYLE_ID)
-    )
+    user_default_style_id = guild_settings.get("user_default", USER_DEFAULT_STYLE_ID)
 
-    # キャラクターとスタイルの詳細を取得
+    # 各スコープのキャラクターとスタイルの詳細を取得
+    user_speaker_name, user_style_name = get_style_details(user_style_id)
+    user_character_id, user_display_name = get_character_info(user_speaker_name)
+
     announcement_speaker_name, announcement_style_name = get_style_details(
         announcement_style_id
     )
     announcement_character_id, announcement_display_name = get_character_info(
         announcement_speaker_name
     )
-    # announcement_url = f"{DORMITORY_URL_BASE}/{announcement_character_id}/"
-    user_speaker_name, user_style_name = get_style_details(user_style_id)
-    user_character_id, user_tts_display_name = get_character_info(user_speaker_name)
-    # user_url = f"{DORMITORY_URL_BASE}/{user_character_id}/"
 
-    # 歓迎メッセージを作成
-    welcome_message = (
+    user_default_speaker_name, user_default_style_name = get_style_details(
+        user_default_style_id
+    )
+    user_default_character_id, user_default_display_name = get_character_info(
+        user_default_speaker_name
+    )
+
+    # 設定の詳細を表示するメッセージを作成
+    info_message = (
+        f"テキストチャンネル: <#{text_channel_id}>\n"
+        f"{interaction.user.display_name}さん専用の読み上げ音声: [{user_display_name}] - {user_style_name}\n"
         f"入退出時のアナウンス音声: [{announcement_display_name}] - {announcement_style_name}\n"
-        f"{user_display_name}さん専用の読み上げ音声: [{user_tts_display_name}] - {user_style_name}"
+        f"未設定ユーザーの読み上げ音声: [{user_default_display_name}] - {user_default_style_name}\n"
     )
 
     # メッセージとスタイルIDをキューに追加し、読み上げ
     await server.text_to_speech(
         voice_client, welcome_voice, announcement_style_id, guild_id
     )
-    await interaction.followup.send(welcome_message)
+    await interaction.followup.send(info_message)
