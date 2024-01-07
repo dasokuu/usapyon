@@ -1,5 +1,5 @@
 import discord
-from settings import APPROVED_GUILD_OBJECTS
+from settings import APPROVED_GUILD_OBJECTS, ERROR_MESSAGES, INFO_MESSAGES
 from utils import VoiceSynthConfig
 from voice import VoiceSynthServer
 
@@ -12,7 +12,7 @@ def setup_leave_command(bot, server: VoiceSynthServer, voice_config: VoiceSynthC
     async def leave(interaction: discord.Interaction):
         # ボイスクライアントが存在しない場合、何もせずに終了
         if not interaction.guild.voice_client:
-            await interaction.response.send_message("ボットはボイスチャンネルに接続されていません。")
+            await interaction.response.send_message(ERROR_MESSAGES["not_connected"])
             return
 
         guild_id = interaction.guild_id
@@ -26,4 +26,4 @@ def setup_leave_command(bot, server: VoiceSynthServer, voice_config: VoiceSynthC
 
         # ボイスクライアントを切断
         await interaction.guild.voice_client.disconnect()
-        await interaction.response.send_message("ボイスチャンネルから切断しました。")
+        await interaction.response.send_message(INFO_MESSAGES["disconnect"])

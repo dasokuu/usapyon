@@ -6,6 +6,7 @@ import re
 import discord
 from settings import (
     CHARACTORS_INFO,
+    ERROR_MESSAGES,
     USER_DEFAULT_STYLE_ID,
     ANNOUNCEMENT_DEFAULT_STYLE_ID,
     BotSettings,
@@ -348,7 +349,7 @@ async def execute_welcome_message(
         await interaction.followup.send(message)
     except Exception as e:
         logging.error(f"Welcome message execution failed: {e}")
-        await interaction.followup.send("エラーが発生しました。詳細はログを参照してください。")
+        await interaction.followup.send(ERROR_MESSAGES["welcome"])
 
 
 

@@ -68,5 +68,10 @@ DORMITORY_URL_BASE = "https://voicevox.hiroshiba.jp/dormitory"
 ERROR_MESSAGES = {
     "connection": "ボイスチャンネルに接続できませんでした。ユーザーがボイスチャンネルにいることを確認してください。",
     "invalid_style": "選択したスタイルIDが無効です。",
+    "not_connected": "ボットはボイスチャンネルに接続されていません。",
+    "welcome": "読み上げ開始中に問題が発生しました。もう一度お試しください。"
+}
+INFO_MESSAGES = {
+    "disconnect": "ボイスチャンネルから切断しました。"
 }
 TOKEN = os.getenv("VOICECHATLOIDTEST_TOKEN")
