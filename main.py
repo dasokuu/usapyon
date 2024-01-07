@@ -7,6 +7,10 @@ from bot_commands import setup_commands
 from settings import APPROVED_GUILD_IDS_INT, BotSettings, TOKEN
 from voice import VoiceSynthServer
 
+# Improved logging format and level
+logging.basicConfig(
+    format="%(asctime)s - %(levelname)s - %(message)s", level=logging.INFO
+)
 
 if __name__ == "__main__":
     intents = discord.Intents.default()
@@ -24,15 +28,13 @@ if __name__ == "__main__":
             for guild_id in APPROVED_GUILD_IDS_INT:
                 try:
                     guild = bot.get_guild(guild_id)
-                    if guild:  # ギルドが見つかった場合のみ処理を行う
+                    if guild:
                         await bot.tree.sync(guild=guild)
                         bot.loop.create_task(server.process_playback_queue(guild.id))
                     else:
                         logging.error(f"Unable to find guild with ID: {guild_id}")
                 except Exception as e:
-                    logging.error(
-                        f"Error occurred syncing commands for guild {guild_id}: {e}"
-                    )
+                    logging.error(f"Error syncing commands for guild {guild_id}: {e}")
         except Exception as e:
             logging.error(f"Error occurred in on_ready: {e}")
 
