@@ -61,42 +61,37 @@ def setup_commands(server, bot):
         name="config", guilds=APPROVED_GUILD_OBJECTS, description="読み上げ音声を設定します。"
     )
     async def config(interaction: discord.Interaction):
-        voice_scope_description = {
+        voice_scope_description = get_voice_scope_description(interaction)
+        view = create_config_view(interaction, voice_scope_description)
+        await interaction.response.send_message(
+            "設定対象を選んでください：", view=view, ephemeral=True
+        )
+
+    def get_voice_scope_description(interaction):
+        return {
             "user": f"{interaction.user.display_name}さん専用の読み上げ音声",
             "announcement": "入退出時のアナウンス音声",
             "user_default": "未設定ユーザーの読み上げ音声",
         }
-        # ボタンとビューの設定
+
+    def create_config_view(interaction, voice_scope_description):
         view = View()
         for voice_scope, label in voice_scope_description.items():
-            # 各スコープに対応するボタンを作成
-            if voice_scope == "user":
-                button = Button(style=discord.ButtonStyle.primary, label=label)
-            else:
-                button = Button(style=discord.ButtonStyle.secondary, label=label)
-
-            # ボタンが押されたときの処理を定義
-            async def on_button_click(
-                interaction: discord.Interaction,
-                button: Button,
-                voice_scope,  # 引数名をvoice_scopeに変更
-            ):
-                # ここで話者のページングを開始
-                await initiate_speaker_paging(interaction, voice_scope)
-
-            # on_button_click関数をボタンのコールバックとして設定
-            # Pythonのデフォルト引数の挙動を利用して、各ボタンに適切なvoice_scopeを渡す
-            button.callback = lambda interaction, button=button, voice_scope=voice_scope: on_button_click(
-                interaction, button, voice_scope
+            button = Button(
+                style=discord.ButtonStyle.primary
+                if voice_scope == "user"
+                else discord.ButtonStyle.secondary,
+                label=label,
             )
-
-            # ビューにボタンを追加
+            button.callback = create_button_callback(interaction, button, voice_scope)
             view.add_item(button)
+        return view
 
-        # ユーザーにボタンを表示
-        await interaction.response.send_message(
-            "設定対象を選んでください：", view=view, ephemeral=True
-        )
+    def create_button_callback(interaction, button, voice_scope):
+        async def on_button_click(interaction: discord.Interaction):
+            await initiate_speaker_paging(interaction, voice_scope)
+
+        return on_button_click
 
     class PagingView(discord.ui.View):
         def __init__(self, speakers, voice_scope):
@@ -106,12 +101,16 @@ def setup_commands(server, bot):
             self.current_page = 0
 
         @discord.ui.button(label="<<", style=discord.ButtonStyle.blurple)
-        async def first_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        async def first_button(
+            self, interaction: discord.Interaction, button: discord.ui.Button
+        ):
             self.current_page = 0
             await self.update_speaker_list(interaction)
 
         @discord.ui.button(label="<", style=discord.ButtonStyle.blurple)
-        async def previous_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        async def previous_button(
+            self, interaction: discord.Interaction, button: discord.ui.Button
+        ):
             if self.current_page > 0:
                 self.current_page -= 1
             else:
@@ -119,7 +118,9 @@ def setup_commands(server, bot):
             await self.update_speaker_list(interaction)
 
         @discord.ui.button(label=">", style=discord.ButtonStyle.blurple)
-        async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        async def next_button(
+            self, interaction: discord.Interaction, button: discord.ui.Button
+        ):
             if self.current_page < len(self.speakers) - 1:
                 self.current_page += 1
             else:
@@ -127,16 +128,14 @@ def setup_commands(server, bot):
             await self.update_speaker_list(interaction)
 
         @discord.ui.button(label=">>", style=discord.ButtonStyle.blurple)
-        async def last_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        async def last_button(
+            self, interaction: discord.Interaction, button: discord.ui.Button
+        ):
             self.current_page = len(self.speakers) - 1
             await self.update_speaker_list(interaction)
 
         async def update_speaker_list(self, interaction: discord.Interaction):
-            voice_scope_description = {
-                "user": f"{interaction.user.display_name}さん専用の読み上げ音声",
-                "announcement": "入退出時のアナウンス音声",
-                "user_default": "未設定ユーザーの読み上げ音声",
-            }
+            voice_scope_description = get_voice_scope_description(interaction)
             # 'interaction'を正しく使ってメッセージを編集
             speaker_name = self.speakers[self.current_page]["name"]
             content = f"矢印ボタンで使用するキャラクターを選択し、スタイルを選んでください：\nページ {self.current_page + 1} / {len(self.speakers)}\n"
@@ -209,11 +208,7 @@ def setup_commands(server, bot):
             await interaction.response.edit_message(content=content, view=self)
 
     async def initiate_speaker_paging(interaction: discord.Interaction, voice_scope):
-        voice_scope_description = {
-            "user": f"{interaction.user.display_name}さん専用の読み上げ音声",
-            "announcement": "入退出時のアナウンス音声",
-            "user_default": "未設定ユーザーの読み上げ音声",
-        }
+        voice_scope_description = get_voice_scope_description(interaction)
         # 初期ページングビューを作成
         view = PagingView(speakers, voice_scope)
         # 最初の話者を表示
@@ -272,6 +267,7 @@ def setup_commands(server, bot):
 
             view.add_item(style_button)
         await interaction.response.edit_message(content=content, view=view)
+
     @bot.tree.command(
         name="info",
         guilds=APPROVED_GUILD_OBJECTS,
@@ -280,7 +276,7 @@ def setup_commands(server, bot):
     async def info(interaction: discord.Interaction):
         guild_id = interaction.guild_id
         user_id = interaction.user.id
-        
+
         # サーバーの設定を取得
         guild_settings = config_pickle.get(guild_id, {})
         text_channel_id = guild_settings.get("text_channel", "未設定")
@@ -292,7 +288,9 @@ def setup_commands(server, bot):
         announcement_style_id = guild_settings.get(
             "announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID
         )
-        user_default_style_id = guild_settings.get("user_default", USER_DEFAULT_STYLE_ID)
+        user_default_style_id = guild_settings.get(
+            "user_default", USER_DEFAULT_STYLE_ID
+        )
 
         # 各スコープのキャラクターとスタイルの詳細を取得
         user_speaker_name, user_style_name = get_style_details(user_style_id)
@@ -323,6 +321,7 @@ def setup_commands(server, bot):
         # ユーザーに設定の詳細を表示
         await interaction.response.send_message(info_message, ephemeral=True)
 
+
 # ボイスチャンネルに接続する関数
 async def connect_to_voice_channel(interaction):
     channel = interaction.user.voice.channel
@@ -337,7 +336,7 @@ async def welcome_user(server, interaction, voice_client):
 
     guild_id = interaction.guild_id
     user_id = interaction.user.id
-    
+
     # サーバーの設定を取得
     guild_settings = config_pickle.get(guild_id, {})
     text_channel_id = guild_settings.get("text_channel", "未設定")
