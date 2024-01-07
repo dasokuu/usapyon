@@ -291,7 +291,6 @@ def setup_commands(
 
         # サーバーの設定を取得
         guild_settings = voice_config.config_pickle.get(guild_id, {})
-        print(voice_config.config_pickle)
         text_channel_id = guild_settings.get("text_channel", "未設定")
 
         # 各スコープのスタイルIDを取得
