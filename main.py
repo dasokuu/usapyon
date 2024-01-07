@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import discord
 from discord.ext import commands
@@ -15,7 +16,6 @@ if __name__ == "__main__":
     bot = commands.Bot(command_prefix=BOT_PREFIX, intents=intents)
     server = VoiceSynthServer()
     setup_commands(server, bot, voice_config)
-
 
     @bot.event
     async def on_ready():
@@ -49,3 +49,4 @@ if __name__ == "__main__":
         await voice_config.handle_voice_state_update(server, bot, member, before, after)
 
     bot.run(os.getenv("VOICECHATLOIDTEST_TOKEN"))
+    asyncio.run(server.close_session())  # Bot停止時にセッションを閉じる

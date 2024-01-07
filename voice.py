@@ -104,3 +104,7 @@ class VoiceSynthServer:
             except asyncio.QueueEmpty:
                 continue
             guild_queue.task_done()
+
+    async def close_session(self):
+        if self.session and not self.session.closed:
+            await self.session.close()  # セッションが開いていれば閉じる
