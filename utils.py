@@ -205,7 +205,8 @@ def fetch_json(url):
         return response.json()
     except requests.RequestException as err:
         logging.error(f"Request error: {err}")
-        return None
+        # エラー時のデフォルト値を返すか、例外を再度投げる
+        return {}
 
 
 def load_style_settings():
