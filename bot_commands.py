@@ -17,9 +17,71 @@ from discord.ext import commands
 logging.basicConfig(level=logging.DEBUG)
 
 
-def setup_commands(
-    server: VoiceSynthServer, bot: commands.Bot, voice_config: VoiceSynthConfig
-):
+async def welcome_user(server, interaction, voice_client, voice_config):
+    # 接続成功時の処理
+    # 接続メッセージの読み上げ
+    welcome_voice = "読み上げを開始します。"
+
+    guild_id = interaction.guild_id
+    user_id = interaction.user.id
+
+    # サーバーの設定を取得
+    guild_settings = voice_config.config_pickle.get(guild_id, {})
+    text_channel_id = interaction.channel_id
+    # サーバー設定が存在しない場合は初期化
+    if guild_id not in voice_config.config_pickle:
+        voice_config.config_pickle[guild_id] = {"text_channel": text_channel_id}
+    else:
+        # 既にサーバー設定が存在する場合はテキストチャンネルIDを更新
+        voice_config.config_pickle[guild_id]["text_channel"] = text_channel_id
+
+    voice_config.save_style_settings()  # 変更を保存
+
+    # 各スコープのスタイルIDを取得
+    user_style_id = voice_config.config_pickle.get(
+        user_id, guild_settings.get("user_default", USER_DEFAULT_STYLE_ID)
+    )
+    announcement_style_id = guild_settings.get(
+        "announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID
+    )
+    user_default_style_id = guild_settings.get("user_default", USER_DEFAULT_STYLE_ID)
+
+    # 各スコープのキャラクターとスタイルの詳細を取得
+    user_speaker_name, user_style_name = voice_config.get_style_details(user_style_id)
+    user_character_id, user_display_name = get_character_info(user_speaker_name)
+
+    (
+        announcement_speaker_name,
+        announcement_style_name,
+    ) = voice_config.get_style_details(announcement_style_id)
+    announcement_character_id, announcement_display_name = get_character_info(
+        announcement_speaker_name
+    )
+
+    (
+        user_default_speaker_name,
+        user_default_style_name,
+    ) = voice_config.get_style_details(user_default_style_id)
+    user_default_character_id, user_default_display_name = get_character_info(
+        user_default_speaker_name
+    )
+
+    # 設定の詳細を表示するメッセージを作成
+    info_message = (
+        f"テキストチャンネル: <#{text_channel_id}>\n"
+        f"{interaction.user.display_name}さん専用の読み上げ音声: [{user_display_name}] - {user_style_name}\n"
+        f"入退出時のアナウンス音声: [{announcement_display_name}] - {announcement_style_name}\n"
+        f"未設定ユーザーの読み上げ音声: [{user_default_display_name}] - {user_default_style_name}\n"
+    )
+
+    # メッセージとスタイルIDをキューに追加し、読み上げ
+    await server.text_to_speech(
+        voice_client, welcome_voice, announcement_style_id, guild_id
+    )
+    await interaction.followup.send(info_message)
+
+
+def setup_leave_command(bot, server, voice_config):
     # ボットをボイスチャンネルから切断するコマンド
     @bot.tree.command(
         name="leave", guilds=APPROVED_GUILD_OBJECTS, description="ボットをボイスチャンネルから切断します。"
@@ -43,6 +105,8 @@ def setup_commands(
         await interaction.guild.voice_client.disconnect()
         await interaction.response.send_message("ボイスチャンネルから切断しました。")
 
+
+def setup_join_command(bot, server, voice_config):
     # ボットをボイスチャンネルに接続するコマンド
     @bot.tree.command(
         name="join",
@@ -56,11 +120,13 @@ def setup_commands(
             await interaction.followup.send(ERROR_MESSAGES["connection"])
         try:
             voice_client = await connect_to_voice_channel(interaction)
-            await welcome_user(server, interaction, voice_client)
+            await welcome_user(server, interaction, voice_client, voice_config)
         except discord.ClientException as e:
             logging.error(f"Connection error: {e}")
             await interaction.followup.send(f"接続中にエラーが発生しました: {e}")
 
+
+def setup_config_command(bot, voice_config):
     @bot.tree.command(
         name="config", guilds=APPROVED_GUILD_OBJECTS, description="読み上げ音声を設定します。"
     )
@@ -280,6 +346,8 @@ def setup_commands(
             view.add_item(style_button)
         await interaction.response.edit_message(content=content, view=view)
 
+
+def setup_info_command(bot, voice_config):
     @bot.tree.command(
         name="info",
         guilds=APPROVED_GUILD_OBJECTS,
@@ -337,73 +405,6 @@ def setup_commands(
         # ユーザーに設定の詳細を表示
         await interaction.response.send_message(info_message, ephemeral=True)
 
-    async def welcome_user(server, interaction, voice_client):
-        # 接続成功時の処理
-        # 接続メッセージの読み上げ
-        welcome_voice = "読み上げを開始します。"
-
-        guild_id = interaction.guild_id
-        user_id = interaction.user.id
-
-        # サーバーの設定を取得
-        guild_settings = voice_config.config_pickle.get(guild_id, {})
-        text_channel_id = interaction.channel_id
-        # サーバー設定が存在しない場合は初期化
-        if guild_id not in voice_config.config_pickle:
-            voice_config.config_pickle[guild_id] = {"text_channel": text_channel_id}
-        else:
-            # 既にサーバー設定が存在する場合はテキストチャンネルIDを更新
-            voice_config.config_pickle[guild_id]["text_channel"] = text_channel_id
-
-        voice_config.save_style_settings()  # 変更を保存
-
-        # 各スコープのスタイルIDを取得
-        user_style_id = voice_config.config_pickle.get(
-            user_id, guild_settings.get("user_default", USER_DEFAULT_STYLE_ID)
-        )
-        announcement_style_id = guild_settings.get(
-            "announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID
-        )
-        user_default_style_id = guild_settings.get(
-            "user_default", USER_DEFAULT_STYLE_ID
-        )
-
-        # 各スコープのキャラクターとスタイルの詳細を取得
-        user_speaker_name, user_style_name = voice_config.get_style_details(
-            user_style_id
-        )
-        user_character_id, user_display_name = get_character_info(user_speaker_name)
-
-        (
-            announcement_speaker_name,
-            announcement_style_name,
-        ) = voice_config.get_style_details(announcement_style_id)
-        announcement_character_id, announcement_display_name = get_character_info(
-            announcement_speaker_name
-        )
-
-        (
-            user_default_speaker_name,
-            user_default_style_name,
-        ) = voice_config.get_style_details(user_default_style_id)
-        user_default_character_id, user_default_display_name = get_character_info(
-            user_default_speaker_name
-        )
-
-        # 設定の詳細を表示するメッセージを作成
-        info_message = (
-            f"テキストチャンネル: <#{text_channel_id}>\n"
-            f"{interaction.user.display_name}さん専用の読み上げ音声: [{user_display_name}] - {user_style_name}\n"
-            f"入退出時のアナウンス音声: [{announcement_display_name}] - {announcement_style_name}\n"
-            f"未設定ユーザーの読み上げ音声: [{user_default_display_name}] - {user_default_style_name}\n"
-        )
-
-        # メッセージとスタイルIDをキューに追加し、読み上げ
-        await server.text_to_speech(
-            voice_client, welcome_voice, announcement_style_id, guild_id
-        )
-        await interaction.followup.send(info_message)
-
 
 async def connect_to_voice_channel(interaction):
     try:
@@ -415,3 +416,12 @@ async def connect_to_voice_channel(interaction):
     except Exception as e:
         logging.error(f"ボイスチャンネル接続エラー: {e}")
         raise
+
+
+def setup_commands(
+    server: VoiceSynthServer, bot: commands.Bot, voice_config: VoiceSynthConfig
+):
+    setup_join_command(bot, server, voice_config)
+    setup_leave_command(bot, server, voice_config)
+    setup_config_command(bot, voice_config)
+    setup_info_command(bot, voice_config)
