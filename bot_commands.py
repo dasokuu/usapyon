@@ -53,8 +53,6 @@ def setup_commands(
         await interaction.response.defer()
         if not interaction.user.voice or not interaction.user.voice.channel:
             await interaction.followup.send(ERROR_MESSAGES["connection"])
-            return
-
         try:
             voice_client = await connect_to_voice_channel(interaction)
             await welcome_user(server, interaction, voice_client)
@@ -383,6 +381,14 @@ def setup_commands(
         user_default_character_id, user_default_display_name = get_character_info(
             user_default_speaker_name
         )
+        # サーバー設定が存在しない場合は初期化
+        if guild_id not in voice_config.config_pickle:
+            voice_config.config_pickle[guild_id] = {"text_channel": text_channel_id}
+        else:
+            # 既にサーバー設定が存在する場合はテキストチャンネルIDを更新
+            voice_config.config_pickle[guild_id]["text_channel"] = text_channel_id
+
+        voice_config.save_style_settings()  # 変更を保存
 
         # 設定の詳細を表示するメッセージを作成
         info_message = (
