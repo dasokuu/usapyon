@@ -18,7 +18,6 @@ class VoiceVoxSettings:
 USER_DEFAULT_STYLE_ID = 3
 ANNOUNCEMENT_DEFAULT_STYLE_ID = 8
 CONFIG_PICKLE_FILE = "config.pkl"
-TEST_GUILD_ID = discord.Object(id="1189256965172514836")
 APPROVED_GUILD_IDS_INT = [
     1189256965172514836,  # くーさーばー１
     1190673139072516096,  # くーさーばー２
@@ -62,13 +61,9 @@ CHARACTORS_INFO = {
     "満別花丸": "manbetsu_hanamaru",
     "琴詠ニア": "kotoyomi_nia",
 }
-EMOJI_JA_URL = (
-    "https://raw.githubusercontent.com/yagays/emoji-ja/master/data/emoji_ja.json"
-)
 
 DORMITORY_URL_BASE = "https://voicevox.hiroshiba.jp/dormitory"
 
-ITEMS_PER_PAGE = 10  # 1ページあたりのアイテム数
 # エラーメッセージを一元管理
 ERROR_MESSAGES = {
     "connection": "ボイスチャンネルに接続できませんでした。ユーザーがボイスチャンネルにいることを確認してください。",
