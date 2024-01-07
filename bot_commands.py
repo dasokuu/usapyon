@@ -316,7 +316,7 @@ def setup_commands(server, bot):
         info_message = (
             f"テキストチャンネル: <#{text_channel_id}>\n"
             f"{interaction.user.display_name}さん専用の読み上げ音声: [{user_display_name}] - {user_style_name}\n"
-            f"アナウンス音声: [{announcement_display_name}] - {announcement_style_name}\n"
+            f"入退出時のアナウンス音声: [{announcement_display_name}] - {announcement_style_name}\n"
             f"未設定ユーザーの読み上げ音声: [{user_default_display_name}] - {user_default_style_name}\n"
         )
 
@@ -368,15 +368,15 @@ async def welcome_user(server, interaction, voice_client):
     announcement_character_id, announcement_display_name = get_character_info(
         announcement_speaker_name
     )
-    announcement_url = f"{DORMITORY_URL_BASE}/{announcement_character_id}/"
+    # announcement_url = f"{DORMITORY_URL_BASE}/{announcement_character_id}/"
     user_speaker_name, user_style_name = get_style_details(user_style_id)
     user_character_id, user_tts_display_name = get_character_info(user_speaker_name)
-    user_url = f"{DORMITORY_URL_BASE}/{user_character_id}/"
+    # user_url = f"{DORMITORY_URL_BASE}/{user_character_id}/"
 
     # 歓迎メッセージを作成
     welcome_message = (
-        f"アナウンス音声「[{announcement_display_name}]({announcement_url}) {announcement_style_name}」\n"
-        f"{user_display_name}さん専用の読み上げ音声「[{user_tts_display_name}]({user_url}) {user_style_name}」"
+        f"入退出時のアナウンス音声: [{announcement_display_name}] - {announcement_style_name}\n"
+        f"{user_display_name}さん専用の読み上げ音声: [{user_tts_display_name}] - {user_style_name}"
     )
 
     # メッセージとスタイルIDをキューに追加し、読み上げ
