@@ -4,7 +4,7 @@ import discord
 from discord.ui import Button, View
 from settings import (
     DORMITORY_URL_BASE,
-    APPROVED_GUILD_IDS,
+    APPROVED_GUILD_OBJECTS,
     ERROR_MESSAGES,
     USER_DEFAULT_STYLE_ID,
     ANNOUNCEMENT_DEFAULT_STYLE_ID,
@@ -25,7 +25,7 @@ logging.basicConfig(level=logging.DEBUG)
 def setup_commands(server, bot):
     # ボットをボイスチャンネルから切断するコマンド
     @bot.tree.command(
-        name="leave", guilds=APPROVED_GUILD_IDS, description="ボットをボイスチャンネルから切断します。"
+        name="leave", guilds=APPROVED_GUILD_OBJECTS, description="ボットをボイスチャンネルから切断します。"
     )
     async def leave(interaction: discord.Interaction):
         # ボイスクライアントが存在するか確認
@@ -40,7 +40,7 @@ def setup_commands(server, bot):
     # ボットをボイスチャンネルに接続するコマンド
     @bot.tree.command(
         name="join",
-        guilds=APPROVED_GUILD_IDS,
+        guilds=APPROVED_GUILD_OBJECTS,
         description="ボットをボイスチャンネルに接続し、読み上げを開始します。",
     )
     async def join(interaction: discord.Interaction):
@@ -58,7 +58,7 @@ def setup_commands(server, bot):
             await interaction.followup.send(f"接続中にエラーが発生しました: {e}")
 
     @bot.tree.command(
-        name="config", guilds=APPROVED_GUILD_IDS, description="読み上げ音声を設定します。"
+        name="config", guilds=APPROVED_GUILD_OBJECTS, description="読み上げ音声を設定します。"
     )
     async def config(interaction: discord.Interaction):
         voice_scope_description = {
@@ -274,7 +274,7 @@ def setup_commands(server, bot):
         await interaction.response.edit_message(content=content, view=view)
     @bot.tree.command(
         name="info",
-        guilds=APPROVED_GUILD_IDS,
+        guilds=APPROVED_GUILD_OBJECTS,
         description="現在の読み上げ音声スコープと設定を表示します。",
     )
     async def info(interaction: discord.Interaction):

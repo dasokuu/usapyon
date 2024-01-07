@@ -11,15 +11,14 @@ AUDIO_QUERY_URL = VOICEVOX_ENGINE_URL + "audio_query"
 SYNTHESIS_URL = VOICEVOX_ENGINE_URL + "synthesis"
 CONFIG_PICKLE_FILE = "config.pkl"
 TEST_GUILD_ID = discord.Object(id="1189256965172514836")
-APPROVED_GUILD_IDS = [
-    discord.Object(id="1189256965172514836"),  # くーさーばー１
-    discord.Object(id="1190673139072516096"),  # くーさーばー２
-    # discord.Object(id="1129051248574869617"),  # めぞんどとわいらいと
-    # discord.Object(id="1156189448288079882"),  # ばろ
-    # 他の承認されたギルドIDを追加する場合は、以下のようにリストに追加します。
-    # discord.Object(id="他のギルドID"),
-    # ...
+APPROVED_GUILD_IDS_INT = [
+    1189256965172514836,  # くーさーばー１
+    1190673139072516096,  # くーさーばー２
+    1129051248574869617,   # めぞんどとわいらいと
+    1156189448288079882    # ばろ
 ]
+APPROVED_GUILD_OBJECTS = [discord.Object(id=guild_id) for guild_id in APPROVED_GUILD_IDS_INT]
+
 # https://raw.githubusercontent.com/VOICEVOX/voicevox_blog/master/src/constants.ts
 CHARACTORS_INFO = {
     "四国めたん": "shikoku_metan",
