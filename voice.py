@@ -12,6 +12,12 @@ class VoiceSynthServer:
         # Initialize global variables
         self.guild_playback_queues = {}
         self.headers = {"Content-Type": "application/json"}
+        self.session = None  # 初期化時にはセッションはNoneに
+
+    async def get_session(self):
+        if not self.session or self.session.closed:  # セッションがないか閉じている場合
+            self.session = aiohttp.ClientSession()  # 新しいセッションを作成
+        return self.session
 
     def get_guild_playback_queue(self, guild_id):
         """指定されたギルドIDのplayback_queueを取得または作成します。"""
@@ -38,31 +44,32 @@ class VoiceSynthServer:
     async def audio_query(self, text, style_id):
         # 音声合成用のクエリを作成します。
         query_payload = {"text": text, "speaker": style_id}
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                AUDIO_QUERY_URL, headers=self.headers, params=query_payload
-            ) as response:
-                if response.status == 200:
-                    return await response.json()
-                elif response.status == 422:
-                    error_detail = await response.text()
-                    logging.error(f"処理できないエンティティ: {error_detail}")
-                    return None
+        session = await self.get_session()  # セッションを取得
+
+        async with session.post(
+            AUDIO_QUERY_URL, headers=self.headers, params=query_payload
+        ) as response:
+            if response.status == 200:
+                return await response.json()
+            elif response.status == 422:
+                error_detail = await response.text()
+                logging.error(f"処理できないエンティティ: {error_detail}")
+                return None
 
     async def synthesis(self, speaker, query_data):
         # 音声合成を行います。
         synth_payload = {"speaker": speaker}
         headers = {"Content-Type": "application/json", "Accept": "audio/wav"}
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                SYNTHESIS_URL,
-                headers=headers,
-                params=synth_payload,
-                data=json.dumps(query_data),
-            ) as response:
-                if response.status == 200:
-                    return await response.read()
-                return None
+        session = await self.get_session()  # セッションを取得
+        async with session.post(
+            SYNTHESIS_URL,
+            headers=headers,
+            params=synth_payload,
+            data=json.dumps(query_data),
+        ) as response:
+            if response.status == 200:
+                return await response.read()
+            return None
 
     async def text_to_speech(self, voice_client, text, style_id, guild_id):
         """テキストを音声に変換して再生します。"""
