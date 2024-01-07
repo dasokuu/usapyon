@@ -205,6 +205,8 @@ def setup_config_command(bot, voice_config):
             await self.update_speaker_list(interaction)
 
         async def update_speaker_list(self, interaction: discord.Interaction):
+            self.first_button.disabled = self.current_page == 0
+            self.last_button.disabled = self.current_page == len(self.speakers) - 1
             voice_scope_description = get_voice_scope_description(interaction)
             # 'interaction'を正しく使ってメッセージを編集
             speaker_name = self.speakers[self.current_page]["name"]
@@ -283,6 +285,7 @@ def setup_config_command(bot, voice_config):
         voice_scope_description = get_voice_scope_description(interaction)
         # 初期ページングビューを作成
         view = PagingView(voice_config.speakers, voice_scope)
+        
         # 最初の話者を表示
         speaker_name = (
             voice_config.speakers[0]["name"]
@@ -342,7 +345,8 @@ def setup_config_command(bot, voice_config):
                     handle_style_button_click(interaction, button, style_id)
                 )
             )
-
+            # 最初のページで<<と<ボタンを無効化
+            view.first_button.disabled = True
             view.add_item(style_button)
         await interaction.response.edit_message(content=content, view=view)
 
