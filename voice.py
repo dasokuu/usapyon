@@ -72,17 +72,25 @@ class VoiceSynthServer:
             return None
 
     async def text_to_speech(self, voice_client, text, style_id, guild_id):
-        """テキストを音声に変換して再生します。"""
         if not voice_client or not voice_client.is_connected():
-            return  # 接続されていない場合は処理を中断
+            logging.error("Voice client is not connected.")
+            return
 
         try:
-            lines = text.split("\n")
-            for line in filter(None, lines):  # 空行を除外
-                guild_queue = self.get_guild_playback_queue(guild_id)
-                await guild_queue.put((voice_client, line, style_id))
+            lines = self._filter_empty_lines(text)
+            for line in lines:
+                await self._enqueue_line_for_speech(
+                    voice_client, line, style_id, guild_id
+                )
         except Exception as e:
             logging.error(f"Error in text_to_speech: {e}")
+
+    def _filter_empty_lines(self, text):
+        return filter(None, text.split("\n"))
+
+    async def _enqueue_line_for_speech(self, voice_client, line, style_id, guild_id):
+        guild_queue = self.get_guild_playback_queue(guild_id)
+        await guild_queue.put((voice_client, line, style_id))
 
     async def speak_line(self, voice_client, line, style_id):
         try:
@@ -90,12 +98,19 @@ class VoiceSynthServer:
             if query_data:
                 voice_data = await self.synthesis(style_id, query_data)
                 if voice_data:
-                    audio_source = discord.FFmpegPCMAudio(io.BytesIO(voice_data), pipe=True)
-                    voice_client.play(audio_source)
-                    while voice_client.is_playing():
-                        await asyncio.sleep(0.1)
+                    await self._play_audio(voice_client, voice_data)
         except Exception as e:
             logging.error(f"Error in speak_line: {e}")
+
+    async def _play_audio(self, voice_client, voice_data):
+        try:
+            audio_source = discord.FFmpegPCMAudio(io.BytesIO(voice_data), pipe=True)
+            voice_client.play(audio_source)
+            # Wait for the current audio to finish playing before returning
+            while voice_client.is_playing():
+                await asyncio.sleep(0.1)
+        except Exception as e:
+            logging.error(f"Error playing audio: {e}")
 
     async def clear_playback_queue(self, guild_id):
         guild_queue = self.get_guild_playback_queue(guild_id)
