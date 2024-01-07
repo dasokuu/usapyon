@@ -183,7 +183,6 @@ class VoiceSynthConfig:
         elif voice_scope == "user":
             self.config_pickle[user_id] = style_id
         self.save_style_settings()
-    
 
 
 def get_character_info(speaker_name):
