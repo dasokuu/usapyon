@@ -53,16 +53,26 @@ def get_speaker_details(
     voice_config, user_style_id, announcement_style_id, user_default_style_id
 ):
     user_speaker_name, user_style_name = voice_config.get_style_details(user_style_id)
+    _, user_display_name = get_character_info(user_speaker_name)  # display_nameを取得
+
     announcement_speaker_name, announcement_style_name = voice_config.get_style_details(
         announcement_style_id
     )
+    _, announcement_display_name = get_character_info(
+        announcement_speaker_name
+    )  # display_nameを取得
+
     user_default_speaker_name, user_default_style_name = voice_config.get_style_details(
         user_default_style_id
     )
+    _, user_default_display_name = get_character_info(
+        user_default_speaker_name
+    )  # display_nameを取得
+
     return {
-        "user": (user_speaker_name, user_style_name),
-        "announcement": (announcement_speaker_name, announcement_style_name),
-        "default": (user_default_speaker_name, user_default_style_name),
+        "user": (user_display_name, user_style_name),
+        "announcement": (announcement_display_name, announcement_style_name),
+        "default": (user_default_display_name, user_default_style_name),
     }
 
 
@@ -371,51 +381,15 @@ def setup_info_command(bot, voice_config):
     )
     async def info(interaction: discord.Interaction):
         guild_id = interaction.guild_id
-        user_id = interaction.user.id
 
         # サーバーの設定を取得
         guild_settings = voice_config.config_pickle.get(guild_id, {})
         text_channel_id = guild_settings.get("text_channel", "未設定")
 
-        # 各スコープのスタイルIDを取得
-        user_style_id = voice_config.config_pickle.get(
-            user_id, guild_settings.get("user_default", USER_DEFAULT_STYLE_ID)
-        )
-        announcement_style_id = guild_settings.get(
-            "announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID
-        )
-        user_default_style_id = guild_settings.get(
-            "user_default", USER_DEFAULT_STYLE_ID
-        )
-
-        # 各スコープのキャラクターとスタイルの詳細を取得
-        user_speaker_name, user_style_name = voice_config.get_style_details(
-            user_style_id
-        )
-        user_character_id, user_display_name = get_character_info(user_speaker_name)
-
-        (
-            announcement_speaker_name,
-            announcement_style_name,
-        ) = voice_config.get_style_details(announcement_style_id)
-        announcement_character_id, announcement_display_name = get_character_info(
-            announcement_speaker_name
-        )
-
-        (
-            user_default_speaker_name,
-            user_default_style_name,
-        ) = voice_config.get_style_details(user_default_style_id)
-        user_default_character_id, user_default_display_name = get_character_info(
-            user_default_speaker_name
-        )
-
-        # 設定の詳細を表示するメッセージを作成
-        info_message = (
-            f"テキストチャンネル: <#{text_channel_id}>\n"
-            f"{interaction.user.display_name}さん専用の読み上げ音声: [{user_display_name}] - {user_style_name}\n"
-            f"入退出時のアナウンス音声: [{announcement_display_name}] - {announcement_style_name}\n"
-            f"未設定ユーザーの読み上げ音声: [{user_default_display_name}] - {user_default_style_name}\n"
+        style_ids = get_style_ids(guild_id, interaction.user.id, voice_config)
+        speaker_details = get_speaker_details(voice_config, *style_ids)
+        info_message = create_info_message(
+            interaction, text_channel_id, speaker_details
         )
 
         # ユーザーに設定の詳細を表示
