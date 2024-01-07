@@ -9,20 +9,17 @@ from settings import (
     USER_DEFAULT_STYLE_ID,
     ANNOUNCEMENT_DEFAULT_STYLE_ID,
 )
-from utils import (
-    get_character_info,
-    config_pickle,
-    save_style_settings,
-    get_style_details,
-    speakers,
-    update_style_setting,
-    validate_style_id,
-)
+from utils import VoiceSynthConfig, get_character_info
+from voice import VoiceSynthServer
+from discord.ext import commands
+
 
 logging.basicConfig(level=logging.DEBUG)
 
 
-def setup_commands(server, bot):
+def setup_commands(
+    server: VoiceSynthServer, bot: commands.Bot, voice_config: VoiceSynthConfig
+):
     # ボットをボイスチャンネルから切断するコマンド
     @bot.tree.command(
         name="leave", guilds=APPROVED_GUILD_OBJECTS, description="ボットをボイスチャンネルから切断します。"
@@ -38,8 +35,8 @@ def setup_commands(server, bot):
         await server.clear_playback_queue(guild_id)
 
         # テキストチャンネル設定を削除
-        if "text_channel" in config_pickle.get(guild_id, {}):
-            del config_pickle[guild_id]["text_channel"]
+        if "text_channel" in voice_config.config_pickle.get(guild_id, {}):
+            del voice_config.config_pickle[guild_id]["text_channel"]
 
         # ボイスクライアントを切断
         await interaction.guild.voice_client.disconnect()
@@ -183,13 +180,15 @@ def setup_commands(server, bot):
                     style_id,
                 ):
                     # スタイル変更をここで処理
-                    valid, speaker_name, style_name = validate_style_id(style_id)
+                    valid, speaker_name, style_name = voice_config.validate_style_id(
+                        style_id
+                    )
                     if not valid:
                         await interaction.response.edit_message(
                             f"スタイルID {style_id} は無効です。`/list`で有効なIDを確認し、正しいIDを入力してください。",
                             view=self,
                         )
-                    update_style_setting(
+                    voice_config.update_style_setting(
                         interaction.guild.id,
                         interaction.user.id,
                         style_id,
@@ -218,16 +217,20 @@ def setup_commands(server, bot):
     async def initiate_speaker_paging(interaction: discord.Interaction, voice_scope):
         voice_scope_description = get_voice_scope_description(interaction)
         # 初期ページングビューを作成
-        view = PagingView(speakers, voice_scope)
+        view = PagingView(voice_config.speakers, voice_scope)
         # 最初の話者を表示
-        speaker_name = speakers[0]["name"] if speakers else "利用可能な話者がいません"
-        content = f"矢印ボタンで使用するキャラクターを選択し、スタイルを選んでください：\nページ 1 / {len(speakers)}\n"
+        speaker_name = (
+            voice_config.speakers[0]["name"]
+            if voice_config.speakers
+            else "利用可能な話者がいません"
+        )
+        content = f"矢印ボタンで使用するキャラクターを選択し、スタイルを選んでください：\nページ 1 / {len(voice_config.speakers)}\n"
         speaker_character_id, speaker_display_name = get_character_info(speaker_name)
         speaker_url = f"{DORMITORY_URL_BASE}/{speaker_character_id}/"
 
         content += f"[{speaker_display_name}]({speaker_url})"
         # 最初の話者の各スタイルに対応するボタンを追加
-        for style in speakers[0]["styles"]:  # 'styles'は各話者のスタイル辞書のリストと仮定
+        for style in voice_config.speakers[0]["styles"]:  # 'styles'は各話者のスタイル辞書のリストと仮定
             style_button = discord.ui.Button(
                 label=style["name"], style=discord.ButtonStyle.secondary
             )
@@ -247,13 +250,15 @@ def setup_commands(server, bot):
                 style_id=style["id"],
             ):
                 # スタイル変更をここで処理
-                valid, speaker_name, style_name = validate_style_id(style_id)
+                valid, speaker_name, style_name = voice_config.validate_style_id(
+                    style_id
+                )
                 if not valid:
                     await interaction.response.edit_message(
                         f"スタイルID {style_id} は無効です。`/list`で有効なIDを確認し、正しいIDを入力してください。",
                         view=view,
                     )
-                update_style_setting(
+                voice_config.update_style_setting(
                     interaction.guild.id, interaction.user.id, style_id, voice_scope
                 )
                 speaker_character_id, speaker_display_name = get_character_info(
@@ -286,11 +291,11 @@ def setup_commands(server, bot):
         user_id = interaction.user.id
 
         # サーバーの設定を取得
-        guild_settings = config_pickle.get(guild_id, {})
+        guild_settings = voice_config.config_pickle.get(guild_id, {})
         text_channel_id = guild_settings.get("text_channel", "未設定")
 
         # 各スコープのスタイルIDを取得
-        user_style_id = config_pickle.get(
+        user_style_id = voice_config.config_pickle.get(
             user_id, guild_settings.get("user_default", USER_DEFAULT_STYLE_ID)
         )
         announcement_style_id = guild_settings.get(
@@ -301,19 +306,23 @@ def setup_commands(server, bot):
         )
 
         # 各スコープのキャラクターとスタイルの詳細を取得
-        user_speaker_name, user_style_name = get_style_details(user_style_id)
+        user_speaker_name, user_style_name = voice_config.get_style_details(
+            user_style_id
+        )
         user_character_id, user_display_name = get_character_info(user_speaker_name)
 
-        announcement_speaker_name, announcement_style_name = get_style_details(
-            announcement_style_id
-        )
+        (
+            announcement_speaker_name,
+            announcement_style_name,
+        ) = voice_config.get_style_details(announcement_style_id)
         announcement_character_id, announcement_display_name = get_character_info(
             announcement_speaker_name
         )
 
-        user_default_speaker_name, user_default_style_name = get_style_details(
-            user_default_style_id
-        )
+        (
+            user_default_speaker_name,
+            user_default_style_name,
+        ) = voice_config.get_style_details(user_default_style_id)
         user_default_character_id, user_default_display_name = get_character_info(
             user_default_speaker_name
         )
@@ -329,6 +338,65 @@ def setup_commands(server, bot):
         # ユーザーに設定の詳細を表示
         await interaction.response.send_message(info_message, ephemeral=True)
 
+    async def welcome_user(server, interaction, voice_client):
+        # 接続成功時の処理
+        # 接続メッセージの読み上げ
+        welcome_voice = "読み上げを開始します。"
+
+        guild_id = interaction.guild_id
+        user_id = interaction.user.id
+
+        # サーバーの設定を取得
+        guild_settings = voice_config.config_pickle.get(guild_id, {})
+        text_channel_id = guild_settings.get("text_channel", "未設定")
+
+        # 各スコープのスタイルIDを取得
+        user_style_id = voice_config.config_pickle.get(
+            user_id, guild_settings.get("user_default", USER_DEFAULT_STYLE_ID)
+        )
+        announcement_style_id = guild_settings.get(
+            "announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID
+        )
+        user_default_style_id = guild_settings.get(
+            "user_default", USER_DEFAULT_STYLE_ID
+        )
+
+        # 各スコープのキャラクターとスタイルの詳細を取得
+        user_speaker_name, user_style_name = voice_config.get_style_details(
+            user_style_id
+        )
+        user_character_id, user_display_name = get_character_info(user_speaker_name)
+
+        (
+            announcement_speaker_name,
+            announcement_style_name,
+        ) = voice_config.get_style_details(announcement_style_id)
+        announcement_character_id, announcement_display_name = get_character_info(
+            announcement_speaker_name
+        )
+
+        (
+            user_default_speaker_name,
+            user_default_style_name,
+        ) = voice_config.get_style_details(user_default_style_id)
+        user_default_character_id, user_default_display_name = get_character_info(
+            user_default_speaker_name
+        )
+
+        # 設定の詳細を表示するメッセージを作成
+        info_message = (
+            f"テキストチャンネル: <#{text_channel_id}>\n"
+            f"{interaction.user.display_name}さん専用の読み上げ音声: [{user_display_name}] - {user_style_name}\n"
+            f"入退出時のアナウンス音声: [{announcement_display_name}] - {announcement_style_name}\n"
+            f"未設定ユーザーの読み上げ音声: [{user_default_display_name}] - {user_default_style_name}\n"
+        )
+
+        # メッセージとスタイルIDをキューに追加し、読み上げ
+        await server.text_to_speech(
+            voice_client, welcome_voice, announcement_style_id, guild_id
+        )
+        await interaction.followup.send(info_message)
+
 
 async def connect_to_voice_channel(interaction):
     try:
@@ -340,57 +408,3 @@ async def connect_to_voice_channel(interaction):
     except Exception as e:
         logging.error(f"ボイスチャンネル接続エラー: {e}")
         raise
-
-
-async def welcome_user(server, interaction, voice_client):
-    # 接続成功時の処理
-    # 接続メッセージの読み上げ
-    welcome_voice = "読み上げを開始します。"
-
-    guild_id = interaction.guild_id
-    user_id = interaction.user.id
-
-    # サーバーの設定を取得
-    guild_settings = config_pickle.get(guild_id, {})
-    text_channel_id = guild_settings.get("text_channel", "未設定")
-
-    # 各スコープのスタイルIDを取得
-    user_style_id = config_pickle.get(
-        user_id, guild_settings.get("user_default", USER_DEFAULT_STYLE_ID)
-    )
-    announcement_style_id = guild_settings.get(
-        "announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID
-    )
-    user_default_style_id = guild_settings.get("user_default", USER_DEFAULT_STYLE_ID)
-
-    # 各スコープのキャラクターとスタイルの詳細を取得
-    user_speaker_name, user_style_name = get_style_details(user_style_id)
-    user_character_id, user_display_name = get_character_info(user_speaker_name)
-
-    announcement_speaker_name, announcement_style_name = get_style_details(
-        announcement_style_id
-    )
-    announcement_character_id, announcement_display_name = get_character_info(
-        announcement_speaker_name
-    )
-
-    user_default_speaker_name, user_default_style_name = get_style_details(
-        user_default_style_id
-    )
-    user_default_character_id, user_default_display_name = get_character_info(
-        user_default_speaker_name
-    )
-
-    # 設定の詳細を表示するメッセージを作成
-    info_message = (
-        f"テキストチャンネル: <#{text_channel_id}>\n"
-        f"{interaction.user.display_name}さん専用の読み上げ音声: [{user_display_name}] - {user_style_name}\n"
-        f"入退出時のアナウンス音声: [{announcement_display_name}] - {announcement_style_name}\n"
-        f"未設定ユーザーの読み上げ音声: [{user_default_display_name}] - {user_default_style_name}\n"
-    )
-
-    # メッセージとスタイルIDをキューに追加し、読み上げ
-    await server.text_to_speech(
-        voice_client, welcome_voice, announcement_style_id, guild_id
-    )
-    await interaction.followup.send(info_message)

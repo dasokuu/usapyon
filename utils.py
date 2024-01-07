@@ -17,8 +17,8 @@ import emoji  # 絵文字の判定を行うためのライブラリ
 
 class VoiceSynthConfig:
     def __init__(self):
-        self.speakers = self.fetch_json(SPEAKERS_URL)
-        self.config_pickle = self.load_style_settings()
+        self.speakers = fetch_json(SPEAKERS_URL)
+        self.config_pickle = load_style_settings()
 
     def validate_style_id(self, style_id):
         valid_style_ids = [

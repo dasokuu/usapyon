@@ -2,7 +2,7 @@ import logging
 import discord
 from discord.ext import commands
 import os
-from utils import handle_message, handle_voice_state_update
+from utils import VoiceSynthConfig
 from bot_commands import setup_commands
 from settings import APPROVED_GUILD_IDS_INT, BOT_PREFIX, GAME_NAME
 from voice import VoiceSynthServer
@@ -11,9 +11,10 @@ from voice import VoiceSynthServer
 if __name__ == "__main__":
     intents = discord.Intents.default()
     intents.message_content = True
+    voice_config = VoiceSynthConfig()
     bot = commands.Bot(command_prefix=BOT_PREFIX, intents=intents)
     server = VoiceSynthServer()
-    setup_commands(server, bot)
+    setup_commands(server, bot, voice_config)
 
 
     @bot.event
@@ -41,10 +42,10 @@ if __name__ == "__main__":
         if message.author == bot.user:
             return
         await bot.process_commands(message)
-        await handle_message(server, bot, message)
+        await voice_config.handle_message(server, bot, message)
 
     @bot.event
     async def on_voice_state_update(member, before, after):
-        await handle_voice_state_update(server, bot, member, before, after)
+        await voice_config.handle_voice_state_update(server, bot, member, before, after)
 
     bot.run(os.getenv("VOICECHATLOIDTEST_TOKEN"))
