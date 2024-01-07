@@ -99,6 +99,10 @@ class VoiceSynthServer:
                 voice_data = await self.synthesis(style_id, query_data)
                 if voice_data:
                     await self._play_audio(voice_client, voice_data)
+                else:
+                    logging.error(f"Failed to synthesize audio for: {line}")
+            else:
+                logging.error(f"Failed to get audio query for: {line}")
         except Exception as e:
             logging.error(f"Error in speak_line: {e}")
 
