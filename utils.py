@@ -16,7 +16,6 @@ from settings import (
 import emoji  # 絵文字の判定を行うためのライブラリ
 
 
-current_voice_client = None
 
 
 def get_character_info(speaker_name):
@@ -174,9 +173,6 @@ async def handle_voice_state_update(server, bot, member, before, after):
     if after.channel is None and member.guild.voice_client:
         # ボイスチャンネルにまだ誰かいるか確認します。
         if not any(not user.bot for user in before.channel.members):
-            # 現在の読み上げを停止する
-            if current_voice_client and current_voice_client.is_playing():
-                current_voice_client.stop()
 
             # キューをクリアする
             await server.clear_playback_queue(guild_id)
