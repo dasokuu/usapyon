@@ -258,3 +258,90 @@ async def replace_content(text, message):
     text = emoji.demojize(text, language="ja")
 
     return text
+
+
+
+async def welcome_user(server, interaction, voice_client, voice_config):
+    guild_id, text_channel_id = get_and_update_guild_settings(interaction, voice_config)
+    style_ids = get_style_ids(guild_id, interaction.user.id, voice_config)
+    speaker_details = get_speaker_details(voice_config, *style_ids)
+    info_message = create_info_message(interaction, text_channel_id, speaker_details)
+    await execute_welcome_message(
+        server, voice_client, guild_id, style_ids[1], info_message, interaction
+    )
+
+
+def get_and_update_guild_settings(interaction, voice_config):
+    guild_id = interaction.guild_id
+    text_channel_id = interaction.channel_id
+    # Updated to clarify the intention and reduce complexity
+    guild_settings = voice_config.config_pickle.setdefault(guild_id, {})
+    guild_settings["text_channel"] = text_channel_id
+    voice_config.save_style_settings()
+    return guild_id, text_channel_id
+
+
+def get_style_ids(guild_id, user_id, voice_config):
+    guild_settings = voice_config.config_pickle.get(guild_id, {})
+    user_style_id = voice_config.config_pickle.get(
+        user_id, guild_settings.get("user_default", USER_DEFAULT_STYLE_ID)
+    )
+    announcement_style_id = guild_settings.get(
+        "announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID
+    )
+    user_default_style_id = guild_settings.get("user_default", USER_DEFAULT_STYLE_ID)
+    return user_style_id, announcement_style_id, user_default_style_id
+
+
+def get_speaker_details(
+    voice_config, user_style_id, announcement_style_id, user_default_style_id
+):
+    user_speaker_name, user_style_name = voice_config.get_style_details(user_style_id)
+    _, user_display_name = get_character_info(user_speaker_name)  # display_nameを取得
+
+    announcement_speaker_name, announcement_style_name = voice_config.get_style_details(
+        announcement_style_id
+    )
+    _, announcement_display_name = get_character_info(
+        announcement_speaker_name
+    )  # display_nameを取得
+
+    user_default_speaker_name, user_default_style_name = voice_config.get_style_details(
+        user_default_style_id
+    )
+    _, user_default_display_name = get_character_info(
+        user_default_speaker_name
+    )  # display_nameを取得
+
+    return {
+        "user": (user_display_name, user_style_name),
+        "announcement": (announcement_display_name, announcement_style_name),
+        "default": (user_default_display_name, user_default_style_name),
+    }
+
+
+def create_info_message(interaction, text_channel_id, speaker_details):
+    user_display_name = interaction.user.display_name
+    user, announcement, default = (
+        speaker_details["user"],
+        speaker_details["announcement"],
+        speaker_details["default"],
+    )
+    return (
+        f"テキストチャンネル: <#{text_channel_id}>\n"
+        f"{user_display_name}さん専用の読み上げ音声: [{user[0]}] - {user[1]}\n"
+        f"入退出時のアナウンス音声: [{announcement[0]}] - {announcement[1]}\n"
+        f"未設定ユーザーの読み上げ音声: [{default[0]}] - {default[1]}\n"
+    )
+
+
+async def execute_welcome_message(
+    server, voice_client, guild_id, style_id, message, interaction
+):
+    welcome_voice = "読み上げを開始します。"
+    try:
+        await server.text_to_speech(voice_client, welcome_voice, style_id, guild_id)
+        await interaction.followup.send(message)
+    except Exception as e:
+        logging.error(f"Welcome message execution failed: {e}")
+        await interaction.followup.send("エラーが発生しました。詳細はログを参照してください。")
