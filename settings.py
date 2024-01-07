@@ -1,3 +1,4 @@
+import os
 import discord
 
 BOT_PREFIX = "!"
@@ -62,3 +63,4 @@ ERROR_MESSAGES = {
     "connection": "ボイスチャンネルに接続できませんでした。ユーザーがボイスチャンネルにいることを確認してください。",
     "invalid_style": "選択したスタイルIDが無効です。",
 }
+TOKEN = os.getenv("VOICECHATLOIDTEST_TOKEN")
