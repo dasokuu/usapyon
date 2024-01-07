@@ -347,7 +347,7 @@ def setup_commands(
 
         # サーバーの設定を取得
         guild_settings = voice_config.config_pickle.get(guild_id, {})
-        text_channel_id = interaction.text_channel.id
+        text_channel_id = interaction.channel_id
         # サーバー設定が存在しない場合は初期化
         if guild_id not in voice_config.config_pickle:
             voice_config.config_pickle[guild_id] = {"text_channel": text_channel_id}
