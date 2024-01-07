@@ -17,7 +17,7 @@ def setup_config_command(bot, voice_config: VoiceSynthConfig):
             "設定対象を選んでください：", view=view, ephemeral=True
         )
 
-    def get_voice_scope_description(interaction):
+    def get_voice_scope_description(interaction: discord.Interaction):
         return {
             "user": f"{interaction.user.display_name}さんの読み上げ音声",
             "announcement": "入退出時のアナウンス音声",
