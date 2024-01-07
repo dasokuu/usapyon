@@ -214,9 +214,14 @@ def fetch_json(url):
         response = requests.get(url)
         response.raise_for_status()
         return response.json()
-    except requests.RequestException as err:
-        logging.error(f"Request error: {err}")
-        return None  # Noneを返すことで、呼び出し元でエラーハンドリングを行えるようにする
+    except requests.ConnectionError as e:
+        logging.error(f"Connection error: {e}")
+    except requests.Timeout as e:
+        logging.error(f"Timeout error: {e}")
+    except requests.RequestException as e:
+        logging.error(f"General Request error: {e}")
+    return None
+
 
 
 def load_style_settings():
