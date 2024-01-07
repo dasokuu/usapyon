@@ -260,7 +260,6 @@ async def replace_content(text, message):
     return text
 
 
-
 async def welcome_user(server, interaction, voice_client, voice_config):
     guild_id, text_channel_id = get_and_update_guild_settings(interaction, voice_config)
     style_ids = get_style_ids(guild_id, interaction.user.id, voice_config)

@@ -7,7 +7,14 @@ from settings import (
     APPROVED_GUILD_OBJECTS,
     ERROR_MESSAGES,
 )
-from utils import VoiceSynthConfig, create_info_message, get_character_info, get_speaker_details, get_style_ids, welcome_user
+from utils import (
+    VoiceSynthConfig,
+    create_info_message,
+    get_character_info,
+    get_speaker_details,
+    get_style_ids,
+    welcome_user,
+)
 from voice import VoiceSynthServer
 from discord.ext import commands
 
@@ -81,15 +88,19 @@ def setup_config_command(bot, voice_config):
     def create_config_view(interaction, voice_scope_description):
         view = View()
         for voice_scope, label in voice_scope_description.items():
-            button = Button(
-                style=discord.ButtonStyle.primary
-                if voice_scope == "user"
-                else discord.ButtonStyle.secondary,
-                label=label,
-            )
-            button.callback = create_button_callback(interaction, button, voice_scope)
+            button = create_scope_button(interaction, label, voice_scope)
             view.add_item(button)
         return view
+
+    def create_scope_button(interaction, label, voice_scope):
+        button = Button(
+            style=discord.ButtonStyle.primary
+            if voice_scope == "user"
+            else discord.ButtonStyle.secondary,
+            label=label,
+        )
+        button.callback = create_button_callback(interaction, button, voice_scope)
+        return button
 
     def create_button_callback(interaction, button, voice_scope):
         async def on_button_click(interaction: discord.Interaction):
