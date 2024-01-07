@@ -18,20 +18,11 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 async def welcome_user(server, interaction, voice_client, voice_config):
-    # サーバー設定を取得し更新
     guild_id, text_channel_id = get_and_update_guild_settings(interaction, voice_config)
-
-    # スタイルIDを取得
-    user_style_id, announcement_style_id, user_default_style_id = get_style_ids(guild_id, interaction.user.id, voice_config)
-
-    # スピーカー情報を取得
-    speaker_details = get_speaker_details(voice_config, user_style_id, announcement_style_id, user_default_style_id)
-
-    # 情報メッセージを作成
+    style_ids = get_style_ids(guild_id, interaction.user.id, voice_config)
+    speaker_details = get_speaker_details(voice_config, *style_ids)
     info_message = create_info_message(interaction, text_channel_id, speaker_details)
-
-    # メッセージとスタイルIDをキューに追加し、読み上げ
-    await execute_welcome_message(server, voice_client, guild_id, announcement_style_id, info_message, interaction)
+    await execute_welcome_message(server, voice_client, guild_id, style_ids[1], info_message, interaction)
 
 
 def get_and_update_guild_settings(interaction, voice_config):
@@ -78,16 +69,14 @@ def create_info_message(interaction, text_channel_id, speaker_details):
     )
 
 
-# リファクタリングされた execute_welcome_message 関数
 async def execute_welcome_message(server, voice_client, guild_id, style_id, message, interaction):
     welcome_voice = "読み上げを開始します。"
-    # エラー処理の追加
     try:
         await server.text_to_speech(voice_client, welcome_voice, style_id, guild_id)
         await interaction.followup.send(message)
     except Exception as e:
         logging.error(f"Welcome message execution failed: {e}")
-        await interaction.followup.send("エラーが発生しました。")
+        await interaction.followup.send("エラーが発生しました。詳細はログを参照してください。")
 
 
 
