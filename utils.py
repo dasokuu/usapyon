@@ -7,7 +7,6 @@ import discord
 from settings import (
     BOT_PREFIX,
     CHARACTORS_INFO,
-    DORMITORY_URL_BASE,
     USER_DEFAULT_STYLE_ID,
     ANNOUNCEMENT_DEFAULT_STYLE_ID,
     SPEAKERS_URL,
@@ -16,6 +15,174 @@ from settings import (
 import emoji  # 絵文字の判定を行うためのライブラリ
 
 
+class VoiceSynthConfig:
+    def __init__(self):
+        self.speakers = self.fetch_json(SPEAKERS_URL)
+        self.config_pickle = self.load_style_settings()
+
+    def validate_style_id(self, style_id):
+        valid_style_ids = [
+            style["id"] for speaker in self.speakers for style in speaker["styles"]
+        ]
+        if style_id in valid_style_ids:
+            speaker_name, style_name = self.get_style_details(style_id)
+            return True, speaker_name, style_name
+        return False, None, None
+
+    def get_style_details(self, style_id, default_name="デフォルト"):
+        """スタイルIDに対応するスピーカー名とスタイル名を返します。"""
+        for speaker in self.speakers:
+            for style in speaker["styles"]:
+                if style["id"] == style_id:
+                    speaker_name = speaker["name"]
+                    return (speaker_name, style["name"])
+        return (default_name, default_name)
+
+    def save_style_settings(self):
+        """スタイル設定を保存します。"""
+        with open(CONFIG_PICKLE_FILE, "wb") as f:  # wbモードで開く
+            pickle.dump(self.config_pickle, f)  # config_pickleをpickleで保存
+
+    async def handle_voice_state_update(self, server, bot, member, before, after):
+        guild_id = member.guild.id
+        # ボット自身の状態変更を無視
+        if member == bot.user:
+            return
+
+        # ボットが接続しているボイスチャンネルを取得
+        voice_client = member.guild.voice_client
+
+        # ボットがボイスチャンネルに接続していなければ何もしない
+        if not voice_client or not voice_client.channel:
+            return
+
+        if (
+            before.channel != voice_client.channel
+            and after.channel == voice_client.channel
+        ):
+            announcement_voice = f"{member.display_name}さんが入室しました。"
+            # ユーザーのスタイルIDを取得
+            user_style_id = self.config_pickle.get(
+                member.id,
+                self.config_pickle[guild_id].get("user_default", USER_DEFAULT_STYLE_ID),
+            )
+            user_speaker_name, user_style_name = self.get_style_details(user_style_id)
+            user_character_id, user_display_name = get_character_info(user_speaker_name)
+            # user_url = f"{DORMITORY_URL_BASE}//{user_character_id}/"
+            announcement_message = f"{member.display_name}さん専用の読み上げ音声: [{user_display_name}] - {user_style_name}"
+
+            # テキストチャンネルを取得してメッセージを送信
+            text_channel_id = self.config_pickle[guild_id].get("text_channel")
+            if text_channel_id:
+                text_channel = bot.get_channel(int(text_channel_id))
+                if text_channel:
+                    await text_channel.send(announcement_message)
+            announcement_style_id = self.config_pickle[guild_id].get(
+                "announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID
+            )
+            await server.text_to_speech(
+                voice_client, announcement_voice, announcement_style_id, guild_id
+            )
+
+        # ボイスチャンネルから切断したとき
+        elif (
+            before.channel == voice_client.channel
+            and after.channel != voice_client.channel
+        ):
+            announcement_voice = f"{member.display_name}さんが退室しました。"
+            announcement_style_id = self.config_pickle.get(member.guild.id, {}).get(
+                "announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID
+            )
+            await server.text_to_speech(
+                voice_client, announcement_voice, announcement_style_id, guild_id
+            )
+
+        # ボイスチャンネルに誰もいなくなったら自動的に切断します。
+        if after.channel is None and member.guild.voice_client:
+            # ボイスチャンネルにまだ誰かいるか確認します。
+            if not any(not user.bot for user in before.channel.members):
+                # キューをクリアする
+                await server.clear_playback_queue(guild_id)
+                if (
+                    guild_id in self.config_pickle
+                    and "text_channel" in self.config_pickle[guild_id]
+                ):
+                    # テキストチャンネルIDの設定をクリア
+                    del self.config_pickle[guild_id]["text_channel"]
+                    self.save_style_settings()  # 変更を保存
+                    logging.info(f"テキストチャンネルの設定をクリアしました: サーバーID {guild_id}")
+                await member.guild.voice_client.disconnect()
+
+    async def handle_message(self, server, bot, message):
+        guild_id = message.guild.id
+
+        # 早期リターンを利用してネストを減らす
+        if not self.should_process_message(message, guild_id):
+            return
+
+        # メッセージ処理
+        try:
+            message_content = await replace_content(message.content, message)
+            if message_content.strip():
+                await server.text_to_speech(
+                    message.guild.voice_client,
+                    message_content,
+                    self.get_style_id(message.author.id, guild_id),
+                    guild_id,
+                )
+            if message.attachments:
+                await self.announce_file_post(server, message)
+        except Exception as e:
+            logging.error(f"Error in handle_message: {e}")  # ロギング改善の余地あり
+
+    async def announce_file_post(self, server, message):
+        """ファイル投稿をアナウンスします。"""
+        file_message = "ファイルを投稿しました。"
+        guild_id = message.guild.id
+        await server.text_to_speech(
+            message.guild.voice_client,
+            file_message,
+            self.get_style_id(message.author.id, guild_id),
+            guild_id,
+        )
+
+    def should_process_message(self, message, guild_id):
+        """メッセージが処理対象かどうかを判断します。"""
+        voice_client = message.guild.voice_client
+        allowed_text_channel_id = self.config_pickle.get(guild_id, {}).get(
+            "text_channel"
+        )
+        return (
+            voice_client
+            and voice_client.channel
+            and message.author.voice
+            and message.author.voice.channel == voice_client.channel
+            and not message.content.startswith(BOT_PREFIX)
+            and message.channel.id == allowed_text_channel_id
+        )
+
+    def get_style_id(self, user_id, guild_id):
+        """ユーザーまたはギルドのスタイルIDを取得します。"""
+        return self.config_pickle.get(
+            user_id,
+            self.config_pickle[guild_id].get("user_default", USER_DEFAULT_STYLE_ID),
+        )
+
+    def update_style_setting(self, guild_id, user_id, style_id, voice_scope):
+        # Ensure the guild_id exists in the config_pickle
+        if guild_id not in self.config_pickle:
+            self.config_pickle[guild_id] = {}
+
+        # Ensure the specific voice_scope exists for this guild
+        if voice_scope not in self.config_pickle[guild_id]:
+            self.config_pickle[guild_id][voice_scope] = {}
+        if voice_scope == "user_default":
+            self.config_pickle[guild_id]["user_default"] = style_id
+        elif voice_scope == "announcement":
+            self.config_pickle[guild_id]["announcement"] = style_id
+        elif voice_scope == "user":
+            self.config_pickle[user_id] = style_id
+        self.save_style_settings()
 
 
 def get_character_info(speaker_name):
@@ -31,16 +198,6 @@ def get_character_info(speaker_name):
     return character_id, display_name
 
 
-def validate_style_id(style_id):
-    valid_style_ids = [
-        style["id"] for speaker in speakers for style in speaker["styles"]
-    ]
-    if style_id in valid_style_ids:
-        speaker_name, style_name = get_style_details(style_id)
-        return True, speaker_name, style_name
-    return False, None, None
-
-
 def fetch_json(url):
     try:
         response = requests.get(url)
@@ -49,22 +206,6 @@ def fetch_json(url):
     except requests.RequestException as err:
         logging.error(f"Request error: {err}")
         return None
-
-
-def get_style_details(style_id, default_name="デフォルト"):
-    """スタイルIDに対応するスピーカー名とスタイル名を返します。"""
-    for speaker in speakers:
-        for style in speaker["styles"]:
-            if style["id"] == style_id:
-                speaker_name = speaker["name"]
-                return (speaker_name, style["name"])
-    return (default_name, default_name)
-
-
-def save_style_settings():
-    """スタイル設定を保存します。"""
-    with open(CONFIG_PICKLE_FILE, "wb") as f:  # wbモードで開く
-        pickle.dump(config_pickle, f)  # config_pickleをpickleで保存
 
 
 def load_style_settings():
@@ -117,146 +258,3 @@ async def replace_content(text, message):
     text = emoji.demojize(text, language="ja")
 
     return text
-
-
-async def handle_voice_state_update(server, bot, member, before, after):
-    guild_id = member.guild.id
-    # ボット自身の状態変更を無視
-    if member == bot.user:
-        return
-
-    # ボットが接続しているボイスチャンネルを取得
-    voice_client = member.guild.voice_client
-
-    # ボットがボイスチャンネルに接続していなければ何もしない
-    if not voice_client or not voice_client.channel:
-        return
-
-    if before.channel != voice_client.channel and after.channel == voice_client.channel:
-        announcement_voice = f"{member.display_name}さんが入室しました。"
-        # ユーザーのスタイルIDを取得
-        user_style_id = config_pickle.get(
-            member.id,
-            config_pickle[guild_id].get("user_default", USER_DEFAULT_STYLE_ID),
-        )
-        user_speaker_name, user_style_name = get_style_details(user_style_id)
-        user_character_id, user_display_name = get_character_info(user_speaker_name)
-        # user_url = f"{DORMITORY_URL_BASE}//{user_character_id}/"
-        announcement_message = f"{member.display_name}さん専用の読み上げ音声: [{user_display_name}] - {user_style_name}"
-
-        # テキストチャンネルを取得してメッセージを送信
-        text_channel_id = config_pickle[guild_id].get("text_channel")
-        if text_channel_id:
-            text_channel = bot.get_channel(int(text_channel_id))
-            if text_channel:
-                await text_channel.send(announcement_message)
-        announcement_style_id = config_pickle[guild_id].get(
-            "announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID
-        )
-        await server.text_to_speech(
-            voice_client, announcement_voice, announcement_style_id, guild_id
-        )
-
-    # ボイスチャンネルから切断したとき
-    elif (
-        before.channel == voice_client.channel and after.channel != voice_client.channel
-    ):
-        announcement_voice = f"{member.display_name}さんが退室しました。"
-        announcement_style_id = config_pickle.get(member.guild.id, {}).get(
-            "announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID
-        )
-        await server.text_to_speech(
-            voice_client, announcement_voice, announcement_style_id, guild_id
-        )
-
-    # ボイスチャンネルに誰もいなくなったら自動的に切断します。
-    if after.channel is None and member.guild.voice_client:
-        # ボイスチャンネルにまだ誰かいるか確認します。
-        if not any(not user.bot for user in before.channel.members):
-
-            # キューをクリアする
-            await server.clear_playback_queue(guild_id)
-            if guild_id in config_pickle and "text_channel" in config_pickle[guild_id]:
-                # テキストチャンネルIDの設定をクリア
-                del config_pickle[guild_id]["text_channel"]
-                save_style_settings()  # 変更を保存
-                logging.info(f"テキストチャンネルの設定をクリアしました: サーバーID {guild_id}")
-            await member.guild.voice_client.disconnect()
-
-
-speakers = fetch_json(SPEAKERS_URL)  # URL is now from settings
-config_pickle = load_style_settings()
-
-
-async def handle_message(server, bot, message):
-    guild_id = message.guild.id
-
-    # 早期リターンを利用してネストを減らす
-    if not should_process_message(message, guild_id):
-        return
-
-    # メッセージ処理
-    try:
-        message_content = await replace_content(message.content, message)
-        if message_content.strip():
-            await server.text_to_speech(
-                message.guild.voice_client,
-                message_content,
-                get_style_id(message.author.id, guild_id),
-                guild_id,
-            )
-        if message.attachments:
-            await announce_file_post(server, message)
-    except Exception as e:
-        logging.error(f"Error in handle_message: {e}")  # ロギング改善の余地あり
-
-
-def should_process_message(message, guild_id):
-    """メッセージが処理対象かどうかを判断します。"""
-    voice_client = message.guild.voice_client
-    allowed_text_channel_id = config_pickle.get(guild_id, {}).get("text_channel")
-    return (
-        voice_client
-        and voice_client.channel
-        and message.author.voice
-        and message.author.voice.channel == voice_client.channel
-        and not message.content.startswith(BOT_PREFIX)
-        and message.channel.id == allowed_text_channel_id
-    )
-
-
-async def announce_file_post(server, message):
-    """ファイル投稿をアナウンスします。"""
-    file_message = "ファイルを投稿しました。"
-    guild_id = message.guild.id
-    await server.text_to_speech(
-        message.guild.voice_client,
-        file_message,
-        get_style_id(message.author.id, guild_id),
-        guild_id,
-    )
-
-
-def get_style_id(user_id, guild_id):
-    """ユーザーまたはギルドのスタイルIDを取得します。"""
-    return config_pickle.get(
-        user_id,
-        config_pickle[guild_id].get("user_default", USER_DEFAULT_STYLE_ID),
-    )
-
-
-def update_style_setting(guild_id, user_id, style_id, voice_scope):
-    # Ensure the guild_id exists in the config_pickle
-    if guild_id not in config_pickle:
-        config_pickle[guild_id] = {}
-
-    # Ensure the specific voice_scope exists for this guild
-    if voice_scope not in config_pickle[guild_id]:
-        config_pickle[guild_id][voice_scope] = {}
-    if voice_scope == "user_default":
-        config_pickle[guild_id]["user_default"] = style_id
-    elif voice_scope == "announcement":
-        config_pickle[guild_id]["announcement"] = style_id
-    elif voice_scope == "user":
-        config_pickle[user_id] = style_id
-    save_style_settings()
