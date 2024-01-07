@@ -19,7 +19,7 @@ def setup_config_command(bot, voice_config):
 
     def get_voice_scope_description(interaction):
         return {
-            "user": f"{interaction.user.display_name}さん専用の読み上げ音声",
+            "user": f"{interaction.user.display_name}さんの読み上げ音声",
             "announcement": "入退出時のアナウンス音声",
             "user_default": "未設定ユーザーの読み上げ音声",
         }
@@ -81,7 +81,7 @@ def setup_config_command(bot, voice_config):
             self.voice_scope = voice_scope
             self.current_page = 0
 
-        @discord.ui.button(label="-5", style=discord.ButtonStyle.blurple)
+        @discord.ui.button(label="-5", style=discord.ButtonStyle.primary)
         async def five_back_button(
             self, interaction: discord.Interaction, button: discord.ui.Button
         ):
@@ -89,7 +89,7 @@ def setup_config_command(bot, voice_config):
             self.current_page = max(0, self.current_page - 5)
             await self.update_speaker_list(interaction)
 
-        @discord.ui.button(label="<", style=discord.ButtonStyle.blurple)
+        @discord.ui.button(label="<", style=discord.ButtonStyle.primary)
         async def previous_button(
             self, interaction: discord.Interaction, button: discord.ui.Button
         ):
@@ -99,7 +99,7 @@ def setup_config_command(bot, voice_config):
                 self.current_page = len(self.speakers) - 1
             await self.update_speaker_list(interaction)
 
-        @discord.ui.button(label=">", style=discord.ButtonStyle.blurple)
+        @discord.ui.button(label=">", style=discord.ButtonStyle.primary)
         async def next_button(
             self, interaction: discord.Interaction, button: discord.ui.Button
         ):
@@ -109,7 +109,7 @@ def setup_config_command(bot, voice_config):
                 self.current_page = 0
             await self.update_speaker_list(interaction)
 
-        @discord.ui.button(label="+5", style=discord.ButtonStyle.blurple)
+        @discord.ui.button(label="+5", style=discord.ButtonStyle.primary)
         async def five_forward_button(
             self, interaction: discord.Interaction, button: discord.ui.Button
         ):
@@ -118,7 +118,7 @@ def setup_config_command(bot, voice_config):
             await self.update_speaker_list(interaction)
 
         @discord.ui.button(
-            label="検索", style=discord.ButtonStyle.blurple, custom_id="search_speaker"
+            label="検索", style=discord.ButtonStyle.primary, custom_id="search_speaker"
         )
         async def go_button(
             self, interaction: discord.Interaction, button: discord.ui.Button

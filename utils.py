@@ -64,20 +64,20 @@ class VoiceSynthConfig:
             # ユーザーのスタイルIDを取得
             user_style_id = self.config_pickle.get(
                 member.id,
-                self.config_pickle[guild_id].get("user_default", USER_DEFAULT_STYLE_ID),
+                self.config_pickle.get(guild_id,{}).get("user_default", USER_DEFAULT_STYLE_ID),
             )
             user_speaker_name, user_style_name = self.get_style_details(user_style_id)
             user_character_id, user_display_name = get_character_info(user_speaker_name)
             # user_url = f"{DORMITORY_URL_BASE}//{user_character_id}/"
-            announcement_message = f"{member.display_name}さん専用の読み上げ音声: [{user_display_name}] - {user_style_name}"
+            announcement_message = f"{member.display_name}さんの読み上げ音声: [{user_display_name}] - {user_style_name}"
 
             # テキストチャンネルを取得してメッセージを送信
-            text_channel_id = self.config_pickle[guild_id].get("text_channel")
+            text_channel_id = self.config_pickle.get(guild_id,{}).get("text_channel")
             if text_channel_id:
                 text_channel = bot.get_channel(text_channel_id)
                 if text_channel:
                     await text_channel.send(announcement_message)
-            announcement_style_id = self.config_pickle[guild_id].get(
+            announcement_style_id = self.config_pickle.get(guild_id,{}).get(
                 "announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID
             )
             await server.text_to_speech(
@@ -105,7 +105,7 @@ class VoiceSynthConfig:
                 await server.clear_playback_queue(guild_id)
                 if (
                     guild_id in self.config_pickle
-                    and "text_channel" in self.config_pickle[guild_id]
+                    and "text_channel" in self.config_pickle.get(guild_id,{})
                 ):
                     # テキストチャンネルIDの設定をクリア
                     del self.config_pickle[guild_id]["text_channel"]
@@ -137,7 +137,7 @@ class VoiceSynthConfig:
 
     async def announce_file_post(self, server, message):
         """ファイル投稿をアナウンスします。"""
-        file_message = "ファイルを投稿しました。"
+        file_message = "ファイルが投稿されました。"
         guild_id = message.guild.id
         await server.text_to_speech(
             message.guild.voice_client,
@@ -165,7 +165,7 @@ class VoiceSynthConfig:
         """ユーザーまたはギルドのスタイルIDを取得します。"""
         return self.config_pickle.get(
             user_id,
-            self.config_pickle[guild_id].get("user_default", USER_DEFAULT_STYLE_ID),
+            self.config_pickle.get(guild_id,{}).get("user_default", USER_DEFAULT_STYLE_ID),
         )
 
     def update_style_setting(self, guild_id, user_id, style_id, voice_scope):
@@ -328,7 +328,7 @@ def create_info_message(interaction, text_channel_id, speaker_details):
     )
     return (
         f"テキストチャンネル: <#{text_channel_id}>\n"
-        f"{user_display_name}さん専用の読み上げ音声: [{user[0]}] - {user[1]}\n"
+        f"{user_display_name}さんの読み上げ音声: [{user[0]}] - {user[1]}\n"
         f"入退出時のアナウンス音声: [{announcement[0]}] - {announcement[1]}\n"
         f"未設定ユーザーの読み上げ音声: [{default[0]}] - {default[1]}\n"
     )
