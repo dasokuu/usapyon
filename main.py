@@ -4,7 +4,7 @@ import discord
 from discord.ext import commands
 from utils import VoiceSynthConfig
 from bot_commands import setup_commands
-from settings import APPROVED_GUILD_IDS_INT, BOT_PREFIX, GAME_NAME, TOKEN
+from settings import APPROVED_GUILD_IDS_INT, BotSettings, TOKEN
 from voice import VoiceSynthServer
 
 
@@ -12,7 +12,7 @@ if __name__ == "__main__":
     intents = discord.Intents.default()
     intents.message_content = True
     voice_config = VoiceSynthConfig()
-    bot = commands.Bot(command_prefix=BOT_PREFIX, intents=intents)
+    bot = commands.Bot(command_prefix=BotSettings.BOT_PREFIX, intents=intents)
     server = VoiceSynthServer()
     setup_commands(server, bot, voice_config)
 
@@ -20,7 +20,7 @@ if __name__ == "__main__":
     async def on_ready():
         try:
             logging.info(f"Logged in as {bot.user.name}")
-            await bot.change_presence(activity=discord.Game(name=GAME_NAME))
+            await bot.change_presence(activity=discord.Game(name=BotSettings.GAME_NAME))
             for guild_id in APPROVED_GUILD_IDS_INT:
                 try:
                     guild = bot.get_guild(guild_id)

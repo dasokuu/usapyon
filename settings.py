@@ -1,24 +1,33 @@
 import os
 import discord
 
-BOT_PREFIX = "!"
-GAME_NAME = f"リクエストを待機中"
+
+class BotSettings:
+    BOT_PREFIX = "!"
+    GAME_NAME = "リクエストを待機中"
+    MAX_MESSAGE_LENGTH = 200
+
+
+class VoiceVoxSettings:
+    ENGINE_URL = "http://127.0.0.1:50021/"
+    SPEAKERS_URL = ENGINE_URL + "speakers"
+    AUDIO_QUERY_URL = ENGINE_URL + "audio_query"
+    SYNTHESIS_URL = ENGINE_URL + "synthesis"
+
+
 USER_DEFAULT_STYLE_ID = 3
 ANNOUNCEMENT_DEFAULT_STYLE_ID = 8
-MAX_MESSAGE_LENGTH = 200
-VOICEVOX_ENGINE_URL = "http://127.0.0.1:50021/"
-SPEAKERS_URL = VOICEVOX_ENGINE_URL + "speakers"
-AUDIO_QUERY_URL = VOICEVOX_ENGINE_URL + "audio_query"
-SYNTHESIS_URL = VOICEVOX_ENGINE_URL + "synthesis"
 CONFIG_PICKLE_FILE = "config.pkl"
 TEST_GUILD_ID = discord.Object(id="1189256965172514836")
 APPROVED_GUILD_IDS_INT = [
     1189256965172514836,  # くーさーばー１
     1190673139072516096,  # くーさーばー２
-    1129051248574869617,   # めぞんどとわいらいと
-    1156189448288079882    # ばろ
+    1129051248574869617,  # めぞんどとわいらいと
+    1156189448288079882,  # ばろ
 ]
-APPROVED_GUILD_OBJECTS = [discord.Object(id=guild_id) for guild_id in APPROVED_GUILD_IDS_INT]
+APPROVED_GUILD_OBJECTS = [
+    discord.Object(id=guild_id) for guild_id in APPROVED_GUILD_IDS_INT
+]
 
 # https://raw.githubusercontent.com/VOICEVOX/voicevox_blog/master/src/constants.ts
 CHARACTORS_INFO = {
@@ -53,7 +62,9 @@ CHARACTORS_INFO = {
     "満別花丸": "manbetsu_hanamaru",
     "琴詠ニア": "kotoyomi_nia",
 }
-EMOJI_JA_URL = "https://raw.githubusercontent.com/yagays/emoji-ja/master/data/emoji_ja.json"
+EMOJI_JA_URL = (
+    "https://raw.githubusercontent.com/yagays/emoji-ja/master/data/emoji_ja.json"
+)
 
 DORMITORY_URL_BASE = "https://voicevox.hiroshiba.jp/dormitory"
 

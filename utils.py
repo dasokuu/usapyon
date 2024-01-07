@@ -5,11 +5,11 @@ import jaconv
 import re
 import discord
 from settings import (
-    BOT_PREFIX,
     CHARACTORS_INFO,
     USER_DEFAULT_STYLE_ID,
     ANNOUNCEMENT_DEFAULT_STYLE_ID,
-    SPEAKERS_URL,
+    BotSettings,
+    VoiceVoxSettings,
     CONFIG_PICKLE_FILE,
 )
 import emoji  # 絵文字の判定を行うためのライブラリ
@@ -17,7 +17,7 @@ import emoji  # 絵文字の判定を行うためのライブラリ
 
 class VoiceSynthConfig:
     def __init__(self):
-        self.speakers = fetch_json(SPEAKERS_URL)
+        self.speakers = fetch_json(VoiceVoxSettings.SPEAKERS_URL)
         self.config_pickle = load_style_settings()
 
     def validate_style_id(self, style_id):
@@ -157,7 +157,7 @@ class VoiceSynthConfig:
             and voice_client.channel
             and message.author.voice
             and message.author.voice.channel == voice_client.channel
-            and not message.content.startswith(BOT_PREFIX)
+            and not message.content.startswith(BotSettings.BOT_PREFIX)
             and message.channel.id == allowed_text_channel_id
         )
 
