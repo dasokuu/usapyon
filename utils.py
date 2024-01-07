@@ -383,4 +383,4 @@ async def connect_to_voice_channel(interaction: discord.Interaction):
         return voice_client
     except Exception as e:
         logging.error(f"Voice channel connection error: {e}")
-        await interaction.followup.send(ERROR_MESSAGES["connection"])
+        raise

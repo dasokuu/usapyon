@@ -53,7 +53,7 @@ class VoiceSynthServer:
                 return await response.json()
             elif response.status == 422:
                 error_detail = await response.text()
-                logging.error(f"処理できないエンティティ: {error_detail}")
+                logging.error(f"Unprocessable Entity: {error_detail}")
                 return None
 
     async def synthesis(self, speaker, query_data):
