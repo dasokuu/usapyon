@@ -142,14 +142,12 @@ class VoiceSynthConfig:
         """ファイル投稿をアナウンスします。"""
         file_message = "ファイルが投稿されました。"
         guild_id = message.guild.id
-        announcement_style_id = self.config_pickle.get(message.guild.id, {}).get(
-                "announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID
-            )
+        announcement_style_id = self.config_pickle.get(message.guild.id, {}).get("announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID)
         await server.text_to_speech(
             message.guild.voice_client,
             file_message,
-            self.get_style_id(message.author.id, guild_id),
-            guild_id,
+            announcement_style_id,
+            guild_id
         )
 
     def should_process_message(self, message: discord.Message, guild_id):
