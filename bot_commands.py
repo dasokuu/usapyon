@@ -330,11 +330,16 @@ def setup_commands(server, bot):
         await interaction.response.send_message(info_message, ephemeral=True)
 
 
-# ボイスチャンネルに接続する関数
 async def connect_to_voice_channel(interaction):
-    channel = interaction.user.voice.channel
-    voice_client = await channel.connect(self_deaf=True)
-    return voice_client
+    try:
+        channel = interaction.user.voice.channel
+        if channel is None:
+            raise ValueError("ユーザーがボイスチャンネルにいません。")
+        voice_client = await channel.connect(self_deaf=True)
+        return voice_client
+    except Exception as e:
+        logging.error(f"ボイスチャンネル接続エラー: {e}")
+        raise
 
 
 async def welcome_user(server, interaction, voice_client):
