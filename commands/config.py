@@ -47,6 +47,33 @@ def setup_config_command(bot, voice_config):
 
         return on_button_click
 
+    class PageNumberModal(discord.ui.Modal):
+        def __init__(self, view):
+            super().__init__(title="ページに移動")
+            self.view = view  # Reference to the PagingView
+
+        page_input = discord.ui.TextInput(
+            label="ページ番号",
+            style=discord.TextStyle.short,
+            placeholder="例: 5",
+            min_length=1,
+            max_length=2,
+        )
+
+        async def on_submit(self, interaction: discord.Interaction):
+            try:
+                # Convert input to an integer and adjust for 0-based indexing
+                page_num = int(self.page_input.value) - 1
+                if 0 <= page_num < len(self.view.speakers):
+                    self.view.current_page = page_num
+                    await self.view.update_speaker_list(interaction)
+                else:
+                    await interaction.response.send_message(
+                        "無効なページ番号です。", ephemeral=True
+                    )
+            except ValueError:
+                await interaction.response.send_message("数字を入力してください。", ephemeral=True)
+
     class PagingView(discord.ui.View):
         def __init__(self, speakers, voice_scope):
             super().__init__()
@@ -88,9 +115,21 @@ def setup_config_command(bot, voice_config):
             self.current_page = len(self.speakers) - 1
             await self.update_speaker_list(interaction)
 
+        @discord.ui.button(
+            label="→", style=discord.ButtonStyle.green, custom_id="go_to_page"
+        )
+        async def go_button(
+            self, interaction: discord.Interaction, button: discord.ui.Button
+        ):
+            # Open the modal when the 'Go' button is clicked
+            modal = PageNumberModal(self)
+            await interaction.response.send_modal(modal)
+
         async def update_speaker_list(self, interaction: discord.Interaction):
             self.first_button.disabled = self.current_page == 0
+            self.previous_button.disabled = self.current_page == 0
             self.last_button.disabled = self.current_page == len(self.speakers) - 1
+            self.next_button.disabled = self.current_page == len(self.speakers) - 1
             voice_scope_description = get_voice_scope_description(interaction)
             # 'interaction'を正しく使ってメッセージを編集
             speaker_name = self.speakers[self.current_page]["name"]
@@ -110,6 +149,7 @@ def setup_config_command(bot, voice_config):
             self.add_item(self.previous_button)
             self.add_item(self.next_button)
             self.add_item(self.last_button)
+            self.add_item(self.go_button)  # Make sure this is added back
 
             # 現在の話者の各スタイルに対応するボタンを追加
             for style in self.speakers[self.current_page]["styles"]:
@@ -229,7 +269,7 @@ def setup_config_command(bot, voice_config):
                     handle_style_button_click(interaction, button, style_id)
                 )
             )
-            # 最初のページで<<と<ボタンを無効化
             view.first_button.disabled = True
+            view.previous_button.disabled = True
             view.add_item(style_button)
         await interaction.response.edit_message(content=content, view=view)
