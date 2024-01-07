@@ -78,10 +78,16 @@ def create_info_message(interaction, text_channel_id, speaker_details):
     )
 
 
+# リファクタリングされた execute_welcome_message 関数
 async def execute_welcome_message(server, voice_client, guild_id, style_id, message, interaction):
     welcome_voice = "読み上げを開始します。"
-    await server.text_to_speech(voice_client, welcome_voice, style_id, guild_id)
-    await interaction.followup.send(message)
+    # エラー処理の追加
+    try:
+        await server.text_to_speech(voice_client, welcome_voice, style_id, guild_id)
+        await interaction.followup.send(message)
+    except Exception as e:
+        logging.error(f"Welcome message execution failed: {e}")
+        await interaction.followup.send("エラーが発生しました。")
 
 
 
