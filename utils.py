@@ -46,7 +46,9 @@ class VoiceSynthConfig:
         with open(CONFIG_PICKLE_FILE, "wb") as f:  # wbモードで開く
             pickle.dump(self.config_pickle, f)  # config_pickleをpickleで保存
 
-    async def handle_voice_state_update(self, server: VoiceSynthServer, bot, member, before, after):
+    async def handle_voice_state_update(
+        self, server: VoiceSynthServer, bot, member, before, after
+    ):
         guild_id = member.guild.id
         # ボット自身の状態変更を無視
         if member == bot.user:
@@ -67,7 +69,9 @@ class VoiceSynthConfig:
             # ユーザーのスタイルIDを取得
             user_style_id = self.config_pickle.get(
                 member.id,
-                self.config_pickle.get(guild_id,{}).get("user_default", USER_DEFAULT_STYLE_ID),
+                self.config_pickle.get(guild_id, {}).get(
+                    "user_default", USER_DEFAULT_STYLE_ID
+                ),
             )
             user_speaker_name, user_style_name = self.get_style_details(user_style_id)
             user_character_id, user_display_name = get_character_info(user_speaker_name)
@@ -75,12 +79,12 @@ class VoiceSynthConfig:
             announcement_message = f"{member.display_name}さんの読み上げ音声: [{user_display_name}] - {user_style_name}"
 
             # テキストチャンネルを取得してメッセージを送信
-            text_channel_id = self.config_pickle.get(guild_id,{}).get("text_channel")
+            text_channel_id = self.config_pickle.get(guild_id, {}).get("text_channel")
             if text_channel_id:
                 text_channel = bot.get_channel(text_channel_id)
                 if text_channel:
                     await text_channel.send(announcement_message)
-            announcement_style_id = self.config_pickle.get(guild_id,{}).get(
+            announcement_style_id = self.config_pickle.get(guild_id, {}).get(
                 "announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID
             )
             await server.text_to_speech(
@@ -108,7 +112,7 @@ class VoiceSynthConfig:
                 await server.clear_playback_queue(guild_id)
                 if (
                     guild_id in self.config_pickle
-                    and "text_channel" in self.config_pickle.get(guild_id,{})
+                    and "text_channel" in self.config_pickle.get(guild_id, {})
                 ):
                     # テキストチャンネルIDの設定をクリア
                     del self.config_pickle[guild_id]["text_channel"]
@@ -138,16 +142,17 @@ class VoiceSynthConfig:
         except Exception as e:
             logging.error(f"Error in handle_message: {e}")  # ロギング改善の余地あり
 
-    async def announce_file_post(self, server: VoiceSynthServer, message: discord.Message):
+    async def announce_file_post(
+        self, server: VoiceSynthServer, message: discord.Message
+    ):
         """ファイル投稿をアナウンスします。"""
         file_message = "ファイルが投稿されました。"
         guild_id = message.guild.id
-        announcement_style_id = self.config_pickle.get(message.guild.id, {}).get("announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID)
+        announcement_style_id = self.config_pickle.get(message.guild.id, {}).get(
+            "announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID
+        )
         await server.text_to_speech(
-            message.guild.voice_client,
-            file_message,
-            announcement_style_id,
-            guild_id
+            message.guild.voice_client, file_message, announcement_style_id, guild_id
         )
 
     def should_process_message(self, message: discord.Message, guild_id):
@@ -169,7 +174,9 @@ class VoiceSynthConfig:
         """ユーザーまたはギルドのスタイルIDを取得します。"""
         return self.config_pickle.get(
             user_id,
-            self.config_pickle.get(guild_id,{}).get("user_default", USER_DEFAULT_STYLE_ID),
+            self.config_pickle.get(guild_id, {}).get(
+                "user_default", USER_DEFAULT_STYLE_ID
+            ),
         )
 
     def update_style_setting(self, guild_id, user_id, style_id, voice_scope):
@@ -264,7 +271,12 @@ async def replace_content(text, message: discord.Message):
     return text
 
 
-async def welcome_user(server: VoiceSynthServer, interaction: discord.Interaction, voice_client: discord.VoiceClient, voice_config: VoiceSynthConfig):
+async def welcome_user(
+    server: VoiceSynthServer,
+    interaction: discord.Interaction,
+    voice_client: discord.VoiceClient,
+    voice_config: VoiceSynthConfig,
+):
     guild_id, text_channel_id = get_and_update_guild_settings(interaction, voice_config)
     style_ids = get_style_ids(guild_id, interaction.user.id, voice_config)
     speaker_details = get_speaker_details(voice_config, *style_ids)
@@ -274,7 +286,9 @@ async def welcome_user(server: VoiceSynthServer, interaction: discord.Interactio
     )
 
 
-def get_and_update_guild_settings(interaction: discord.Interaction, voice_config:VoiceSynthConfig):
+def get_and_update_guild_settings(
+    interaction: discord.Interaction, voice_config: VoiceSynthConfig
+):
     guild_id = interaction.guild_id
     text_channel_id = interaction.channel_id
     # Updated to clarify the intention and reduce complexity
@@ -297,7 +311,10 @@ def get_style_ids(guild_id, user_id, voice_config: VoiceSynthConfig):
 
 
 def get_speaker_details(
-    voice_config: VoiceSynthConfig, user_style_id, announcement_style_id, user_default_style_id
+    voice_config: VoiceSynthConfig,
+    user_style_id,
+    announcement_style_id,
+    user_default_style_id,
 ):
     user_speaker_name, user_style_name = voice_config.get_style_details(user_style_id)
     _, user_display_name = get_character_info(user_speaker_name)  # display_nameを取得
@@ -323,7 +340,9 @@ def get_speaker_details(
     }
 
 
-def create_info_message(interaction: discord.Interaction, text_channel_id, speaker_details):
+def create_info_message(
+    interaction: discord.Interaction, text_channel_id, speaker_details
+):
     user_display_name = interaction.user.display_name
     user, announcement, default = (
         speaker_details["user"],
@@ -339,7 +358,12 @@ def create_info_message(interaction: discord.Interaction, text_channel_id, speak
 
 
 async def execute_welcome_message(
-    server: VoiceSynthServer, voice_client, guild_id, style_id, message, interaction: discord.Interaction
+    server: VoiceSynthServer,
+    voice_client,
+    guild_id,
+    style_id,
+    message,
+    interaction: discord.Interaction,
 ):
     welcome_voice = "読み上げを開始します。"
     try:
@@ -350,7 +374,6 @@ async def execute_welcome_message(
         await interaction.followup.send(ERROR_MESSAGES["welcome"])
 
 
-
 async def connect_to_voice_channel(interaction: discord.Interaction):
     try:
         channel = interaction.user.voice.channel
@@ -359,5 +382,5 @@ async def connect_to_voice_channel(interaction: discord.Interaction):
         voice_client = await channel.connect(self_deaf=True)
         return voice_client
     except Exception as e:
-        logging.error(f"ボイスチャンネル接続エラー: {e}")
-        raise
+        logging.error(f"Voice channel connection error: {e}")
+        await interaction.followup.send(ERROR_MESSAGES["connection"])
