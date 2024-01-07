@@ -113,7 +113,7 @@ class VoiceSynthConfig:
                     logging.info(f"テキストチャンネルの設定をクリアしました: サーバーID {guild_id}")
                 await member.guild.voice_client.disconnect()
 
-    async def handle_message(self, server, bot, message):
+    async def handle_message(self, server, message):
         guild_id = message.guild.id
 
         # 早期リターンを利用してネストを減らす
@@ -183,6 +183,7 @@ class VoiceSynthConfig:
         elif voice_scope == "user":
             self.config_pickle[user_id] = style_id
         self.save_style_settings()
+    
 
 
 def get_character_info(speaker_name):

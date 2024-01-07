@@ -41,7 +41,7 @@ if __name__ == "__main__":
         if message.author == bot.user:
             return
         await bot.process_commands(message)
-        await voice_config.handle_message(server, bot, message)
+        await voice_config.handle_message(server, message)
 
     @bot.event
     async def on_voice_state_update(member, before, after):
