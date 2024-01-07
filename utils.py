@@ -344,3 +344,16 @@ async def execute_welcome_message(
     except Exception as e:
         logging.error(f"Welcome message execution failed: {e}")
         await interaction.followup.send("エラーが発生しました。詳細はログを参照してください。")
+
+
+
+async def connect_to_voice_channel(interaction):
+    try:
+        channel = interaction.user.voice.channel
+        if channel is None:
+            raise ValueError("ユーザーがボイスチャンネルにいません。")
+        voice_client = await channel.connect(self_deaf=True)
+        return voice_client
+    except Exception as e:
+        logging.error(f"ボイスチャンネル接続エラー: {e}")
+        raise
