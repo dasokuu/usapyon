@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import pickle
 import requests
@@ -14,6 +15,8 @@ from settings import (
     CONFIG_PICKLE_FILE,
 )
 import emoji
+import alkana
+
 
 from voice import VoiceSynthServer  # 絵文字の判定を行うためのライブラリ
 
@@ -122,15 +125,22 @@ class VoiceSynthConfig:
 
     async def handle_message(self, server: VoiceSynthServer, message):
         guild_id = message.guild.id
-
-        # 早期リターンを利用してネストを減らす
-        if not self.should_process_message(message, guild_id):
-            return
-
-        # メッセージ処理
         try:
+            logging.info(f"Handling message: {message.content}")
+
+            if not isinstance(message.content, str):
+                logging.error(f"Message content is not a string: {message.content}")
+                return
+
             message_content = await replace_content(message.content, message)
-            if message_content.strip():
+
+            if not isinstance(message_content, str):
+                logging.error(
+                    f"Replaced message content is not a string: {message_content}"
+                )
+                return
+
+            if message_content:
                 await server.text_to_speech(
                     message.guild.voice_client,
                     message_content,
@@ -140,7 +150,7 @@ class VoiceSynthConfig:
             if message.attachments:
                 await self.announce_file_post(server, message)
         except Exception as e:
-            logging.error(f"Error in handle_message: {e}")  # ロギング改善の余地あり
+            logging.error(f"Error in handle_message: {e}")
 
     async def announce_file_post(
         self, server: VoiceSynthServer, message: discord.Message
@@ -223,7 +233,6 @@ def fetch_json(url):
     return None
 
 
-
 def load_style_settings():
     """スタイル設定をロードします。"""
     try:
@@ -233,47 +242,83 @@ def load_style_settings():
         return {}  # ファイルが見つからないか、pickle読み込みエラーの場合は空の辞書を返す
 
 
+# 正規表現パターンをグローバル変数として一度コンパイル
+user_mention_pattern = re.compile(r"<@!?(\d+)>")
+role_mention_pattern = re.compile(r"<@&(\d+)>")
+channel_pattern = re.compile(r"<#(\d+)>")
+custom_emoji_pattern = re.compile(r"<:(\w*):\d*>")
+url_pattern = re.compile(r"https?://\S+")
+english_word_pattern = re.compile(r"\b[a-zA-Z_]+\b")
+laugh_pattern = re.compile("[ｗwW]+$")
+
+def replace_user_mention(match,message: discord.Message):
+    user_id = int(match.group(1))
+    user = message.guild.get_member(user_id)
+    return user.display_name + "さん" if user else match.group(0)
+
+def replace_role_mention(match,message: discord.Message):
+    role_id = int(match.group(1))
+    role = discord.utils.get(message.guild.roles, id=role_id)
+    return role.name + "役職" if role else match.group(0)
+
+def replace_channel_mention(match,message: discord.Message):
+    channel_id = int(match.group(1))
+    channel = message.guild.get_channel(channel_id)
+    return channel.name + "チャンネル" if channel else match.group(0)
+
+def replace_custom_emoji_name_to_kana(match):
+    emoji_name = match.group(1)
+    return jaconv.alphabet2kana(emoji_name) + " "
+
+def replace_english_to_kana(text):
+    # 英単語を検出する正規表現パターン
+    english_word_pattern = re.compile(r"\b[a-zA-Z_]+\b")
+
+    def replace_to_kana(match):
+        # 英単語をかなに変換
+        word = match.group(0)
+
+        # アンダースコアでつながった単語を分割
+        sub_words = word.split("_")
+        kana_words = []
+
+        for sub_word in sub_words:
+            kana = alkana.get_kana(sub_word)
+            # alkanaが変換できなかった場合は、元の単語をそのまま使用
+            kana_words.append(kana if kana is not None else sub_word)
+
+        # かなに変換された単語を結合
+        return "".join(kana_words)
+
+    # 英単語をかなに置き換え
+    return english_word_pattern.sub(replace_to_kana, text)
+
+# 文末の連続する「ｗ」を「わら」と置き換える
+def laugh_replace(match):
+    return "わら" * len(match.group(0))
 async def replace_content(text, message: discord.Message):
-    # ユーザーメンションを検出する正規表現パターン
-    user_mention_pattern = re.compile(r"<@!?(\d+)>")
-    # ロールメンションを検出する正規表現パターン
-    role_mention_pattern = re.compile(r"<@&(\d+)>")
-    # チャンネルを検出する正規表現パターン
-    channel_pattern = re.compile(r"<#(\d+)>")
-    # カスタム絵文字を検出する正規表現パターン
-    custom_emoji_pattern = re.compile(r"<:(\w*):\d*>")
-    # URLを検出する正規表現パターン
-    url_pattern = re.compile(r"https?://\S+")
+    # 一括置換のための関数定義
+    def replace_patterns(text):
+        text = user_mention_pattern.sub(
+            lambda m: replace_user_mention(m, message), text
+        )
+        text = role_mention_pattern.sub(
+            lambda m: replace_role_mention(m, message), text
+        )
+        text = channel_pattern.sub(
+            lambda m: replace_channel_mention(m, message), text
+        )
+        text = custom_emoji_pattern.sub(replace_custom_emoji_name_to_kana, text)
+        text = url_pattern.sub("URL省略", text)
+        text = laugh_pattern.sub(laugh_replace, text)
+        return text
 
-    def replace_user_mention(match):
-        user_id = int(match.group(1))
-        user = message.guild.get_member(user_id)
-        return user.display_name + "さん" if user else match.group(0)
-
-    def replace_role_mention(match):
-        role_id = int(match.group(1))
-        role = discord.utils.get(message.guild.roles, id=role_id)
-        return role.name + "役職" if role else match.group(0)
-
-    def replace_channel_mention(match):
-        channel_id = int(match.group(1))
-        channel = message.guild.get_channel(channel_id)
-        return channel.name + "チャンネル" if channel else match.group(0)
-
-    def replace_custom_emoji_name_to_kana(match):
-        emoji_name = match.group(1)
-        return jaconv.alphabet2kana(emoji_name) + " "
-
-    # ユーザーメンションを「○○さん」に置き換え
-    text = user_mention_pattern.sub(replace_user_mention, text)
-    # ロールメンションを「○○役職」に置き換え
-    text = role_mention_pattern.sub(replace_role_mention, text)
-    text = channel_pattern.sub(replace_channel_mention, text)
-    text = url_pattern.sub("URL省略", text)
-    text = custom_emoji_pattern.sub(replace_custom_emoji_name_to_kana, text)
-    text = emoji.demojize(text, language="ja")
-
-    return text
+    # 文章を一括で置換
+    replaced_text = replace_patterns(text)
+    replaced_text = await asyncio.get_event_loop().run_in_executor(
+        None, replace_english_to_kana, replaced_text
+    )
+    return replaced_text
 
 
 async def welcome_user(
