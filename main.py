@@ -2,8 +2,12 @@ import asyncio
 import logging
 import discord
 from discord.ext import commands
+from commands.config import setup_config_command
+from commands.info import setup_info_command
+from commands.join import setup_join_command
+from commands.leave import setup_leave_command
+from commands.skip import setup_skip_command
 from utils import VoiceSynthConfig, wait_for_server
-from bot_commands import setup_commands
 from settings import APPROVED_GUILD_IDS_INT, BotSettings, TOKEN, VoiceVoxSettings
 from voice import VoiceSynthServer
 
@@ -19,8 +23,12 @@ if __name__ == "__main__" and wait_for_server(VoiceVoxSettings.SPEAKERS_URL):
     voice_config = VoiceSynthConfig()
     bot = commands.Bot(command_prefix=BotSettings.BOT_PREFIX, intents=intents)
     server = VoiceSynthServer()
-    setup_commands(server, bot, voice_config)
 
+    setup_join_command(bot, server, voice_config)
+    setup_leave_command(bot, server, voice_config)
+    setup_config_command(bot, voice_config)
+    setup_info_command(bot, voice_config)
+    setup_skip_command(bot, server)
     @bot.event
     async def on_ready():
         try:
