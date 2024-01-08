@@ -269,8 +269,7 @@ class VoiceSynth:
         replace_operations = [
             (self.user_mention_pattern, lambda m: self.replace_user_mention(m, message)),
             (self.role_mention_pattern, lambda m: self.replace_role_mention(m, message)),
-            (self.channel_pattern, lambda m: self.replace_channel_mention(m, message)),
-            # 他のパターンも同様に追加...
+            (self.channel_pattern, lambda m: self.replace_channel_mention(m, message))
         ]
         text = self.replace_english_to_kana(text)  # First replace English words
         for pattern, func in replace_operations:

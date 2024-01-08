@@ -10,4 +10,4 @@ find . -name "*.py" | while read file; do
     echo '```' >> python_files.md          # シンタックスハイライトの終了を追加
 done
 
-echo 'このアプリケーションを100点満点で採点し、修正案のコードを示してください。' >> python_files.md
+echo 'このアプリケーションを100点満点で採点し、特に修正すべき部分を修正したコードを示してください。' >> python_files.md

@@ -1,33 +1,40 @@
 import os
+import json
 import discord
+
+# 設定ファイルの読み込み
+with open("config.json", "r") as f:
+    config = json.load(f)
 
 
 class BotSettings:
-    BOT_PREFIX = "!"
-    GAME_NAME = "リクエストを待機中"
-    MAX_MESSAGE_LENGTH = 200
+    BOT_PREFIX = config["bot_settings"]["bot_prefix"]
+    GAME_NAME = config["bot_settings"]["game_name"]
+    MAX_MESSAGE_LENGTH = config["bot_settings"]["max_message_length"]
 
 
 class VoiceVoxSettings:
-    ENGINE_URL = "http://127.0.0.1:50021/"
-    SPEAKERS_URL = ENGINE_URL + "speakers"
-    AUDIO_QUERY_URL = ENGINE_URL + "audio_query"
-    SYNTHESIS_URL = ENGINE_URL + "synthesis"
+    ENGINE_URL = config["voicevox_settings"]["engine_url"]
+    SPEAKERS_URL = config["voicevox_settings"]["speakers_url"]
+    AUDIO_QUERY_URL = config["voicevox_settings"]["audio_query_url"]
+    SYNTHESIS_URL = config["voicevox_settings"]["synthesis_url"]
+
+
+APPROVED_GUILD_IDS_INT = config["guild_settings"]["approved_guild_ids"]
+APPROVED_GUILD_OBJECTS = [
+    discord.Object(id=guild_id) for guild_id in APPROVED_GUILD_IDS_INT
+]
+
+ERROR_MESSAGES = config["error_messages"]
+INFO_MESSAGES = config["info_messages"]
+
+TOKEN = os.getenv("VOICECHATLOIDTEST_TOKEN")
 
 
 USER_DEFAULT_STYLE_ID = 3
 ANNOUNCEMENT_DEFAULT_STYLE_ID = 8
 script_dir = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PICKLE_FILE = os.path.join(script_dir, "config.pkl")
-APPROVED_GUILD_IDS_INT = [
-    1189256965172514836,  # くーさーばー１
-    1190673139072516096,  # くーさーばー２
-    1129051248574869617,  # めぞんどとわいらいと
-    1156189448288079882,  # ばろ
-]
-APPROVED_GUILD_OBJECTS = [
-    discord.Object(id=guild_id) for guild_id in APPROVED_GUILD_IDS_INT
-]
 
 # https://raw.githubusercontent.com/VOICEVOX/voicevox_blog/master/src/constants.ts
 CHARACTORS_INFO = {
@@ -64,17 +71,3 @@ CHARACTORS_INFO = {
 }
 
 DORMITORY_URL_BASE = "https://voicevox.hiroshiba.jp/dormitory"
-
-# エラーメッセージを一元管理
-ERROR_MESSAGES = {
-    "connection": "ボイスチャンネルに接続できませんでした。ユーザーがボイスチャンネルにいることを確認してください。",
-    "invalid_style": "選択したスタイルIDが無効です。",
-    "not_connected": "ボットはボイスチャンネルに接続されていません。",
-    "welcome": "読み上げ開始中に問題が発生しました。もう一度お試しください。"
-}
-INFO_MESSAGES = {
-    "disconnect": "ボイスチャンネルから切断しました。",
-    "skip": "現在の読み上げをスキップし、再生キューをクリアしました。",
-    "no_queue": "スキップする読み上げがありません。"
-}
-TOKEN = os.getenv("VOICECHATLOIDTEST_TOKEN")
