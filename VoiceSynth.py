@@ -32,42 +32,15 @@ class VoiceSynth:
             before.channel != voice_client.channel
             and after.channel == voice_client.channel
         ):
-            announcement_voice = f"{member.display_name}さんが入室しました。"
-            # ユーザーのスタイルIDを取得
-            user_style_id = voice_config.get_user_style_id(member.id, guild_id)
-            user_speaker_name, user_style_name = voice_config.get_style_details(
-                user_style_id
+            await self.announce_presence(
+                member, voice_client, voice_config, voice_server, "entered"
             )
-            user_character_id, user_display_name = voice_config.get_character_info(
-                user_speaker_name
-            )
-            # user_url = f"{DORMITORY_URL_BASE}//{user_character_id}/"
-            announcement_message = f"{member.display_name}さんの読み上げ音声: [{user_display_name}] - {user_style_name}"
-
-            # テキストチャンネルを取得してメッセージを送信
-            text_channel_id = voice_config.voice_config_pickle.get(guild_id, {}).get(
-                "text_channel"
-            )
-            if text_channel_id:
-                text_channel = bot.get_channel(text_channel_id)
-                if text_channel:
-                    await text_channel.send(announcement_message)
-            announcement_style_id = voice_config.get_announcement_style_id(guild_id)
-            await voice_server.text_to_speech(
-                voice_client, announcement_voice, announcement_style_id, guild_id
-            )
-
-        # ボイスチャンネルから切断したとき
         elif (
             before.channel == voice_client.channel
             and after.channel != voice_client.channel
         ):
-            announcement_voice = f"{member.display_name}さんが退室しました。"
-            announcement_style_id = voice_config.get_announcement_style_id(
-                member.guild.id
-            )
-            await voice_server.text_to_speech(
-                voice_client, announcement_voice, announcement_style_id, guild_id
+            await self.announce_presence(
+                member, voice_client, voice_config, voice_server, "left"
             )
 
         # ボイスチャンネルに誰もいなくなったら自動的に切断します。
@@ -92,7 +65,7 @@ class VoiceSynth:
         voice_config: VoiceSynthConfig,
         voice_server: VoiceSynthServer,
         message: discord.Message,
-        handler: DiscordMessageHandler
+        handler: DiscordMessageHandler,
     ):
         guild_id = message.guild.id
         try:
@@ -125,6 +98,22 @@ class VoiceSynth:
 
         except Exception as e:
             logging.error(f"Error in handle_message: {e}")
+
+    async def announce_presence(
+        self,
+        member: discord.Member,
+        voice_client,
+        voice_config: VoiceSynthConfig,
+        voice_server: VoiceSynthServer,
+        action="entered",
+    ):
+        """ユーザーの入退室をアナウンスする共通関数"""
+        action_text = "入室しました。" if action == "entered" else "退室しました。"
+        announcement_voice = f"{member.display_name}さんが{action_text}"
+        announcement_style_id = voice_config.get_announcement_style_id(member.guild.id)
+        await voice_server.text_to_speech(
+            voice_client, announcement_voice, announcement_style_id, member.guild.id
+        )
 
     # New Method: Announce the name of the sticker
     async def announce_sticker_post(
