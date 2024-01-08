@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import pickle
 import time
@@ -128,7 +127,8 @@ class VoiceSynthConfig:
         guild_id = message.guild.id
         try:
             logging.info(f"Handling message: {message.content}")
-
+            if message.stickers:
+                await self.announce_sticker_post(server, message)
             if not isinstance(message.content, str):
                 logging.error(f"Message content is not a string: {message.content}")
                 return
@@ -152,6 +152,28 @@ class VoiceSynthConfig:
                 await self.announce_file_post(server, message)
         except Exception as e:
             logging.error(f"Error in handle_message: {e}")
+
+    async def announce_sticker_post(
+        self, server: VoiceSynthServer, message: discord.Message
+    ):
+        """アナウンスステッカーが投稿されました。"""
+        guild_id = message.guild.id
+        announcement_style_id = self.config_pickle.get(message.guild.id, {}).get(
+            "announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID
+        )
+
+        sticker_messages = []
+        for sticker in message.stickers:
+            sticker_messages.append("スタンプ")
+
+        if sticker_messages:
+            sticker_message = f"{', '.join(sticker_messages)}が投稿されました。"
+            await server.text_to_speech(
+                message.guild.voice_client,
+                sticker_message,
+                announcement_style_id,
+                guild_id,
+            )
 
     async def announce_file_post(
         self, server: VoiceSynthServer, message: discord.Message
