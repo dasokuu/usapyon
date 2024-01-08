@@ -36,7 +36,9 @@ ANNOUNCEMENT_DEFAULT_STYLE_ID = 8
 script_dir = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PICKLE_FILE = os.path.join(script_dir, "config.pkl")
 
-with open("characters_info.json", "r") as f:
+characters_info_file = os.path.join(script_dir, "config.pkl")
+
+with open(characters_info_file, "r") as f:
     CHARACTORS_INFO = json.load(f)
 
 DORMITORY_URL_BASE = "https://voicevox.hiroshiba.jp/dormitory"
