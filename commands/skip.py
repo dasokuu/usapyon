@@ -1,5 +1,5 @@
 import discord
-from settings import APPROVED_GUILD_OBJECTS, INFO_MESSAGES
+from settings import APPROVED_GUILD_OBJECTS, info_messages
 from VoiceSynthServer import VoiceSynthServer
 
 
@@ -27,8 +27,8 @@ def setup_skip_command(bot, voice_server: VoiceSynthServer):
         # ギルドの再生キューを確認し、空の場合はユーザーに通知
         guild_queue = voice_server.get_guild_playback_queue(guild_id)
         if guild_queue.empty():
-            await interaction.followup.send(INFO_MESSAGES["no_queue"])
+            await interaction.followup.send(info_messages["no_queue"])
         else:
             # キューが空ではない場合、キューをクリアしてスキップされたことをユーザーに通知
             await voice_server.clear_playback_queue(guild_id)
-            await interaction.followup.send(INFO_MESSAGES["skip"])
+            await interaction.followup.send(info_messages["skip"])

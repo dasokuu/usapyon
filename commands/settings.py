@@ -7,13 +7,13 @@ from discord.ui import Button, View
 from VoiceSynthConfig import VoiceSynthConfig
 
 
-def setup_config_command(bot, voice_config: VoiceSynthConfig):
+def setup_settings_command(bot, voice_config: VoiceSynthConfig):
     @bot.tree.command(
-        name="config", guilds=APPROVED_GUILD_OBJECTS, description="読み上げ音声を設定します。"
+        name="settings", guilds=APPROVED_GUILD_OBJECTS, description="読み上げ音声を設定します。"
     )
-    async def config(interaction: discord.Interaction):
+    async def settings(interaction: discord.Interaction):
         voice_scope_description = get_voice_scope_description(interaction)
-        view = create_config_view(interaction, voice_scope_description)
+        view = create_settings_view(interaction, voice_scope_description)
         await interaction.response.send_message(
             "設定対象を選んでください：", view=view, ephemeral=True
         )
@@ -25,7 +25,7 @@ def setup_config_command(bot, voice_config: VoiceSynthConfig):
             "user_default": "デフォルト読み上げ音声（サーバー設定）",
         }
 
-    def create_config_view(interaction: discord.Interaction, voice_scope_description):
+    def create_settings_view(interaction: discord.Interaction, voice_scope_description):
         view = View()
         for voice_scope, label in voice_scope_description.items():
             button = create_scope_button(interaction, label, voice_scope)

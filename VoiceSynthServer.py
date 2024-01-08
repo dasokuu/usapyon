@@ -4,7 +4,7 @@ import asyncio
 import json
 import discord
 import io
-from settings import ERROR_MESSAGES, VoiceVoxSettings
+from settings import error_messages, VoiceVoxSettings
 
 
 class VoiceSynthServer:
@@ -144,4 +144,4 @@ class VoiceSynthServer:
             await interaction.followup.send(message)
         except Exception as e:
             logging.error(f"Welcome message execution failed: {e}")
-            await interaction.followup.send(ERROR_MESSAGES["welcome"])
+            await interaction.followup.send(error_messages["welcome"])

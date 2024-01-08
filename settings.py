@@ -25,8 +25,8 @@ APPROVED_GUILD_OBJECTS = [
     discord.Object(id=guild_id) for guild_id in APPROVED_GUILD_IDS_INT
 ]
 
-ERROR_MESSAGES = config["error_messages"]
-INFO_MESSAGES = config["info_messages"]
+error_messages = config["error_messages"]
+info_messages = config["info_messages"]
 
 TOKEN = os.getenv("VOICECHATLOIDTEST_TOKEN")
 

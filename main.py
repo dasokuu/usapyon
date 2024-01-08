@@ -6,7 +6,7 @@ from discord.ext import commands
 import requests
 from DiscordMessageHandler import DiscordMessageHandler
 from VoiceSynth import VoiceSynth
-from commands.config import setup_config_command
+from commands.settings import setup_settings_command
 from commands.info import setup_info_command
 from commands.join import setup_join_command
 from commands.leave import setup_leave_command
@@ -58,7 +58,7 @@ if __name__ == "__main__" and wait_for_voice_server(VoiceVoxSettings.SPEAKERS_UR
 
     setup_join_command(bot, voice, voice_server, voice_config)
     setup_leave_command(bot, voice_server, voice_config)
-    setup_config_command(bot, voice_config)
+    setup_settings_command(bot, voice_config)
     setup_info_command(bot, voice_config)
     setup_skip_command(bot, voice_server)
 

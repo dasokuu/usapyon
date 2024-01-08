@@ -1,7 +1,7 @@
 import logging
 import discord
 from VoiceSynth import VoiceSynth
-from settings import APPROVED_GUILD_OBJECTS, ERROR_MESSAGES
+from settings import APPROVED_GUILD_OBJECTS, error_messages
 from VoiceSynthConfig import VoiceSynthConfig
 from VoiceSynthServer import VoiceSynthServer
 
@@ -26,7 +26,7 @@ def setup_join_command(
 
         # ユーザーがボイスチャンネルにいない場合、エラーメッセージを表示
         if not interaction.user.voice or not interaction.user.voice.channel:
-            await interaction.followup.send(ERROR_MESSAGES["connection"])
+            await interaction.followup.send(error_messages["connection"])
             return
 
         # VCにすでに接続されている場合
