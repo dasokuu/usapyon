@@ -84,7 +84,14 @@ class VoiceSynth:
                     f"Replaced message content is not a string: {message_content}"
                 )
                 return
-
+            # TenorのGIFリンクをチェック
+            if "tenor.com/view/" in message.content:
+                await self.announce_tenor_gif(voice_server, message, voice_config)
+                return
+            # New Code: Announce sticker name if a sticker is posted
+            elif message.stickers:
+                await self.announce_sticker_post(voice_config, voice_server, message)
+                return
             if message_content:
                 await voice_server.text_to_speech(
                     message.guild.voice_client,
@@ -93,14 +100,27 @@ class VoiceSynth:
                     guild_id,
                 )
             if message.attachments:
-                await voice_config.announce_file_post(voice_server, message)
-
-            # New Code: Announce sticker name if a sticker is posted
-            if message.stickers:
-                await self.announce_sticker_post(voice_config, voice_server, message)
+                await self.announce_file_post(voice_config, voice_server, message)
 
         except Exception as e:
             logging.error(f"Error in handle_message: {e}")
+
+    async def announce_tenor_gif(
+        self,
+        voice_server: VoiceSynthServer,
+        message: discord.Message,
+        voice_config: VoiceSynthConfig,
+    ):
+        """TenorのGIFリンクが投稿された場合にアナウンスする。"""
+        guild_id = message.guild.id
+        announcement_style_id = voice_config.get_announcement_style_id(guild_id)
+        announcement_message = "GIF画像が投稿されました。"
+        await voice_server.text_to_speech(
+            message.guild.voice_client,
+            announcement_message,
+            announcement_style_id,
+            guild_id,
+        )
 
     async def announce_presence(
         self,
