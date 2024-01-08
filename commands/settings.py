@@ -22,7 +22,7 @@ def setup_settings_command(bot, voice_config: VoiceSynthConfig):
         return {
             "user": f"{interaction.user.display_name}さんの読み上げ音声",
             "announcement": "アナウンス音声（サーバー設定）",
-            "user_default": "デフォルト読み上げ音声（サーバー設定）",
+            "user_default": "未設定ユーザーの読み上げ音声音声（サーバー設定）",
         }
 
     def create_settings_view(interaction: discord.Interaction, voice_scope_description):
