@@ -17,7 +17,8 @@ class VoiceVoxSettings:
 
 USER_DEFAULT_STYLE_ID = 3
 ANNOUNCEMENT_DEFAULT_STYLE_ID = 8
-CONFIG_PICKLE_FILE = "config.pkl"
+script_dir = os.path.dirname(os.path.abspath(__file__))
+CONFIG_PICKLE_FILE = os.path.join(script_dir, "config.pkl")
 APPROVED_GUILD_IDS_INT = [
     1189256965172514836,  # くーさーばー１
     1190673139072516096,  # くーさーばー２
