@@ -152,18 +152,28 @@ class VoiceSynthConfig:
         except Exception as e:
             logging.error(f"Error in handle_message: {e}")
 
-    async def announce_file_post(
-        self, server: VoiceSynthServer, message: discord.Message
-    ):
+    async def announce_file_post(self, server: VoiceSynthServer, message: discord.Message):
         """ファイル投稿をアナウンスします。"""
-        file_message = "ファイルが投稿されました。"
         guild_id = message.guild.id
         announcement_style_id = self.config_pickle.get(message.guild.id, {}).get(
             "announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID
         )
-        await server.text_to_speech(
-            message.guild.voice_client, file_message, announcement_style_id, guild_id
-        )
+        
+        for attachment in message.attachments:
+            if attachment.content_type.startswith('image/'):
+                file_message = "画像が投稿されました。"
+            elif attachment.content_type.startswith('video/'):
+                file_message = "動画が投稿されました。"
+            elif attachment.content_type.startswith('audio/'):
+                file_message = "音声ファイルが投稿されました。"
+            elif attachment.content_type.startswith('text/'):
+                file_message = "テキストファイルが投稿されました。"
+            else:
+                file_message = "ファイルが投稿されました。"
+            
+            await server.text_to_speech(
+                message.guild.voice_client, file_message, announcement_style_id, guild_id
+            )
 
     def should_process_message(self, message: discord.Message, guild_id):
         """メッセージが処理対象かどうかを判断します。"""
