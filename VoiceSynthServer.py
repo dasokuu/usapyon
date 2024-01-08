@@ -4,7 +4,7 @@ import asyncio
 import json
 import discord
 import io
-from settings import VoiceVoxSettings
+from settings import ERROR_MESSAGES, VoiceVoxSettings
 
 
 class VoiceSynthServer:
@@ -71,7 +71,9 @@ class VoiceSynthServer:
                 return await response.read()
             return None
 
-    async def text_to_speech(self, voice_client: discord.VoiceClient, text, style_id, guild_id):
+    async def text_to_speech(
+        self, voice_client: discord.VoiceClient, text, style_id, guild_id
+    ):
         if not voice_client or not voice_client.is_connected():
             logging.error("Voice client is not connected.")
             return
@@ -88,7 +90,9 @@ class VoiceSynthServer:
     def _filter_empty_lines(self, text):
         return filter(None, text.split("\n"))
 
-    async def _enqueue_line_for_speech(self, voice_client: discord.VoiceClient, line, style_id, guild_id):
+    async def _enqueue_line_for_speech(
+        self, voice_client: discord.VoiceClient, line, style_id, guild_id
+    ):
         guild_queue = self.get_guild_playback_queue(guild_id)
         await guild_queue.put((voice_client, line, style_id))
 
@@ -128,3 +132,19 @@ class VoiceSynthServer:
     async def close_session(self):
         if self.session and not self.session.closed:
             await self.session.close()  # セッションが開いていれば閉じる
+
+    async def execute_welcome_message(
+        self,
+        voice_client,
+        guild_id,
+        style_id,
+        message,
+        interaction: discord.Interaction,
+    ):
+        welcome_voice = "読み上げを開始します。"
+        try:
+            await self.text_to_speech(voice_client, welcome_voice, style_id, guild_id)
+            await interaction.followup.send(message)
+        except Exception as e:
+            logging.error(f"Welcome message execution failed: {e}")
+            await interaction.followup.send(ERROR_MESSAGES["welcome"])

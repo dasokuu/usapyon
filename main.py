@@ -19,7 +19,7 @@ logging.basicConfig(
 )
 
 
-def is_server_up(url):
+def is_voice_server_up(url):
     try:
         response = requests.get(url)
         if response.status_code == 200:
@@ -30,10 +30,10 @@ def is_server_up(url):
         return False
 
 
-def wait_for_server(url, max_attempts=10, delay=5):
+def wait_for_voice_server(url, max_attempts=10, delay=5):
     attempts = 0
     while attempts < max_attempts:
-        if is_server_up(url):
+        if is_voice_server_up(url):
             print("Server is up!")
             return True
         else:
@@ -45,18 +45,18 @@ def wait_for_server(url, max_attempts=10, delay=5):
     return False
 
 
-if __name__ == "__main__" and wait_for_server(VoiceVoxSettings.SPEAKERS_URL):
+if __name__ == "__main__" and wait_for_voice_server(VoiceVoxSettings.SPEAKERS_URL):
     intents = discord.Intents.default()
     intents.message_content = True
     voice_config = VoiceSynthConfig()
     bot = commands.Bot(command_prefix=BotSettings.BOT_PREFIX, intents=intents)
-    server = VoiceSynthServer()
+    voice_server = VoiceSynthServer()
 
-    setup_join_command(bot, server, voice_config)
-    setup_leave_command(bot, server, voice_config)
+    setup_join_command(bot, voice_server, voice_config)
+    setup_leave_command(bot, voice_server, voice_config)
     setup_config_command(bot, voice_config)
     setup_info_command(bot, voice_config)
-    setup_skip_command(bot, server)
+    setup_skip_command(bot, voice_server)
 
     @bot.event
     async def on_ready():
@@ -68,7 +68,7 @@ if __name__ == "__main__" and wait_for_server(VoiceVoxSettings.SPEAKERS_URL):
                     guild = bot.get_guild(guild_id)
                     if guild:
                         await bot.tree.sync(guild=guild)
-                        bot.loop.create_task(server.process_playback_queue(guild.id))
+                        bot.loop.create_task(voice_server.process_playback_queue(guild.id))
                     else:
                         logging.error(f"Unable to find guild with ID: {guild_id}")
                 except Exception as e:
@@ -81,13 +81,13 @@ if __name__ == "__main__" and wait_for_server(VoiceVoxSettings.SPEAKERS_URL):
         if message.author.bot:  # これでメッセージがボットからのものかどうかをチェック
             return
         await bot.process_commands(message)
-        await voice_config.handle_message(server, message)
+        await voice_config.handle_message(voice_server, message)
 
     @bot.event
     async def on_voice_state_update(member, before, after):
-        await voice_config.handle_voice_state_update(server, bot, member, before, after)
+        await voice_config.handle_voice_state_update(voice_server, bot, member, before, after)
 
     bot.run(TOKEN)
-    asyncio.run(server.close_session())  # Bot停止時にセッションを閉じる
+    asyncio.run(voice_server.close_session())  # Bot停止時にセッションを閉じる
 else:
     print("Server did not become available in time. Exiting.")
