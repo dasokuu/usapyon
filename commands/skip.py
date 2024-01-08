@@ -2,6 +2,7 @@ import discord
 from settings import APPROVED_GUILD_OBJECTS, INFO_MESSAGES
 from VoiceSynthServer import VoiceSynthServer
 
+
 def setup_skip_command(bot, voice_server: VoiceSynthServer):
     @bot.tree.command(
         name="skip",

@@ -6,7 +6,12 @@ from VoiceSynthConfig import VoiceSynthConfig
 from VoiceSynthServer import VoiceSynthServer
 
 
-def setup_join_command(bot, voice: VoiceSynth, voice_server: VoiceSynthServer, voice_config: VoiceSynthConfig):
+def setup_join_command(
+    bot,
+    voice: VoiceSynth,
+    voice_server: VoiceSynthServer,
+    voice_config: VoiceSynthConfig,
+):
     # ボットをボイスチャンネルに接続するコマンド
     @bot.tree.command(
         name="join",
@@ -45,7 +50,9 @@ def setup_join_command(bot, voice: VoiceSynth, voice_server: VoiceSynthServer, v
             # ボットがVCに接続されていない場合、通常の接続処理を実行
             try:
                 voice_client = await voice_config.connect_to_voice_channel(interaction)
-                await voice.welcome_user(voice_config, voice_server, interaction, voice_client)
+                await voice.welcome_user(
+                    voice_config, voice_server, interaction, voice_client
+                )
             except discord.ClientException as e:
                 logging.error(f"Connection error: {e}")
                 await interaction.followup.send(f"接続中にエラーが発生しました: {e}")

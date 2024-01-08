@@ -4,6 +4,7 @@ import emoji
 import jaconv
 import alkana
 
+
 class DiscordMessageHandler:
     USER_MENTION_PATTERN = re.compile(r"<@!?(\d+)>")
     ROLE_MENTION_PATTERN = re.compile(r"<@&(\d+)>")
@@ -44,6 +45,7 @@ class DiscordMessageHandler:
                 kana = alkana.get_kana(sub_word)
                 kana_words.append(kana if kana is not None else sub_word)
             return "".join(kana_words)
+
         return self.ENGLISH_WORD_PATTERN.sub(replace_to_kana, text)
 
     def laugh_replace(self, match):
@@ -54,8 +56,14 @@ class DiscordMessageHandler:
 
     async def replace_content(self, text, message: discord.Message):
         replace_operations = [
-            (self.USER_MENTION_PATTERN, lambda m: self.replace_user_mention(m, message)),
-            (self.ROLE_MENTION_PATTERN, lambda m: self.replace_role_mention(m, message)),
+            (
+                self.USER_MENTION_PATTERN,
+                lambda m: self.replace_user_mention(m, message),
+            ),
+            (
+                self.ROLE_MENTION_PATTERN,
+                lambda m: self.replace_role_mention(m, message),
+            ),
             (self.CHANNEL_PATTERN, lambda m: self.replace_channel_mention(m, message)),
         ]
 
@@ -63,9 +71,11 @@ class DiscordMessageHandler:
         for pattern, func in replace_operations:
             text = self.replace_pattern(pattern, text, func)
         text = self.CUSTOM_EMOJI_PATTERN.sub(
-                self.replace_custom_emoji_name_to_kana, text
-            )
+            self.replace_custom_emoji_name_to_kana, text
+        )
         text = self.URL_PATTERN.sub("URL省略", text)
         text = self.LAUGH_PATTERN.sub(self.laugh_replace, text)
-        text = emoji.demojize(text, language="ja")  # Assuming you meant emojize instead of demojize
+        text = emoji.demojize(
+            text, language="ja"
+        )  # Assuming you meant emojize instead of demojize
         return text
