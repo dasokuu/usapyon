@@ -1,25 +1,12 @@
 import logging
-import re
 import discord
-import emoji
-import jaconv
-import alkana
+from DiscordMessageHandler import DiscordMessageHandler
 from VoiceSynthConfig import VoiceSynthConfig
 from VoiceSynthServer import VoiceSynthServer
 from settings import ANNOUNCEMENT_DEFAULT_STYLE_ID
 
 
 class VoiceSynth:
-    def __init__(self):
-        # 正規表現パターンをグローバル変数として一度コンパイル
-        self.user_mention_pattern = re.compile(r"<@!?(\d+)>")
-        self.role_mention_pattern = re.compile(r"<@&(\d+)>")
-        self.channel_pattern = re.compile(r"<#(\d+)>")
-        self.custom_emoji_pattern = re.compile(r"<:(\w*):\d*>")
-        self.url_pattern = re.compile(r"https?://\S+")
-        self.english_word_pattern = re.compile(r"\b[a-zA-Z_]+\b")
-        self.laugh_pattern = re.compile("[ｗwW]+$")
-
     async def handle_voice_state_update(
         self,
         voice_config: VoiceSynthConfig,
@@ -105,6 +92,7 @@ class VoiceSynth:
         voice_config: VoiceSynthConfig,
         voice_server: VoiceSynthServer,
         message: discord.Message,
+        handler: DiscordMessageHandler
     ):
         guild_id = message.guild.id
         try:
@@ -113,7 +101,7 @@ class VoiceSynth:
                 logging.error(f"Message content is not a string: {message.content}")
                 return
 
-            message_content = await self.replace_content(message.content, message)
+            message_content = await handler.replace_content(message.content, message)
 
             if not isinstance(message_content, str):
                 logging.error(
@@ -215,69 +203,3 @@ class VoiceSynth:
             info_message,
             interaction,
         )
-
-    def replace_user_mention(self, match, message: discord.Message):
-        user_id = int(match.group(1))
-        user = message.guild.get_member(user_id)
-        return user.display_name if user else match.group(0)
-
-    def replace_role_mention(self, match, message: discord.Message):
-        role_id = int(match.group(1))
-        role = discord.utils.get(message.guild.roles, id=role_id)
-        return role.name if role else match.group(0)
-
-    def replace_channel_mention(self, match, message: discord.Message):
-        channel_id = int(match.group(1))
-        channel = message.guild.get_channel(channel_id)
-        return channel.name if channel else match.group(0)
-
-    def replace_custom_emoji_name_to_kana(self, match):
-        emoji_name = match.group(1)
-        return jaconv.alphabet2kana(emoji_name) + " "
-
-    def replace_english_to_kana(self, text):
-        # 英単語を検出する正規表現パターン
-        english_word_pattern = re.compile(r"\b[a-zA-Z_]+\b")
-
-        def replace_to_kana(match):
-            # 英単語をかなに変換
-            word = match.group(0)
-
-            # アンダースコアでつながった単語を分割
-            sub_words = word.split("_")
-            kana_words = []
-
-            for sub_word in sub_words:
-                kana = alkana.get_kana(sub_word)
-                # alkanaが変換できなかった場合は、元の単語をそのまま使用
-                kana_words.append(kana if kana is not None else sub_word)
-
-            # かなに変換された単語を結合
-            return "".join(kana_words)
-
-        # 英単語をかなに置き換え
-        return english_word_pattern.sub(replace_to_kana, text)
-
-    # 文末の連続する「ｗ」を「わら」と置き換える
-    def laugh_replace(self, match):
-        return "わら" * len(match.group(0))
-    # 新しいメソッド: パターン置換を一元管理
-    def replace_pattern(self, pattern, text, replace_func):
-        return pattern.sub(replace_func, text)
-
-    async def replace_content(self, text, message: discord.Message):
-        replace_operations = [
-            (self.user_mention_pattern, lambda m: self.replace_user_mention(m, message)),
-            (self.role_mention_pattern, lambda m: self.replace_role_mention(m, message)),
-            (self.channel_pattern, lambda m: self.replace_channel_mention(m, message))
-        ]
-        text = self.replace_english_to_kana(text)  # First replace English words
-        for pattern, func in replace_operations:
-            text = self.replace_pattern(pattern, text, func)
-        text = self.custom_emoji_pattern.sub(
-                self.replace_custom_emoji_name_to_kana, text
-            )
-        text = self.url_pattern.sub("URL省略", text)
-        text = self.laugh_pattern.sub(self.laugh_replace, text)
-        text = emoji.demojize(text, language="ja")
-        return text
