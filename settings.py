@@ -2,8 +2,11 @@ import os
 import json
 import discord
 
+script_dir = os.path.dirname(os.path.abspath(__file__))
+config_json_file = os.path.join(script_dir, "config.json")
+
 # 設定ファイルの読み込み
-with open("config.json", "r") as f:
+with open(config_json_file, "r") as f:
     config = json.load(f)
 
 
@@ -33,7 +36,6 @@ TOKEN = os.getenv("VOICECHATLOIDTEST_TOKEN")
 
 USER_DEFAULT_STYLE_ID = 3
 ANNOUNCEMENT_DEFAULT_STYLE_ID = 8
-script_dir = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PICKLE_FILE = os.path.join(script_dir, "config.pkl")
 
 characters_info_file = os.path.join(script_dir, "characters_info.json")
