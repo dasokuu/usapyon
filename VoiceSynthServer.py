@@ -79,16 +79,14 @@ class VoiceSynthServer:
             return
 
         try:
-            lines = self._filter_empty_lines(text)
-            for line in lines:
-                await self._enqueue_line_for_speech(
-                    voice_client, line, style_id, guild_id
-                )
+            lines = text.split("\n")  # 以前の_filter_empty_lines関数の機能をここに統合
+            for line in filter(None, lines):  # 空の行を除外し、余分な空白を削除しない
+                guild_queue = self.get_guild_playback_queue(guild_id)
+                await guild_queue.put(
+                    (voice_client, line, style_id)
+                )  # strip()を使用せずにlineをそのまま使用
         except Exception as e:
             logging.error(f"Error in text_to_speech: {e}")
-
-    def _filter_empty_lines(self, text):
-        return filter(None, text.split("\n"))
 
     async def _enqueue_line_for_speech(
         self, voice_client: discord.VoiceClient, line, style_id, guild_id
