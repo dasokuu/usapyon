@@ -1,3 +1,3 @@
 # VoiceChatLoid
-`pip install discord.py[voice]`
-`pip install aiohttp`
+`pip install -r requirements.txt`
+`python3 main.py`

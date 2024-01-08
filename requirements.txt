@@ -1,3 +1,5 @@
 jaconv
 discord.py[voice]
 aiohttp
+emoji
+alkana
