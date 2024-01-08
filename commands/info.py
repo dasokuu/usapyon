@@ -7,7 +7,7 @@ def setup_info_command(bot, voice_config: VoiceSynthConfig):
     @bot.tree.command(
         name="info",
         guilds=APPROVED_GUILD_OBJECTS,
-        description="現在の読み上げ音声スコープと設定を表示します。",
+        description="現在の設定を表示します。",
     )
     async def info(interaction: discord.Interaction):
         guild_id = interaction.guild_id
