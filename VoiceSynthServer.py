@@ -42,20 +42,19 @@ class VoiceSynthServer:
                 guild_queue.task_done()
 
     async def audio_query(self, text, style_id):
+        # 音声合成用のクエリを作成します。
         query_payload = {"text": text, "speaker": style_id}
-        session = await self.get_session()
-        try:
-            async with session.post(
-                VoiceVoxSettings.AUDIO_QUERY_URL, headers=self.headers, params=query_payload
-            ) as response:
-                if response.status == 200:
-                    return await response.json()
-                else:
-                    logging.error(f"Audio query failed with status: {response.status}")
-                    return None
-        except Exception as e:
-            logging.error(f"Error in audio_query: {e}")
-            return None
+        session = await self.get_session()  # セッションを取得
+
+        async with session.post(
+            VoiceVoxSettings.AUDIO_QUERY_URL, headers=self.headers, params=query_payload
+        ) as response:
+            if response.status == 200:
+                return await response.json()
+            elif response.status == 422:
+                error_detail = await response.text()
+                logging.error(f"Unprocessable Entity: {error_detail}")
+                return None
 
     async def synthesis(self, speaker, query_data):
         # 音声合成を行います。
