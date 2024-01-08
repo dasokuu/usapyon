@@ -1,7 +1,7 @@
 import logging
 import discord
 from settings import APPROVED_GUILD_OBJECTS, ERROR_MESSAGES
-from utils import VoiceSynthConfig, connect_to_voice_channel, welcome_user
+from utils import VoiceSynthConfig, connect_to_voice_channel
 from voice import VoiceSynthServer
 
 
@@ -43,7 +43,7 @@ def setup_join_command(bot, server: VoiceSynthServer, voice_config: VoiceSynthCo
             # ボットがVCに接続されていない場合、通常の接続処理を実行
             try:
                 voice_client = await connect_to_voice_channel(interaction)
-                await welcome_user(server, interaction, voice_client, voice_config)
+                await voice_config.welcome_user(server, interaction, voice_client)
             except discord.ClientException as e:
                 logging.error(f"Connection error: {e}")
                 await interaction.followup.send(f"接続中にエラーが発生しました: {e}")

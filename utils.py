@@ -118,16 +118,6 @@ class VoiceSynthConfig:
         guild_id = message.guild.id
         try:
             logging.info(f"Handling message: {message.content}")
-            # スティッカーがある場合はその名前を読み上げる
-            if message.stickers:
-                sticker_names = [sticker.name for sticker in message.stickers]
-                sticker_text = "、".join(sticker_names) + "のスタンプを送信しました。"
-                await server.text_to_speech(
-                    message.guild.voice_client,
-                    sticker_text,
-                    self.get_user_style_id(message.author.id, guild_id),
-                    guild_id,
-                )
             if not isinstance(message.content, str):
                 logging.error(f"Message content is not a string: {message.content}")
                 return
@@ -135,9 +125,7 @@ class VoiceSynthConfig:
             message_content = await replace_content(message.content, message)
 
             if not isinstance(message_content, str):
-                logging.error(
-                    f"Replaced message content is not a string: {message_content}"
-                )
+                logging.error(f"Replaced message content is not a string: {message_content}")
                 return
 
             if message_content:
@@ -149,9 +137,29 @@ class VoiceSynthConfig:
                 )
             if message.attachments:
                 await self.announce_file_post(server, message)
+
+            # New Code: Announce sticker name if a sticker is posted
+            if message.stickers:
+                await self.announce_sticker_post(server, message)
+
         except Exception as e:
             logging.error(f"Error in handle_message: {e}")
 
+    # New Method: Announce the name of the sticker
+    async def announce_sticker_post(self, server: VoiceSynthServer, message: discord.Message):
+        """スタンプ投稿をアナウンスします。"""
+        guild_id = message.guild.id
+        announcement_style_id = self.get_announcement_style_id(guild_id)
+
+        for sticker in message.stickers:
+            sticker_name = sticker.name
+            announcement_message = f"スタンプ「{sticker_name}」が投稿されました。"
+            await server.text_to_speech(
+                message.guild.voice_client,
+                announcement_message,
+                announcement_style_id,
+                guild_id,
+            )
     async def announce_file_post(
         self, server: VoiceSynthServer, message: discord.Message
     ):
@@ -250,7 +258,7 @@ class VoiceSynthConfig:
         interaction: discord.Interaction,
         voice_client: discord.VoiceClient,
     ):
-        guild_id, text_channel_id = get_and_update_guild_settings(interaction)
+        guild_id, text_channel_id = self.get_and_update_guild_settings(interaction)
         style_ids = self.get_style_ids(guild_id, interaction.user.id)
         speaker_details = self.get_speaker_details(*style_ids)
         info_message = create_info_message(
@@ -288,7 +296,16 @@ class VoiceSynthConfig:
             "announcement": (announcement_display_name, announcement_style_name),
             "default": (user_default_display_name, user_default_style_name),
         }
-
+    def get_and_update_guild_settings(self,
+        interaction: discord.Interaction
+    ):
+        guild_id = interaction.guild_id
+        text_channel_id = interaction.channel_id
+        # Updated to clarify the intention and reduce complexity
+        guild_settings = self.config_pickle.setdefault(guild_id, {})
+        guild_settings["text_channel"] = text_channel_id
+        self.save_style_settings()
+        return guild_id, text_channel_id
 
 def get_character_info(speaker_name):
     # もち子さんの特別な処理
@@ -411,16 +428,7 @@ async def replace_content(text, message: discord.Message):
     return replaced_text
 
 
-def get_and_update_guild_settings(
-    interaction: discord.Interaction, voice_config: VoiceSynthConfig
-):
-    guild_id = interaction.guild_id
-    text_channel_id = interaction.channel_id
-    # Updated to clarify the intention and reduce complexity
-    guild_settings = voice_config.config_pickle.setdefault(guild_id, {})
-    guild_settings["text_channel"] = text_channel_id
-    voice_config.save_style_settings()
-    return guild_id, text_channel_id
+
 
 
 def create_info_message(
