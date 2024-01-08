@@ -33,8 +33,12 @@ class DiscordMessageHandler:
         return channel.name if channel else match.group(0)
 
     def replace_custom_emoji_name_to_kana(self, match):
-        emoji_name = match.group(1)
-        return jaconv.alphabet2kana(emoji_name) + " "
+        # 絵文字の名前をキャプチャする
+        emoji_name = match.group(0)
+        # 絵文字名からID部分を取り除く
+        emoji_name_cleaned = emoji_name.split(":")[1]
+        # 絵文字名をひらがなに変換して返す
+        return jaconv.alphabet2kana(emoji_name_cleaned) + " "
 
     def replace_english_to_kana(self, text):
         def replace_to_kana(match):
