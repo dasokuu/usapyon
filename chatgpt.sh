@@ -11,5 +11,3 @@ find . -name "*.py" | while read file; do
 done
 
 echo 'このアプリケーションを100点満点で採点し、修正案のコードを示してください。' >> python_files.md
-
-

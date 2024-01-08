@@ -19,9 +19,9 @@ def setup_config_command(bot, voice_config: VoiceSynthConfig):
 
     def get_voice_scope_description(interaction: discord.Interaction):
         return {
-            "user": f"{interaction.user.display_name}さんの読み上げ音声",
-            "announcement": "入退出時のアナウンス音声",
-            "user_default": "未設定ユーザーの読み上げ音声",
+            "user": f"「{interaction.user.display_name}」さんの読み上げ音声",
+            "announcement": "アナウンス音声（サーバー設定）",
+            "user_default": "デフォルト読み上げ音声（サーバー設定）",
         }
 
     def create_config_view(interaction: discord.Interaction, voice_scope_description):
@@ -33,9 +33,7 @@ def setup_config_command(bot, voice_config: VoiceSynthConfig):
 
     def create_scope_button(interaction: discord.Interaction, label, voice_scope):
         button = Button(
-            style=discord.ButtonStyle.primary
-            if voice_scope == "user"
-            else discord.ButtonStyle.secondary,
+            style=discord.ButtonStyle.primary,
             label=label,
         )
         button.callback = create_button_callback(interaction, button, voice_scope)

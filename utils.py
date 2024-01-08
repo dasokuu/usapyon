@@ -357,8 +357,8 @@ def create_info_message(
     return (
         f"テキストチャンネル: <#{text_channel_id}>\n"
         f"{user_display_name}さんの読み上げ音声: [{user[0]}] - {user[1]}\n"
-        f"入退出時のアナウンス音声: [{announcement[0]}] - {announcement[1]}\n"
-        f"未設定ユーザーの読み上げ音声: [{default[0]}] - {default[1]}\n"
+        f"アナウンス音声（サーバー設定）: [{announcement[0]}] - {announcement[1]}\n"
+        f"デフォルト読み上げ音声（サーバー設定）: [{default[0]}] - {default[1]}\n"
     )
 
 
