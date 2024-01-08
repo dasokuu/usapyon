@@ -2,9 +2,9 @@ import asyncio
 import logging
 import discord
 from discord.ext import commands
-from utils import VoiceSynthConfig
+from utils import VoiceSynthConfig, wait_for_server
 from bot_commands import setup_commands
-from settings import APPROVED_GUILD_IDS_INT, BotSettings, TOKEN
+from settings import APPROVED_GUILD_IDS_INT, BotSettings, TOKEN, VoiceVoxSettings
 from voice import VoiceSynthServer
 
 # Improved logging format and level
@@ -12,7 +12,8 @@ logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(message)s", level=logging.INFO
 )
 
-if __name__ == "__main__":
+
+if __name__ == "__main__" and wait_for_server(VoiceVoxSettings.SPEAKERS_URL):
     intents = discord.Intents.default()
     intents.message_content = True
     voice_config = VoiceSynthConfig()
@@ -51,3 +52,5 @@ if __name__ == "__main__":
 
     bot.run(TOKEN)
     asyncio.run(server.close_session())  # Bot停止時にセッションを閉じる
+else:
+    print("Server did not become available in time. Exiting.")

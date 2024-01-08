@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import pickle
+import time
 import requests
 import jaconv
 import re
@@ -152,27 +153,35 @@ class VoiceSynthConfig:
         except Exception as e:
             logging.error(f"Error in handle_message: {e}")
 
-    async def announce_file_post(self, server: VoiceSynthServer, message: discord.Message):
+    async def announce_file_post(
+        self, server: VoiceSynthServer, message: discord.Message
+    ):
         """ファイル投稿をアナウンスします。"""
         guild_id = message.guild.id
         announcement_style_id = self.config_pickle.get(message.guild.id, {}).get(
             "announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID
         )
-        
+
+        file_messages = []
         for attachment in message.attachments:
-            if attachment.content_type.startswith('image/'):
-                file_message = "画像が投稿されました。"
-            elif attachment.content_type.startswith('video/'):
-                file_message = "動画が投稿されました。"
-            elif attachment.content_type.startswith('audio/'):
-                file_message = "音声ファイルが投稿されました。"
-            elif attachment.content_type.startswith('text/'):
-                file_message = "テキストファイルが投稿されました。"
+            if attachment.content_type.startswith("image/"):
+                file_messages.append("画像")
+            elif attachment.content_type.startswith("video/"):
+                file_messages.append("動画")
+            elif attachment.content_type.startswith("audio/"):
+                file_messages.append("音声ファイル")
+            elif attachment.content_type.startswith("text/"):
+                file_messages.append("テキストファイル")
             else:
-                file_message = "ファイルが投稿されました。"
-            
+                file_messages.append("ファイル")
+
+        if file_messages:
+            file_message = f"{', '.join(file_messages)}が投稿されました。"
             await server.text_to_speech(
-                message.guild.voice_client, file_message, announcement_style_id, guild_id
+                message.guild.voice_client,
+                file_message,
+                announcement_style_id,
+                guild_id,
             )
 
     def should_process_message(self, message: discord.Message, guild_id):
@@ -325,17 +334,17 @@ async def replace_content(text, message: discord.Message):
         text = role_mention_pattern.sub(
             lambda m: replace_role_mention(m, message), text
         )
-        text = channel_pattern.sub(
-            lambda m: replace_channel_mention(m, message), text
-        )
+        text = channel_pattern.sub(lambda m: replace_channel_mention(m, message), text)
         text = custom_emoji_pattern.sub(replace_custom_emoji_name_to_kana, text)
         text = url_pattern.sub("URL省略", text)
         text = laugh_pattern.sub(laugh_replace, text)
         return text
+
     text = emoji.demojize(text, language="ja")
     # 文章を一括で置換
     replaced_text = replace_patterns(text)
     return replaced_text
+
 
 async def welcome_user(
     server: VoiceSynthServer,
@@ -450,3 +459,29 @@ async def connect_to_voice_channel(interaction: discord.Interaction):
     except Exception as e:
         logging.error(f"Voice channel connection error: {e}")
         raise
+
+
+def is_server_up(url):
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            return True
+        else:
+            return False
+    except requests.ConnectionError:
+        return False
+
+
+def wait_for_server(url, max_attempts=10, delay=5):
+    attempts = 0
+    while attempts < max_attempts:
+        if is_server_up(url):
+            print("Server is up!")
+            return True
+        else:
+            print(
+                f"Server not up yet. Waiting for {delay} seconds. Attempt {attempts + 1}/{max_attempts}"
+            )
+            time.sleep(delay)
+            attempts += 1
+    return False
