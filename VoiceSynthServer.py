@@ -60,8 +60,7 @@ class VoiceSynthServer:
         # 音声合成を行います。
         synth_payload = {"speaker": speaker}
         headers = {"Content-Type": "application/json", "Accept": "audio/wav"}
-        session = await self.get_session()  # セッションを取得
-        async with session.post(
+        async with (await self.get_session()).post(  # セッションの取得方法を修正
             VoiceVoxSettings.SYNTHESIS_URL,
             headers=headers,
             params=synth_payload,
