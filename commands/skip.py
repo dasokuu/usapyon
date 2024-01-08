@@ -23,7 +23,11 @@ def setup_skip_command(bot, server: VoiceSynthServer):
         if voice_client.is_playing():
             voice_client.stop()
 
-        # ギルドの再生キューをクリア
-        await server.clear_playback_queue(guild_id)
-
-        await interaction.followup.send(INFO_MESSAGES["skip"])
+        # ギルドの再生キューを確認し、空の場合はユーザーに通知
+        guild_queue = server.get_guild_playback_queue(guild_id)
+        if guild_queue.empty():
+            await interaction.followup.send(INFO_MESSAGES["no_queue"])
+        else:
+            # キューが空ではない場合、キューをクリアしてスキップされたことをユーザーに通知
+            await server.clear_playback_queue(guild_id)
+            await interaction.followup.send(INFO_MESSAGES["skip"])
