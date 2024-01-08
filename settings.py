@@ -36,7 +36,7 @@ ANNOUNCEMENT_DEFAULT_STYLE_ID = 8
 script_dir = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PICKLE_FILE = os.path.join(script_dir, "config.pkl")
 
-characters_info_file = os.path.join(script_dir, "config.pkl")
+characters_info_file = os.path.join(script_dir, "characters_info.json")
 
 with open(characters_info_file, "r") as f:
     CHARACTORS_INFO = json.load(f)
