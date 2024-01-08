@@ -40,7 +40,7 @@ if __name__ == "__main__":
 
     @bot.event
     async def on_message(message):
-        if message.author == bot.user:
+        if message.author.bot:  # これでメッセージがボットからのものかどうかをチェック
             return
         await bot.process_commands(message)
         await voice_config.handle_message(server, message)
