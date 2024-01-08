@@ -61,7 +61,7 @@ async def main():
         voice = VoiceSynth()
         handler = DiscordMessageHandler()
 
-        setup_join_command(bot, voice, voice_server, voice_config)
+        setup_join_command(bot, voice, voice_server, voice_config, handler)
         setup_leave_command(bot, voice_server, voice_config)
         setup_settings_command(bot, voice_config)
         setup_info_command(bot, voice_config)
@@ -101,7 +101,7 @@ async def main():
         @bot.event
         async def on_voice_state_update(member: discord.Member, before, after):
             await voice.handle_voice_state_update(
-                voice_config, voice_server, bot, member, before, after
+                voice_config, voice_server, bot, member, before, after, handler
             )
 
         await bot.start(TOKEN)  # bot.run()の代わりにbot.start()を使用します

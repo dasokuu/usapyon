@@ -3,7 +3,7 @@ import discord
 from DiscordMessageHandler import DiscordMessageHandler
 from VoiceSynthConfig import VoiceSynthConfig
 from VoiceSynthServer import VoiceSynthServer
-from settings import ANNOUNCEMENT_DEFAULT_STYLE_ID
+from settings import ANNOUNCEMENT_DEFAULT_STYLE_ID, error_messages
 
 
 class VoiceSynth:
@@ -15,6 +15,7 @@ class VoiceSynth:
         member: discord.Member,
         before,
         after,
+        handler: DiscordMessageHandler,
     ):
         guild_id = member.guild.id
         # ボット自身の状態変更を無視
@@ -33,14 +34,14 @@ class VoiceSynth:
             and after.channel == voice_client.channel
         ):
             await self.announce_presence(
-                member, voice_client, voice_config, voice_server, "entered"
+                member, voice_client, voice_config, voice_server, handler, "entered"
             )
         elif (
             before.channel == voice_client.channel
             and after.channel != voice_client.channel
         ):
             await self.announce_presence(
-                member, voice_client, voice_config, voice_server, "left"
+                member, voice_client, voice_config, voice_server, handler, "left"
             )
 
         # ボイスチャンネルに誰もいなくなったら自動的に切断します。
@@ -77,7 +78,7 @@ class VoiceSynth:
                 logging.error(f"Message content is not a string: {message.content}")
                 return
 
-            message_content = await handler.replace_content(message.content, message)
+            message_content = message.content
 
             if not isinstance(message_content, str):
                 logging.error(
@@ -86,40 +87,53 @@ class VoiceSynth:
                 return
             # TenorのGIFリンクをチェック
             if "tenor.com/view/" in message.content:
-                await self.announce_tenor_gif(voice_server, message, voice_config)
+                await self.announce_tenor_gif(
+                    message, voice_config, handler, voice_server
+                )
                 return
             # New Code: Announce sticker name if a sticker is posted
             elif message.stickers:
-                await self.announce_sticker_post(voice_config, voice_server, message)
+                await self.announce_sticker_post(
+                    voice_config, voice_server, message, handler
+                )
                 return
             if message_content:
-                await voice_server.text_to_speech(
+                await self.text_to_speech(
                     message.guild.voice_client,
                     message_content,
                     voice_config.get_user_style_id(message.author.id, guild_id),
                     guild_id,
+                    handler,
+                    voice_server,
+                    message,
                 )
             if message.attachments:
-                await self.announce_file_post(voice_config, voice_server, message)
+                await self.announce_file_post(
+                    voice_config, voice_server, message, handler
+                )
 
         except Exception as e:
             logging.error(f"Error in handle_message: {e}")
 
     async def announce_tenor_gif(
         self,
-        voice_server: VoiceSynthServer,
         message: discord.Message,
         voice_config: VoiceSynthConfig,
+        handler: DiscordMessageHandler,
+        voice_server: VoiceSynthServer,
     ):
         """TenorのGIFリンクが投稿された場合にアナウンスする。"""
         guild_id = message.guild.id
         announcement_style_id = voice_config.get_announcement_style_id(guild_id)
         announcement_message = "GIF画像が投稿されました。"
-        await voice_server.text_to_speech(
+        await self.text_to_speech(
             message.guild.voice_client,
             announcement_message,
             announcement_style_id,
             guild_id,
+            handler,
+            voice_server,
+            message,
         )
 
     async def announce_presence(
@@ -128,6 +142,7 @@ class VoiceSynth:
         voice_client,
         voice_config: VoiceSynthConfig,
         voice_server: VoiceSynthServer,
+        handler: DiscordMessageHandler,  # handlerを追加
         action="entered",
     ):
         action_texts = {"entered": "が入室しました。", "left": "が退室しました。"}
@@ -147,10 +162,15 @@ class VoiceSynth:
                 if text_channel:
                     await text_channel.send(message)
         announcement_voice = f"{member.display_name}さん{action_text}"
-
         announcement_style_id = voice_config.get_announcement_style_id(member.guild.id)
-        await voice_server.text_to_speech(
-            voice_client, announcement_voice, announcement_style_id, member.guild.id
+        await self.text_to_speech(
+            voice_client,
+            announcement_voice,
+            announcement_style_id,
+            member.guild.id,
+            handler,
+            voice_server,
+            message,
         )
 
     # New Method: Announce the name of the sticker
@@ -159,6 +179,7 @@ class VoiceSynth:
         voice_config: VoiceSynthConfig,
         voice_server: VoiceSynthServer,
         message: discord.Message,
+        handler: DiscordMessageHandler,
     ):
         """スタンプ投稿をアナウンスします。"""
         guild_id = message.guild.id
@@ -167,11 +188,14 @@ class VoiceSynth:
         for sticker in message.stickers:
             sticker_name = sticker.name
             announcement_message = f"{sticker_name}スタンプが投稿されました。"
-            await voice_server.text_to_speech(
+            await self.text_to_speech(
                 message.guild.voice_client,
                 announcement_message,
                 announcement_style_id,
                 guild_id,
+                handler,
+                voice_server,
+                message,
             )
 
     async def announce_file_post(
@@ -179,6 +203,7 @@ class VoiceSynth:
         voice_config: VoiceSynthConfig,
         voice_server: VoiceSynthServer,
         message: discord.Message,
+        handler: DiscordMessageHandler,
     ):
         """ファイル投稿をアナウンスします。"""
         guild_id = message.guild.id
@@ -201,11 +226,14 @@ class VoiceSynth:
 
         if file_messages:
             file_message = f"{', '.join(file_messages)}が投稿されました。"
-            await voice_server.text_to_speech(
+            await self.text_to_speech(
                 message.guild.voice_client,
                 file_message,
                 announcement_style_id,
                 guild_id,
+                handler,
+                voice_server,
+                message,
             )
 
     async def welcome_user(
@@ -214,6 +242,7 @@ class VoiceSynth:
         voice_server: VoiceSynthServer,
         interaction: discord.Interaction,
         voice_client: discord.VoiceClient,
+        handler: DiscordMessageHandler,
     ):
         guild_id, text_channel_id = voice_config.get_and_update_guild_settings(
             interaction
@@ -223,10 +252,63 @@ class VoiceSynth:
         info_message = voice_config.create_info_message(
             interaction, text_channel_id, speaker_details
         )
-        await voice_server.execute_welcome_message(
+        await self.execute_welcome_message(
             voice_client,
             guild_id,
             style_ids[1],
             info_message,
             interaction,
+            handler,
+            voice_server,
         )
+
+    async def text_to_speech(
+        self,
+        voice_client: discord.VoiceClient,
+        text,
+        style_id,
+        guild_id,
+        handler: DiscordMessageHandler,
+        voice_server: VoiceSynthServer,
+        message: discord.Message,
+    ):
+        if not voice_client or not voice_client.is_connected():
+            logging.error("Voice client is not connected.")
+            return
+
+        try:
+            lines = text.split("\n")
+            for line in filter(None, lines):
+                # DiscordMessageHandlerを用いてテキストを処理
+                processed_line = await handler.replace_content(line, message)
+                guild_queue = voice_server.get_guild_playback_queue(guild_id)
+                await guild_queue.put((voice_client, processed_line, style_id))
+        except Exception as e:
+            logging.error(f"Error in text_to_speech: {e}")
+            # Handle specific exceptions and add remediation here.
+
+    async def execute_welcome_message(
+        self,
+        voice_client,
+        guild_id,
+        style_id,
+        message,
+        interaction: discord.Interaction,
+        handler: DiscordMessageHandler,
+        voice_server: VoiceSynthServer,
+    ):
+        welcome_voice = "読み上げを開始します。"
+        try:
+            await self.text_to_speech(
+                voice_client,
+                welcome_voice,
+                style_id,
+                guild_id,
+                handler,
+                voice_server,
+                message,
+            )
+            await interaction.followup.send(message)
+        except Exception as e:
+            logging.error(f"Welcome message execution failed: {e}")
+            await interaction.followup.send(error_messages["welcome"])

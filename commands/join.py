@@ -1,5 +1,6 @@
 import logging
 import discord
+from DiscordMessageHandler import DiscordMessageHandler
 from VoiceSynth import VoiceSynth
 from settings import APPROVED_GUILD_OBJECTS, error_messages
 from VoiceSynthConfig import VoiceSynthConfig
@@ -11,6 +12,7 @@ def setup_join_command(
     voice: VoiceSynth,
     voice_server: VoiceSynthServer,
     voice_config: VoiceSynthConfig,
+    handler: DiscordMessageHandler
 ):
     # ボットをボイスチャンネルに接続するコマンド
     @bot.tree.command(
@@ -51,7 +53,7 @@ def setup_join_command(
             try:
                 voice_client = await voice_config.connect_to_voice_channel(interaction)
                 await voice.welcome_user(
-                    voice_config, voice_server, interaction, voice_client
+                    voice_config, voice_server, interaction, voice_client, handler
                 )
             except discord.ClientException as e:
                 logging.error(f"Connection error: {e}")
