@@ -151,7 +151,7 @@ class VoiceSynth:
         # 入室アクション時にVOICEVOXのスピーカー名を使用
         if action == "entered":
             user_style_id = voice_config.get_user_style_id(member.id, member.guild.id)
-            _, user_display_name = voice_config.get_speaker_details(user_style_id)
+            _, user_display_name = voice_config.get_character_info(user_style_id)
             message = f"{user_display_name} {member.display_name}さん{action_text}"
             # テキストチャンネルへのメッセージ送信
             text_channel_id = voice_config.voice_config_pickle.get(
