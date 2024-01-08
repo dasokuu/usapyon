@@ -322,7 +322,7 @@ async def replace_content(text, message: discord.Message):
         text = url_pattern.sub("URL省略", text)
         text = laugh_pattern.sub(laugh_replace, text)
         return text
-
+    text = emoji.demojize(text, language="ja")
     # 文章を一括で置換
     replaced_text = replace_patterns(text)
     return replaced_text
