@@ -110,9 +110,24 @@ class VoiceSynth:
         voice_server: VoiceSynthServer,
         action="entered",
     ):
-        action_texts = {"entered": "入室しました。", "left": "退室しました。"}
-        action_text = action_texts.get(action, "行動しました。")
-        announcement_voice = f"{member.display_name}さんが{action_text}"
+        action_texts = {"entered": "が入室しました。", "left": "が退室しました。"}
+        action_text = action_texts.get(action, "が行動しました。")
+
+        # 入室アクション時にVOICEVOXのスピーカー名を使用
+        if action == "entered":
+            user_style_id = voice_config.get_user_style_id(member.id, member.guild.id)
+            _, user_display_name = voice_config.get_speaker_details(user_style_id)
+            message = f"{user_display_name} {member.display_name}さん{action_text}"
+            # テキストチャンネルへのメッセージ送信
+            text_channel_id = voice_config.voice_config_pickle.get(
+                member.guild.id, {}
+            ).get("text_channel")
+            if text_channel_id:
+                text_channel = member.guild.get_channel(text_channel_id)
+                if text_channel:
+                    await text_channel.send(message)
+        announcement_voice = f"{member.display_name}さん{action_text}"
+
         announcement_style_id = voice_config.get_announcement_style_id(member.guild.id)
         await voice_server.text_to_speech(
             voice_client, announcement_voice, announcement_style_id, member.guild.id
