@@ -135,7 +135,7 @@ def setup_config_command(bot, voice_config: VoiceSynthConfig):
             voice_scope_description = get_voice_scope_description(interaction)
             # 'interaction'を正しく使ってメッセージを編集
             speaker_name = self.speakers[self.current_page]["name"]
-            content = f"矢印や検索ボタンなどを使って使用するキャラクターを選択したあと、キャラクターのスタイルを選んでください：\nキャラクター {self.current_page + 1} / {len(self.speakers)}\n"
+            content = f"矢印や検索ボタンを活用してお好みのキャラクターを選んだ後、そのキャラクター固有のスタイル（声のバリエーションや特色など）を選択してください：\nキャラクター {self.current_page + 1} / {len(self.speakers)}\n"
             speaker_character_id, speaker_display_name = get_character_info(
                 speaker_name
             )
@@ -219,7 +219,7 @@ def setup_config_command(bot, voice_config: VoiceSynthConfig):
             else "利用可能なキャラクターがいません"
         )
         content = (
-            f"矢印や検索ボタンなどを使って使用するキャラクターを選択したあと、キャラクターのスタイルを選んでください：\nキャラクター 1 / {len(voice_config.speakers)}\n"
+            f"矢印や検索ボタンを活用してお好みのキャラクターを選んだ後、そのキャラクター固有のスタイル（声のバリエーションや特色など）を選択してください：\nキャラクター 1 / {len(voice_config.speakers)}\n"
         )
         speaker_character_id, speaker_display_name = get_character_info(speaker_name)
         speaker_url = f"{DORMITORY_URL_BASE}/{speaker_character_id}/"
