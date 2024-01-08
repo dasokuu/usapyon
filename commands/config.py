@@ -4,7 +4,7 @@ import jaconv
 from settings import APPROVED_GUILD_OBJECTS, DORMITORY_URL_BASE
 from discord.ui import Button, View
 
-from utils import VoiceSynthConfig, get_character_info
+from VoiceSynthConfig import VoiceSynthConfig
 
 
 def setup_config_command(bot, voice_config: VoiceSynthConfig):
@@ -142,9 +142,10 @@ def setup_config_command(bot, voice_config: VoiceSynthConfig):
             # 'interaction'を正しく使ってメッセージを編集
             speaker_name = self.speakers[self.current_page]["name"]
             content = f"矢印や検索ボタンを活用してお好みのキャラクターを選んだ後、そのキャラクター固有のスタイル（声のバリエーションや特色など）を選択してください：\nキャラクター {self.current_page + 1} / {len(self.speakers)}\n"
-            speaker_character_id, speaker_display_name = get_character_info(
-                speaker_name
-            )
+            (
+                speaker_character_id,
+                speaker_display_name,
+            ) = voice_config.get_character_info(speaker_name)
             speaker_url = f"{DORMITORY_URL_BASE}/{speaker_character_id}/"
 
             # 歓迎メッセージを作成
@@ -193,9 +194,10 @@ def setup_config_command(bot, voice_config: VoiceSynthConfig):
                         style_id,
                         self.voice_scope,
                     )
-                    speaker_character_id, speaker_display_name = get_character_info(
-                        speaker_name
-                    )
+                    (
+                        speaker_character_id,
+                        speaker_display_name,
+                    ) = voice_config.get_character_info(speaker_name)
                     speaker_url = f"{DORMITORY_URL_BASE}/{speaker_character_id}/"
                     await interaction.response.send_message(
                         f"{voice_scope_description[self.voice_scope]}が「[{speaker_display_name}]({speaker_url}) {style_name}」に更新されました。"
@@ -225,7 +227,9 @@ def setup_config_command(bot, voice_config: VoiceSynthConfig):
             else "利用可能なキャラクターがいません"
         )
         content = f"矢印や検索ボタンを活用してお好みのキャラクターを選んだ後、そのキャラクター固有のスタイル（声のバリエーションや特色など）を選択してください：\nキャラクター 1 / {len(voice_config.speakers)}\n"
-        speaker_character_id, speaker_display_name = get_character_info(speaker_name)
+        speaker_character_id, speaker_display_name = voice_config.get_character_info(
+            speaker_name
+        )
         speaker_url = f"{DORMITORY_URL_BASE}/{speaker_character_id}/"
 
         content += f"[{speaker_display_name}]({speaker_url})"
@@ -263,9 +267,10 @@ def setup_config_command(bot, voice_config: VoiceSynthConfig):
                 voice_config.update_style_setting(
                     interaction.guild.id, interaction.user.id, style_id, voice_scope
                 )
-                speaker_character_id, speaker_display_name = get_character_info(
-                    speaker_name
-                )
+                (
+                    speaker_character_id,
+                    speaker_display_name,
+                ) = voice_config.get_character_info(speaker_name)
                 speaker_url = f"{DORMITORY_URL_BASE}/{speaker_character_id}/"
                 await interaction.response.send_message(
                     f"{voice_scope_description[voice_scope]}が「[{speaker_display_name}]({speaker_url}) {style_name}」に更新されました。"

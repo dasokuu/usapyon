@@ -1,8 +1,8 @@
 import logging
 import discord
 from settings import APPROVED_GUILD_OBJECTS, ERROR_MESSAGES
-from utils import VoiceSynthConfig, connect_to_voice_channel
-from voice import VoiceSynthServer
+from VoiceSynthConfig import VoiceSynthConfig
+from VoiceSynthServer import VoiceSynthServer
 
 
 def setup_join_command(bot, server: VoiceSynthServer, voice_config: VoiceSynthConfig):
@@ -28,7 +28,8 @@ def setup_join_command(bot, server: VoiceSynthServer, voice_config: VoiceSynthCo
             # 読み上げテキストチャンネルが既に設定されているが、異なる場合は更新
             if (
                 guild_id in voice_config.config_pickle
-                and voice_config.config_pickle[guild_id].get("text_channel") != text_channel_id
+                and voice_config.config_pickle[guild_id].get("text_channel")
+                != text_channel_id
             ):
                 voice_config.config_pickle[guild_id]["text_channel"] = text_channel_id
                 voice_config.save_style_settings()
@@ -42,7 +43,7 @@ def setup_join_command(bot, server: VoiceSynthServer, voice_config: VoiceSynthCo
         else:
             # ボットがVCに接続されていない場合、通常の接続処理を実行
             try:
-                voice_client = await connect_to_voice_channel(interaction)
+                voice_client = await voice_config.connect_to_voice_channel(interaction)
                 await voice_config.welcome_user(server, interaction, voice_client)
             except discord.ClientException as e:
                 logging.error(f"Connection error: {e}")

@@ -1,7 +1,7 @@
 import discord
 from settings import APPROVED_GUILD_OBJECTS, ERROR_MESSAGES, INFO_MESSAGES
-from utils import VoiceSynthConfig
-from voice import VoiceSynthServer
+from VoiceSynthConfig import VoiceSynthConfig
+from VoiceSynthServer import VoiceSynthServer
 
 
 def setup_leave_command(bot, server: VoiceSynthServer, voice_config: VoiceSynthConfig):
