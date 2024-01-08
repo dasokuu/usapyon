@@ -76,7 +76,7 @@ class VoiceSynthConfig:
             user_speaker_name, user_style_name = self.get_style_details(user_style_id)
             user_character_id, user_display_name = get_character_info(user_speaker_name)
             # user_url = f"{DORMITORY_URL_BASE}//{user_character_id}/"
-            announcement_message = f"{member.display_name}さんの読み上げ音声: [{user_display_name}] - {user_style_name}"
+            announcement_message = f"「{member.display_name}」さんの読み上げ音声: [{user_display_name}] - {user_style_name}"
 
             # テキストチャンネルを取得してメッセージを送信
             text_channel_id = self.config_pickle.get(guild_id, {}).get("text_channel")
