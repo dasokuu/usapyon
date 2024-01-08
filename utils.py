@@ -70,12 +70,7 @@ class VoiceSynthConfig:
         ):
             announcement_voice = f"{member.display_name}さんが入室しました。"
             # ユーザーのスタイルIDを取得
-            user_style_id = self.config_pickle.get(
-                member.id,
-                self.config_pickle.get(guild_id, {}).get(
-                    "user_default", USER_DEFAULT_STYLE_ID
-                ),
-            )
+            user_style_id = self.get_user_style_id(member.id, guild_id)
             user_speaker_name, user_style_name = self.get_style_details(user_style_id)
             user_character_id, user_display_name = get_character_info(user_speaker_name)
             # user_url = f"{DORMITORY_URL_BASE}//{user_character_id}/"
@@ -87,9 +82,7 @@ class VoiceSynthConfig:
                 text_channel = bot.get_channel(text_channel_id)
                 if text_channel:
                     await text_channel.send(announcement_message)
-            announcement_style_id = self.config_pickle.get(guild_id, {}).get(
-                "announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID
-            )
+            announcement_style_id = self.get_announcement_style_id(guild_id)
             await server.text_to_speech(
                 voice_client, announcement_voice, announcement_style_id, guild_id
             )
@@ -100,9 +93,7 @@ class VoiceSynthConfig:
             and after.channel != voice_client.channel
         ):
             announcement_voice = f"{member.display_name}さんが退室しました。"
-            announcement_style_id = self.config_pickle.get(member.guild.id, {}).get(
-                "announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID
-            )
+            announcement_style_id = self.get_announcement_style_id(member.guild.id)
             await server.text_to_speech(
                 voice_client, announcement_voice, announcement_style_id, guild_id
             )
@@ -127,8 +118,16 @@ class VoiceSynthConfig:
         guild_id = message.guild.id
         try:
             logging.info(f"Handling message: {message.content}")
+            # スティッカーがある場合はその名前を読み上げる
             if message.stickers:
-                await self.announce_sticker_post(server, message)
+                sticker_names = [sticker.name for sticker in message.stickers]
+                sticker_text = "、".join(sticker_names) + "のスタンプを送信しました。"
+                await server.text_to_speech(
+                    message.guild.voice_client,
+                    sticker_text,
+                    self.get_user_style_id(message.author.id, guild_id),
+                    guild_id,
+                )
             if not isinstance(message.content, str):
                 logging.error(f"Message content is not a string: {message.content}")
                 return
@@ -145,35 +144,13 @@ class VoiceSynthConfig:
                 await server.text_to_speech(
                     message.guild.voice_client,
                     message_content,
-                    self.get_style_id(message.author.id, guild_id),
+                    self.get_user_style_id(message.author.id, guild_id),
                     guild_id,
                 )
             if message.attachments:
                 await self.announce_file_post(server, message)
         except Exception as e:
             logging.error(f"Error in handle_message: {e}")
-
-    async def announce_sticker_post(
-        self, server: VoiceSynthServer, message: discord.Message
-    ):
-        """アナウンスステッカーが投稿されました。"""
-        guild_id = message.guild.id
-        announcement_style_id = self.config_pickle.get(message.guild.id, {}).get(
-            "announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID
-        )
-
-        sticker_messages = []
-        for sticker in message.stickers:
-            sticker_messages.append("スタンプ")
-
-        if sticker_messages:
-            sticker_message = f"{', '.join(sticker_messages)}が投稿されました。"
-            await server.text_to_speech(
-                message.guild.voice_client,
-                sticker_message,
-                announcement_style_id,
-                guild_id,
-            )
 
     async def announce_file_post(
         self, server: VoiceSynthServer, message: discord.Message
@@ -221,13 +198,21 @@ class VoiceSynthConfig:
             and message.channel.id == allowed_text_channel_id
         )
 
-    def get_style_id(self, user_id, guild_id):
-        """ユーザーまたはギルドのスタイルIDを取得します。"""
+    def get_user_style_id(self, user_id, guild_id):
+        """指定されたユーザーのスタイルIDを取得します。"""
+        # ユーザーに固有のスタイルIDが設定されていればそれを返し、そうでなければギルドのデフォルトを返します。
         return self.config_pickle.get(
             user_id,
             self.config_pickle.get(guild_id, {}).get(
                 "user_default", USER_DEFAULT_STYLE_ID
             ),
+        )
+
+    def get_announcement_style_id(self, guild_id):
+        """指定されたギルドのアナウンス用スタイルIDを取得します。"""
+        # ギルドのアナウンス用スタイルIDを返します。設定されていない場合はデフォルトのアナウンススタイルIDを返します。
+        return self.config_pickle.get(guild_id, {}).get(
+            "announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID
         )
 
     def update_style_setting(self, guild_id, user_id, style_id, voice_scope):
@@ -245,6 +230,64 @@ class VoiceSynthConfig:
         elif voice_scope == "user":
             self.config_pickle[user_id] = style_id
         self.save_style_settings()
+
+    def get_style_ids(self, guild_id, user_id):
+        user_style_id = self.get_user_style_id(user_id, guild_id)
+        announcement_style_id = self.get_announcement_style_id(guild_id)
+        user_default_style_id = self.get_user_default_style_id(guild_id)
+        return user_style_id, announcement_style_id, user_default_style_id
+
+    def get_user_default_style_id(self, guild_id):
+        """指定されたギルドのデフォルトユーザー読み上げスタイルIDを取得します。"""
+        # ギルドに設定されているデフォルトのユーザースタイルIDを返します。設定されていない場合は、事前に定義されたデフォルトのユーザースタイルIDを返します。
+        return self.config_pickle.get(guild_id, {}).get(
+            "user_default", USER_DEFAULT_STYLE_ID
+        )
+
+    async def welcome_user(
+        self,
+        server: VoiceSynthServer,
+        interaction: discord.Interaction,
+        voice_client: discord.VoiceClient,
+    ):
+        guild_id, text_channel_id = get_and_update_guild_settings(interaction)
+        style_ids = self.get_style_ids(guild_id, interaction.user.id)
+        speaker_details = self.get_speaker_details(*style_ids)
+        info_message = create_info_message(
+            interaction, text_channel_id, speaker_details
+        )
+        await execute_welcome_message(
+            server, voice_client, guild_id, style_ids[1], info_message, interaction
+        )
+
+    def get_speaker_details(
+        self,
+        user_style_id,
+        announcement_style_id,
+        user_default_style_id,
+    ):
+        user_speaker_name, user_style_name = self.get_style_details(user_style_id)
+        _, user_display_name = get_character_info(user_speaker_name)  # display_nameを取得
+
+        announcement_speaker_name, announcement_style_name = self.get_style_details(
+            announcement_style_id
+        )
+        _, announcement_display_name = get_character_info(
+            announcement_speaker_name
+        )  # display_nameを取得
+
+        user_default_speaker_name, user_default_style_name = self.get_style_details(
+            user_default_style_id
+        )
+        _, user_default_display_name = get_character_info(
+            user_default_speaker_name
+        )  # display_nameを取得
+
+        return {
+            "user": (user_display_name, user_style_name),
+            "announcement": (announcement_display_name, announcement_style_name),
+            "default": (user_default_display_name, user_default_style_name),
+        }
 
 
 def get_character_info(speaker_name):
@@ -368,21 +411,6 @@ async def replace_content(text, message: discord.Message):
     return replaced_text
 
 
-async def welcome_user(
-    server: VoiceSynthServer,
-    interaction: discord.Interaction,
-    voice_client: discord.VoiceClient,
-    voice_config: VoiceSynthConfig,
-):
-    guild_id, text_channel_id = get_and_update_guild_settings(interaction, voice_config)
-    style_ids = get_style_ids(guild_id, interaction.user.id, voice_config)
-    speaker_details = get_speaker_details(voice_config, *style_ids)
-    info_message = create_info_message(interaction, text_channel_id, speaker_details)
-    await execute_welcome_message(
-        server, voice_client, guild_id, style_ids[1], info_message, interaction
-    )
-
-
 def get_and_update_guild_settings(
     interaction: discord.Interaction, voice_config: VoiceSynthConfig
 ):
@@ -393,48 +421,6 @@ def get_and_update_guild_settings(
     guild_settings["text_channel"] = text_channel_id
     voice_config.save_style_settings()
     return guild_id, text_channel_id
-
-
-def get_style_ids(guild_id, user_id, voice_config: VoiceSynthConfig):
-    guild_settings = voice_config.config_pickle.get(guild_id, {})
-    user_style_id = voice_config.config_pickle.get(
-        user_id, guild_settings.get("user_default", USER_DEFAULT_STYLE_ID)
-    )
-    announcement_style_id = guild_settings.get(
-        "announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID
-    )
-    user_default_style_id = guild_settings.get("user_default", USER_DEFAULT_STYLE_ID)
-    return user_style_id, announcement_style_id, user_default_style_id
-
-
-def get_speaker_details(
-    voice_config: VoiceSynthConfig,
-    user_style_id,
-    announcement_style_id,
-    user_default_style_id,
-):
-    user_speaker_name, user_style_name = voice_config.get_style_details(user_style_id)
-    _, user_display_name = get_character_info(user_speaker_name)  # display_nameを取得
-
-    announcement_speaker_name, announcement_style_name = voice_config.get_style_details(
-        announcement_style_id
-    )
-    _, announcement_display_name = get_character_info(
-        announcement_speaker_name
-    )  # display_nameを取得
-
-    user_default_speaker_name, user_default_style_name = voice_config.get_style_details(
-        user_default_style_id
-    )
-    _, user_default_display_name = get_character_info(
-        user_default_speaker_name
-    )  # display_nameを取得
-
-    return {
-        "user": (user_display_name, user_style_name),
-        "announcement": (announcement_display_name, announcement_style_name),
-        "default": (user_default_display_name, user_default_style_name),
-    }
 
 
 def create_info_message(
