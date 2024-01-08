@@ -73,6 +73,7 @@ ERROR_MESSAGES = {
     "welcome": "読み上げ開始中に問題が発生しました。もう一度お試しください。"
 }
 INFO_MESSAGES = {
-    "disconnect": "ボイスチャンネルから切断しました。"
+    "disconnect": "ボイスチャンネルから切断しました。",
+    "skip": "現在の読み上げをスキップしました。"
 }
 TOKEN = os.getenv("VOICECHATLOIDTEST_TOKEN")
