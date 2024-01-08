@@ -36,38 +36,7 @@ ANNOUNCEMENT_DEFAULT_STYLE_ID = 8
 script_dir = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PICKLE_FILE = os.path.join(script_dir, "config.pkl")
 
-# https://raw.githubusercontent.com/VOICEVOX/voicevox_blog/master/src/constants.ts
-CHARACTORS_INFO = {
-    "四国めたん": "shikoku_metan",
-    "ずんだもん": "zundamon",
-    "春日部つむぎ": "kasukabe_tsumugi",
-    "雨晴はう": "amehare_hau",
-    "波音リツ": "namine_ritsu",
-    "玄野武宏": "kurono_takehiro",
-    "白上虎太郎": "shirakami_kotarou",
-    "青山龍星": "aoyama_ryusei",
-    "冥鳴ひまり": "meimei_himari",
-    "九州そら": "kyushu_sora",
-    "もち子さん": "mochikosan",
-    "剣崎雌雄": "kenzaki_mesuo",
-    "WhiteCUL": "white_cul",
-    "後鬼": "goki",
-    "No.7": "number_seven",
-    "ちび式じい": "chibishikiji",
-    "櫻歌ミコ": "ouka_miko",
-    "小夜/SAYO": "sayo",
-    "ナースロボ＿タイプＴ": "nurserobo_typet",
-    "†聖騎士 紅桜†": "horinaito_benizakura",
-    "雀松朱司": "wakamatsu_akashi",
-    "麒ヶ島宗麟": "kigashima_sourin",
-    "春歌ナナ": "haruka_nana",
-    "猫使アル": "nekotsuka_aru",
-    "猫使ビィ": "nekotsuka_bi",
-    "中国うさぎ": "chugoku_usagi",
-    "栗田まろん": "kurita_maron",
-    "あいえるたん": "aierutan",
-    "満別花丸": "manbetsu_hanamaru",
-    "琴詠ニア": "kotoyomi_nia",
-}
+with open("characters_info.json", "r") as f:
+    CHARACTORS_INFO = json.load(f)
 
 DORMITORY_URL_BASE = "https://voicevox.hiroshiba.jp/dormitory"
