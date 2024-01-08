@@ -79,7 +79,7 @@ def setup_config_command(bot, voice_config: VoiceSynthConfig):
             self.voice_scope = voice_scope
             self.current_page = 0
 
-        @discord.ui.button(label="-5", style=discord.ButtonStyle.primary)
+        @discord.ui.button(label="<<", style=discord.ButtonStyle.primary)
         async def five_back_button(
             self, interaction: discord.Interaction, button: discord.ui.Button
         ):
@@ -107,7 +107,7 @@ def setup_config_command(bot, voice_config: VoiceSynthConfig):
                 self.current_page = 0
             await self.update_speaker_list(interaction)
 
-        @discord.ui.button(label="+5", style=discord.ButtonStyle.primary)
+        @discord.ui.button(label=">>", style=discord.ButtonStyle.primary)
         async def five_forward_button(
             self, interaction: discord.Interaction, button: discord.ui.Button
         ):
