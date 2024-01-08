@@ -4,6 +4,7 @@ import time
 import discord
 from discord.ext import commands
 import requests
+from VoiceSynth import VoiceSynth
 from commands.config import setup_config_command
 from commands.info import setup_info_command
 from commands.join import setup_join_command
@@ -51,8 +52,8 @@ if __name__ == "__main__" and wait_for_voice_server(VoiceVoxSettings.SPEAKERS_UR
     voice_config = VoiceSynthConfig()
     bot = commands.Bot(command_prefix=BotSettings.BOT_PREFIX, intents=intents)
     voice_server = VoiceSynthServer()
-
-    setup_join_command(bot, voice_server, voice_config)
+    voice = VoiceSynth()
+    setup_join_command(bot, voice, voice_server, voice_config)
     setup_leave_command(bot, voice_server, voice_config)
     setup_config_command(bot, voice_config)
     setup_info_command(bot, voice_config)
@@ -68,7 +69,9 @@ if __name__ == "__main__" and wait_for_voice_server(VoiceVoxSettings.SPEAKERS_UR
                     guild = bot.get_guild(guild_id)
                     if guild:
                         await bot.tree.sync(guild=guild)
-                        bot.loop.create_task(voice_server.process_playback_queue(guild.id))
+                        bot.loop.create_task(
+                            voice_server.process_playback_queue(guild.id)
+                        )
                     else:
                         logging.error(f"Unable to find guild with ID: {guild_id}")
                 except Exception as e:
@@ -77,15 +80,17 @@ if __name__ == "__main__" and wait_for_voice_server(VoiceVoxSettings.SPEAKERS_UR
             logging.error(f"Error occurred in on_ready: {e}")
 
     @bot.event
-    async def on_message(message):
+    async def on_message(message: discord.Message):
         if message.author.bot:  # これでメッセージがボットからのものかどうかをチェック
             return
         await bot.process_commands(message)
-        await voice_config.handle_message(voice_server, message)
+        await voice.handle_message(voice_config, voice_server, message)
 
     @bot.event
-    async def on_voice_state_update(member, before, after):
-        await voice_config.handle_voice_state_update(voice_server, bot, member, before, after)
+    async def on_voice_state_update(member: discord.Member, before, after):
+        await voice.handle_voice_state_update(
+            voice_config, voice_server, bot, member, before, after
+        )
 
     bot.run(TOKEN)
     asyncio.run(voice_server.close_session())  # Bot停止時にセッションを閉じる
