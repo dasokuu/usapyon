@@ -74,6 +74,6 @@ ERROR_MESSAGES = {
 }
 INFO_MESSAGES = {
     "disconnect": "ボイスチャンネルから切断しました。",
-    "skip": "現在の読み上げをスキップしました。"
+    "skip": "現在の読み上げをスキップし、再生キューをクリアしました。"
 }
 TOKEN = os.getenv("VOICECHATLOIDTEST_TOKEN")
