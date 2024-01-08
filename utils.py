@@ -251,24 +251,29 @@ url_pattern = re.compile(r"https?://\S+")
 english_word_pattern = re.compile(r"\b[a-zA-Z_]+\b")
 laugh_pattern = re.compile("[ｗwW]+$")
 
-def replace_user_mention(match,message: discord.Message):
+
+def replace_user_mention(match, message: discord.Message):
     user_id = int(match.group(1))
     user = message.guild.get_member(user_id)
     return user.display_name + "さん" if user else match.group(0)
 
-def replace_role_mention(match,message: discord.Message):
+
+def replace_role_mention(match, message: discord.Message):
     role_id = int(match.group(1))
     role = discord.utils.get(message.guild.roles, id=role_id)
     return role.name + "役職" if role else match.group(0)
 
-def replace_channel_mention(match,message: discord.Message):
+
+def replace_channel_mention(match, message: discord.Message):
     channel_id = int(match.group(1))
     channel = message.guild.get_channel(channel_id)
     return channel.name + "チャンネル" if channel else match.group(0)
 
+
 def replace_custom_emoji_name_to_kana(match):
     emoji_name = match.group(1)
     return jaconv.alphabet2kana(emoji_name) + " "
+
 
 def replace_english_to_kana(text):
     # 英単語を検出する正規表現パターン
@@ -293,12 +298,17 @@ def replace_english_to_kana(text):
     # 英単語をかなに置き換え
     return english_word_pattern.sub(replace_to_kana, text)
 
+
 # 文末の連続する「ｗ」を「わら」と置き換える
 def laugh_replace(match):
     return "わら" * len(match.group(0))
+
+
 async def replace_content(text, message: discord.Message):
     # 一括置換のための関数定義
     def replace_patterns(text):
+        # Change the order here
+        text = replace_english_to_kana(text)  # First replace English words
         text = user_mention_pattern.sub(
             lambda m: replace_user_mention(m, message), text
         )
@@ -315,11 +325,7 @@ async def replace_content(text, message: discord.Message):
 
     # 文章を一括で置換
     replaced_text = replace_patterns(text)
-    replaced_text = await asyncio.get_event_loop().run_in_executor(
-        None, replace_english_to_kana, replaced_text
-    )
     return replaced_text
-
 
 async def welcome_user(
     server: VoiceSynthServer,
