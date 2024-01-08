@@ -107,8 +107,8 @@ class VoiceSynth:
         voice_server: VoiceSynthServer,
         action="entered",
     ):
-        """ユーザーの入退室をアナウンスする共通関数"""
-        action_text = "入室しました。" if action == "entered" else "退室しました。"
+        action_texts = {"entered": "入室しました。", "left": "退室しました。"}
+        action_text = action_texts.get(action, "行動しました。")
         announcement_voice = f"{member.display_name}さんが{action_text}"
         announcement_style_id = voice_config.get_announcement_style_id(member.guild.id)
         await voice_server.text_to_speech(

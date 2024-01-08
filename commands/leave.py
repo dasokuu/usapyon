@@ -22,8 +22,8 @@ def setup_leave_command(
         await voice_server.clear_playback_queue(guild_id)
 
         # テキストチャンネル設定を削除
-        if "text_channel" in voice_config.config_pickle.get(guild_id, {}):
-            del voice_config.config_pickle[guild_id]["text_channel"]
+        if "text_channel" in voice_config.voice_config_pickle.get(guild_id, {}):
+            del voice_config.voice_config_pickle[guild_id]["text_channel"]
         voice_config.save_style_settings()
 
         # ボイスクライアントを切断
