@@ -113,9 +113,7 @@ class VoiceSynth:
                 logging.error(f"Message content is not a string: {message.content}")
                 return
 
-            message_content = await self.replace_content(
-                message.content, message
-            )
+            message_content = await self.replace_content(message.content, message)
 
             if not isinstance(message_content, str):
                 logging.error(
@@ -135,7 +133,7 @@ class VoiceSynth:
 
             # New Code: Announce sticker name if a sticker is posted
             if message.stickers:
-                await voice_config.announce_sticker_post(voice_server, message)
+                await self.announce_sticker_post(voice_config, voice_server, message)
 
         except Exception as e:
             logging.error(f"Error in handle_message: {e}")
@@ -263,29 +261,24 @@ class VoiceSynth:
     # 文末の連続する「ｗ」を「わら」と置き換える
     def laugh_replace(self, match):
         return "わら" * len(match.group(0))
+    # 新しいメソッド: パターン置換を一元管理
+    def replace_pattern(self, pattern, text, replace_func):
+        return pattern.sub(replace_func, text)
 
     async def replace_content(self, text, message: discord.Message):
-        # 一括置換のための関数定義
-        def replace_patterns(text):
-            # Change the order here
-            text = self.replace_english_to_kana(text)  # First replace English words
-            text = self.user_mention_pattern.sub(
-                lambda m: self.replace_user_mention(m, message), text
-            )
-            text = self.role_mention_pattern.sub(
-                lambda m: self.replace_role_mention(m, message), text
-            )
-            text = self.channel_pattern.sub(
-                lambda m: self.replace_channel_mention(m, message), text
-            )
-            text = self.custom_emoji_pattern.sub(
+        replace_operations = [
+            (self.user_mention_pattern, lambda m: self.replace_user_mention(m, message)),
+            (self.role_mention_pattern, lambda m: self.replace_role_mention(m, message)),
+            (self.channel_pattern, lambda m: self.replace_channel_mention(m, message)),
+            # 他のパターンも同様に追加...
+        ]
+        text = self.replace_english_to_kana(text)  # First replace English words
+        for pattern, func in replace_operations:
+            text = self.replace_pattern(pattern, text, func)
+        text = self.custom_emoji_pattern.sub(
                 self.replace_custom_emoji_name_to_kana, text
             )
-            text = self.url_pattern.sub("URL省略", text)
-            text = self.laugh_pattern.sub(self.laugh_replace, text)
-            return text
-
+        text = self.url_pattern.sub("URL省略", text)
+        text = self.laugh_pattern.sub(self.laugh_replace, text)
         text = emoji.demojize(text, language="ja")
-        # 文章を一括で置換
-        replaced_text = replace_patterns(text)
-        return replaced_text
+        return text

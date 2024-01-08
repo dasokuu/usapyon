@@ -42,19 +42,20 @@ class VoiceSynthServer:
                 guild_queue.task_done()
 
     async def audio_query(self, text, style_id):
-        # 音声合成用のクエリを作成します。
         query_payload = {"text": text, "speaker": style_id}
-        session = await self.get_session()  # セッションを取得
-
-        async with session.post(
-            VoiceVoxSettings.AUDIO_QUERY_URL, headers=self.headers, params=query_payload
-        ) as response:
-            if response.status == 200:
-                return await response.json()
-            elif response.status == 422:
-                error_detail = await response.text()
-                logging.error(f"Unprocessable Entity: {error_detail}")
-                return None
+        session = await self.get_session()
+        try:
+            async with session.post(
+                VoiceVoxSettings.AUDIO_QUERY_URL, headers=self.headers, params=query_payload
+            ) as response:
+                if response.status == 200:
+                    return await response.json()
+                else:
+                    logging.error(f"Audio query failed with status: {response.status}")
+                    return None
+        except Exception as e:
+            logging.error(f"Error in audio_query: {e}")
+            return None
 
     async def synthesis(self, speaker, query_data):
         # 音声合成を行います。
@@ -79,14 +80,13 @@ class VoiceSynthServer:
             return
 
         try:
-            lines = text.split("\n")  # 以前の_filter_empty_lines関数の機能をここに統合
-            for line in filter(None, lines):  # 空の行を除外し、余分な空白を削除しない
+            lines = text.split("\n")
+            for line in filter(None, lines):
                 guild_queue = self.get_guild_playback_queue(guild_id)
-                await guild_queue.put(
-                    (voice_client, line, style_id)
-                )  # strip()を使用せずにlineをそのまま使用
+                await guild_queue.put((voice_client, line, style_id))
         except Exception as e:
             logging.error(f"Error in text_to_speech: {e}")
+            # Handle specific exceptions and add remediation here.
 
     async def _enqueue_line_for_speech(
         self, voice_client: discord.VoiceClient, line, style_id, guild_id
