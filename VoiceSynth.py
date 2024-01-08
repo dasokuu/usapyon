@@ -67,6 +67,9 @@ class VoiceSynth:
         message: discord.Message,
         handler: DiscordMessageHandler,
     ):
+        # この行を追加
+        if not voice_config.should_process_message(message, message.guild.id):
+            return
         guild_id = message.guild.id
         try:
             logging.info(f"Handling message: {message.content}")
