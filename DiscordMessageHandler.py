@@ -59,21 +59,26 @@ class DiscordMessageHandler:
         return pattern.sub(replace_func, text)
 
     async def replace_content(self, text, message: discord.Message):
-        replace_operations = [
-            (
-                self.USER_MENTION_PATTERN,
-                lambda m: self.replace_user_mention(m, message),
-            ),
-            (
-                self.ROLE_MENTION_PATTERN,
-                lambda m: self.replace_role_mention(m, message),
-            ),
-            (self.CHANNEL_PATTERN, lambda m: self.replace_channel_mention(m, message)),
-        ]
+        if message:
+            replace_operations = [
+                (
+                    self.USER_MENTION_PATTERN,
+                    lambda m: self.replace_user_mention(m, message),
+                ),
+                (
+                    self.ROLE_MENTION_PATTERN,
+                    lambda m: self.replace_role_mention(m, message),
+                ),
+                (
+                    self.CHANNEL_PATTERN,
+                    lambda m: self.replace_channel_mention(m, message),
+                ),
+            ]
 
         text = self.replace_english_to_kana(text)  # First replace English words
-        for pattern, func in replace_operations:
-            text = self.replace_pattern(pattern, text, func)
+        if message:
+            for pattern, func in replace_operations:
+                text = self.replace_pattern(pattern, text, func)
         text = self.CUSTOM_EMOJI_PATTERN.sub(
             self.replace_custom_emoji_name_to_kana, text
         )

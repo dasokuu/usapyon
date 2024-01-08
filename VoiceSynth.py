@@ -151,8 +151,12 @@ class VoiceSynth:
         # 入室アクション時にVOICEVOXのスピーカー名を使用
         if action == "entered":
             user_style_id = voice_config.get_user_style_id(member.id, member.guild.id)
-            _, user_display_name = voice_config.get_character_info(user_style_id)
-            message = f"{user_display_name} {member.display_name}さん{action_text}"
+            voice_config.get_speaker_details
+            user_speaker_name, user_style_name = voice_config.get_style_details(user_style_id)
+            _, user_display_name = voice_config.get_character_info(
+                user_speaker_name
+            )  # display_nameを取得
+            send_message = f"{user_display_name}さんの読み上げ音声: [{user_speaker_name}] - {user_style_name}"
             # テキストチャンネルへのメッセージ送信
             text_channel_id = voice_config.voice_config_pickle.get(
                 member.guild.id, {}
@@ -160,7 +164,7 @@ class VoiceSynth:
             if text_channel_id:
                 text_channel = member.guild.get_channel(text_channel_id)
                 if text_channel:
-                    await text_channel.send(message)
+                    await text_channel.send(send_message)
         announcement_voice = f"{member.display_name}さん{action_text}"
         announcement_style_id = voice_config.get_announcement_style_id(member.guild.id)
         await self.text_to_speech(
@@ -170,7 +174,6 @@ class VoiceSynth:
             member.guild.id,
             handler,
             voice_server,
-            message,
         )
 
     # New Method: Announce the name of the sticker
@@ -270,7 +273,7 @@ class VoiceSynth:
         guild_id,
         handler: DiscordMessageHandler,
         voice_server: VoiceSynthServer,
-        message: discord.Message,
+        message: discord.Message = None,
     ):
         if not voice_client or not voice_client.is_connected():
             logging.error("Voice client is not connected.")
