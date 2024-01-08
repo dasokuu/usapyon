@@ -80,7 +80,7 @@ class VoiceSynthConfig:
             user_speaker_name, user_style_name = self.get_style_details(user_style_id)
             user_character_id, user_display_name = get_character_info(user_speaker_name)
             # user_url = f"{DORMITORY_URL_BASE}//{user_character_id}/"
-            announcement_message = f"「{member.display_name}」さんの読み上げ音声: [{user_display_name}] - {user_style_name}"
+            announcement_message = f"{member.display_name}さんの読み上げ音声: [{user_display_name}] - {user_style_name}"
 
             # テキストチャンネルを取得してメッセージを送信
             text_channel_id = self.config_pickle.get(guild_id, {}).get("text_channel")
@@ -274,19 +274,19 @@ laugh_pattern = re.compile("[ｗwW]+$")
 def replace_user_mention(match, message: discord.Message):
     user_id = int(match.group(1))
     user = message.guild.get_member(user_id)
-    return user.display_name + "さん" if user else match.group(0)
+    return user.display_name if user else match.group(0)
 
 
 def replace_role_mention(match, message: discord.Message):
     role_id = int(match.group(1))
     role = discord.utils.get(message.guild.roles, id=role_id)
-    return role.name + "役職" if role else match.group(0)
+    return role.name if role else match.group(0)
 
 
 def replace_channel_mention(match, message: discord.Message):
     channel_id = int(match.group(1))
     channel = message.guild.get_channel(channel_id)
-    return channel.name + "チャンネル" if channel else match.group(0)
+    return channel.name if channel else match.group(0)
 
 
 def replace_custom_emoji_name_to_kana(match):

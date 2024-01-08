@@ -1,5 +1,6 @@
 import asyncio
 import discord
+import jaconv
 from settings import APPROVED_GUILD_OBJECTS, DORMITORY_URL_BASE
 from discord.ui import Button, View
 
@@ -19,7 +20,7 @@ def setup_config_command(bot, voice_config: VoiceSynthConfig):
 
     def get_voice_scope_description(interaction: discord.Interaction):
         return {
-            "user": f"「{interaction.user.display_name}」さんの読み上げ音声",
+            "user": f"{interaction.user.display_name}さんの読み上げ音声",
             "announcement": "アナウンス音声（サーバー設定）",
             "user_default": "デフォルト読み上げ音声（サーバー設定）",
         }
@@ -59,17 +60,22 @@ def setup_config_command(bot, voice_config: VoiceSynthConfig):
         )
 
         async def on_submit(self, interaction: discord.Interaction):
-            # Convert input to a string
-            speaker_name_query = self.speaker_input.value.strip().lower()
+            # ユーザーの入力をひらがなに変換
+            speaker_name_query = jaconv.kata2hira(
+                self.speaker_input.value.strip().lower()
+            )
+
             for i, speaker in enumerate(self.view.speakers):
-                if speaker_name_query in speaker["name"].lower():
+                # データソースのテキストもひらがなに変換してから比較
+                speaker_name = jaconv.kata2hira(speaker["name"].lower())
+                if speaker_name_query in speaker_name:
                     self.view.current_page = i
                     await self.view.update_speaker_list(interaction)
                     return
 
-            # If no speaker found, send a message
+            # 一致するキャラクターが見つからなかった場合の処理
             await interaction.response.send_message(
-                f"「{speaker_name_query}」に一致するキャラクターが見つかりませんでした。", ephemeral=True
+                f"「{self.speaker_input.value}」に一致するキャラクターが見つかりませんでした。", ephemeral=True
             )
 
     class PagingView(discord.ui.View):
@@ -218,9 +224,7 @@ def setup_config_command(bot, voice_config: VoiceSynthConfig):
             if voice_config.speakers
             else "利用可能なキャラクターがいません"
         )
-        content = (
-            f"矢印や検索ボタンを活用してお好みのキャラクターを選んだ後、そのキャラクター固有のスタイル（声のバリエーションや特色など）を選択してください：\nキャラクター 1 / {len(voice_config.speakers)}\n"
-        )
+        content = f"矢印や検索ボタンを活用してお好みのキャラクターを選んだ後、そのキャラクター固有のスタイル（声のバリエーションや特色など）を選択してください：\nキャラクター 1 / {len(voice_config.speakers)}\n"
         speaker_character_id, speaker_display_name = get_character_info(speaker_name)
         speaker_url = f"{DORMITORY_URL_BASE}/{speaker_character_id}/"
 
