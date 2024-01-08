@@ -1,0 +1,32 @@
+{
+  "bot_settings": {
+    "bot_prefix": "!",
+    "game_name": "リクエストを待機中",
+    "max_message_length": 200
+  },
+  "voicevox_settings": {
+    "engine_url": "http://127.0.0.1:50021/",
+    "speakers_url": "http://127.0.0.1:50021/speakers",
+    "audio_query_url": "http://127.0.0.1:50021/audio_query",
+    "synthesis_url": "http://127.0.0.1:50021/synthesis"
+  },
+  "guild_settings": {
+    "approved_guild_ids": [
+      1189256965172514836,
+      1190673139072516096,
+      1129051248574869617,
+      1156189448288079882
+    ]
+  },
+  "error_messages": {
+    "connection": "ボイスチャンネルに接続できませんでした。ユーザーがボイスチャンネルにいることを確認してください。",
+    "invalid_style": "選択したスタイルIDが無効です。",
+    "not_connected": "ボットはボイスチャンネルに接続されていません。",
+    "welcome": "読み上げ開始中に問題が発生しました。もう一度お試しください。"
+  },
+  "info_messages": {
+    "disconnect": "ボイスチャンネルから切断しました。",
+    "skip": "現在の読み上げをスキップし、再生キューをクリアしました。",
+    "no_queue": "スキップする読み上げがありません。"
+  }
+}
