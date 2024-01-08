@@ -34,7 +34,9 @@ def setup_config_command(bot, voice_config: VoiceSynthConfig):
 
     def create_scope_button(interaction: discord.Interaction, label, voice_scope):
         button = Button(
-            style=discord.ButtonStyle.primary,
+            style=discord.ButtonStyle.primary
+            if voice_scope == "user"
+            else discord.ButtonStyle.danger,
             label=label,
         )
         button.callback = create_button_callback(interaction, button, voice_scope)
