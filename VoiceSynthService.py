@@ -50,13 +50,18 @@ class VoiceSynthService:
         except aiohttp.ClientError as e:
             logging.error(
                 f"Client error during speaking line: {e}", exc_info=True)
-            await voice_client.send_message("音声合成サービスへの接続に問題が発生しました。")
+            await self.send_error_message(voice_client, "音声合成サービスへの接続に問題が発生しました。")
         except Exception as e:
             logging.error(
                 f"Unexpected error speaking line: {e}", exc_info=True)
-            await voice_client.send_message("予期せぬエラーが発生しました。")
+            await self.send_error_message(voice_client, "予期せぬエラーが発生しました。")
             if voice_client.is_connected():
                 await voice_client.disconnect()
+
+    async def send_error_message(self, voice_client, message):
+        # エラーメッセージを送信するための専用メソッド
+        if voice_client.channel:
+            await voice_client.channel.send(message)
 
     async def audio_query(self, text, style_id):
         # 音声合成用のクエリを作成します。
