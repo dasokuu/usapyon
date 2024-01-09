@@ -67,10 +67,11 @@ class VoiceSynthService:
 
     async def synthesis(self, speaker, query_data):
         # aiohttpを使用した非同期処理に変更
+        session = await self.get_session()  # セッションを取得
         synth_payload = {"speaker": speaker}
         headers = {"Content-Type": "application/json", "Accept": "audio/wav"}
         try:
-            async with self.session.post(
+            async with session.post(
                 VOICEVOXSettings.SYNTHESIS_URL,
                 headers=headers,
                 params=synth_payload,

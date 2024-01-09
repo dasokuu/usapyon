@@ -21,32 +21,24 @@ logging.basicConfig(
 )
 
 
-def is_synth_service_up(url):
-    try:
-        response = requests.get(url)
-        if response.status_code == 200:
-            return True
-        else:
+async def is_synth_service_up(url):
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.get(url) as response:
+                return response.status == 200
+        except Exception as e:
+            logging.error(f"Error checking service status: {e}")
             return False
-    except requests.ConnectionError:
-        return False
 
 
 async def wait_for_synth_service(url, max_attempts=10, delay=5):
     attempts = 0
-    async with aiohttp.ClientSession() as session:  # 非同期HTTPセッションを作成
-        while attempts < max_attempts:
-            try:
-                async with session.get(url) as response:  # 非同期にリクエストを送る
-                    if response.status == 200:
-                        print("Server is up!")
-                        return True
-            except aiohttp.ClientError as e:
-                print(f"Attempt {attempts + 1}/{max_attempts} failed: {e}")
-
-            print(f"Waiting for {delay} seconds...")
-            await asyncio.sleep(delay)  # 非同期にウェイト
-            attempts += 1
+    while attempts < max_attempts:
+        if await is_synth_service_up(url):
+            print("Server is up!")
+            return True
+        await asyncio.sleep(delay)
+        attempts += 1
     return False
 
 
@@ -59,6 +51,7 @@ async def main():
             command_prefix=BotSettings.BOT_PREFIX, intents=intents)
         synth_service = VoiceSynthService()
         synth_config = VoiceSynthConfig()
+        await synth_config.async_init()
         synth_event_processor = VoiceSynthEventProcessor()
         text_processor = SpeechTextFormatter()
 

@@ -1,5 +1,6 @@
 import logging
 import pickle
+import aiohttp
 import discord
 import requests
 from settings import (
@@ -13,8 +14,8 @@ from settings import (
 
 
 class VoiceSynthConfig:
-    def __init__(self):
-        self.speakers = self.fetch_json(VOICEVOXSettings.SPEAKERS_URL)
+    async def async_init(self):
+        self.speakers = await self.fetch_json(VOICEVOXSettings.SPEAKERS_URL)
         self.synth_config_pickle = self.load_style_settings()
 
     def validate_style_id(self, style_id):
@@ -140,18 +141,19 @@ class VoiceSynthConfig:
             character_key, "unknown")  # キャラクターIDを取得
         return character_id, display_name
 
-    def fetch_json(self, url):
-        try:
-            response = requests.get(url)
-            response.raise_for_status()
-            return response.json()
-        except requests.ConnectionError as e:
-            logging.error(f"Connection error: {e}")
-        except requests.Timeout as e:
-            logging.error(f"Timeout error: {e}")
-        except requests.RequestException as e:
-            logging.error(f"General Request error: {e}")
-        return None
+    async def fetch_json(self, url):
+        async with aiohttp.ClientSession() as session:
+            try:
+                async with session.get(url) as response:
+                    response.raise_for_status()
+                    return await response.json()
+            except aiohttp.ClientResponseError as e:
+                logging.error(f"Client Response Error: {e}")
+            except aiohttp.ClientConnectionError as e:
+                logging.error(f"Client Connection Error: {e}")
+            except Exception as e:
+                logging.error(f"General Error: {e}")
+            return None
 
     def load_style_settings(self):
         """スタイル設定をロードします。"""
