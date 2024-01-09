@@ -13,12 +13,20 @@ class VoiceSynthService:
         # Initialize global variables
         self.guild_playback_queues = {}
         self.headers = {"Content-Type": "application/json"}
-        self.session = None  # 初期化時にはセッションはNoneに
+        self.session = aiohttp.ClientSession()  # セッションを初期化
 
     async def get_session(self):
-        if not self.session or self.session.closed:  # セッションがないか閉じている場合
-            self.session = aiohttp.ClientSession()  # 新しいセッションを作成
+        if self.session.closed:  # セッションが閉じている場合、新しいセッションを作成
+            self.session = aiohttp.ClientSession()
         return self.session
+
+    async def close_session(self):
+        if not self.session.closed:
+            await self.session.close()
+
+    # デストラクタでセッションをクローズ
+    async def __del__(self):
+        await self.close_session()
 
     def get_guild_playback_queue(self, guild_id):
         """指定されたギルドIDのplayback_queueを取得または作成します。"""
@@ -72,7 +80,8 @@ class VoiceSynthService:
                     return await response.read()
                 else:
                     logging.error(
-                        f"Synthesis request failed with status: {response.status}")
+                        f"Synthesis request failed with status: {response.status}"
+                    )
                     return None
         except Exception as e:
             logging.error(f"Error in synthesis: {e}")
@@ -95,8 +104,7 @@ class VoiceSynthService:
 
     async def _play_audio(self, voice_client: discord.VoiceClient, voice_data):
         try:
-            audio_source = discord.FFmpegPCMAudio(
-                io.BytesIO(voice_data), pipe=True)
+            audio_source = discord.FFmpegPCMAudio(io.BytesIO(voice_data), pipe=True)
             voice_client.play(audio_source)
             # Wait for the current audio to finish playing before returning
             while voice_client.is_playing():
@@ -109,10 +117,6 @@ class VoiceSynthService:
         while not guild_queue.empty():
             guild_queue.get_nowait()
             guild_queue.task_done()
-
-    async def close_session(self):
-        if self.session and not self.session.closed:
-            await self.session.close()  # セッションが開いていれば閉じる
 
     async def text_to_speech(
         self,
