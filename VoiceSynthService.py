@@ -45,9 +45,14 @@ class VoiceSynthService:
     async def safely_speak_line(self, voice_client, line, style_id):
         try:
             await self.speak_line(voice_client, line, style_id)
+        except aiohttp.ClientError as e:
+            logging.error(
+                f"Client error during speaking line: {e}", exc_info=True)
         except Exception as e:
-            # 詳細なエラー情報をログに記録
-            logging.error(f"Error speaking line: {e}", exc_info=True)
+            logging.error(
+                f"Unexpected error speaking line: {e}", exc_info=True)
+            if voice_client.is_connected():
+                await voice_client.disconnect()
 
     async def audio_query(self, text, style_id):
         # 音声合成用のクエリを作成します。
@@ -82,11 +87,12 @@ class VoiceSynthService:
                     logging.error(
                         f"Synthesis request failed with status: {response.status}"
                     )
-                    return None
+        except aiohttp.ClientResponseError as e:
+            logging.error(
+                f"Response error during synthesis: {e}", exc_info=True)
         except Exception as e:
-            # 詳細なエラー情報をログに記録
-            logging.error(f"Error in synthesis: {e}", exc_info=True)
-            return None
+            logging.error(
+                f"Unexpected error during synthesis: {e}", exc_info=True)
 
     async def speak_line(self, voice_client: discord.VoiceClient, line, style_id):
         try:
