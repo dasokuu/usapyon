@@ -1,3 +1,4 @@
 .env
 python_files.md
 __pycache__
+config.pkl
