@@ -5,7 +5,7 @@ import discord
 from discord.ext import commands
 import requests
 from DiscordMessageHandler import DiscordMessageHandler
-from VoiceSynth import VoiceSynth
+from DiscordEventHandler import DiscordEventHandler
 from commands.settings import setup_settings_command
 from commands.info import setup_info_command
 from commands.join import setup_join_command
@@ -55,14 +55,13 @@ async def main():
     if await wait_for_voice_server(VoiceVoxSettings.SPEAKERS_URL):  # 非同期処理に変更
         intents = discord.Intents.default()
         intents.message_content = True
-        voice_config = VoiceSynthConfig()
-        bot = commands.Bot(
-            command_prefix=BotSettings.BOT_PREFIX, intents=intents)
+        bot = commands.Bot(command_prefix=BotSettings.BOT_PREFIX, intents=intents)
         voice_server = VoiceSynthServer()
-        voice = VoiceSynth()
-        handler = DiscordMessageHandler()
+        voice_config = VoiceSynthConfig()
+        event_handler = DiscordEventHandler()
+        message_handler = DiscordMessageHandler()
 
-        setup_join_command(bot, voice, voice_server, voice_config, handler)
+        setup_join_command(bot, event_handler, voice_server, voice_config, message_handler)
         setup_leave_command(bot, voice_server, voice_config)
         setup_settings_command(bot, voice_config)
         setup_info_command(bot, voice_config)
@@ -84,8 +83,7 @@ async def main():
                                 voice_server.process_playback_queue(guild.id)
                             )
                         else:
-                            logging.error(
-                                f"Unable to find guild with ID: {guild_id}")
+                            logging.error(f"Unable to find guild with ID: {guild_id}")
                     except Exception as e:
                         logging.error(
                             f"Error syncing commands for guild {guild_id}: {e}"
@@ -98,12 +96,14 @@ async def main():
             if message.author.bot:  # これでメッセージがボットからのものかどうかをチェック
                 return
             await bot.process_commands(message)
-            await voice.handle_message(voice_config, voice_server, message, handler)
+            await event_handler.handle_message(
+                voice_config, voice_server, message, message_handler
+            )
 
         @bot.event
         async def on_voice_state_update(member: discord.Member, before, after):
-            await voice.handle_voice_state_update(
-                voice_config, voice_server, bot, member, before, after, handler
+            await event_handler.handle_voice_state_update(
+                voice_config, voice_server, bot, member, before, after, message_handler
             )
 
         await bot.start(TOKEN)  # bot.run()の代わりにbot.start()を使用します
