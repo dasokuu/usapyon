@@ -196,7 +196,7 @@ class VoiceSynth:
 
         for sticker in message.stickers:
             sticker_name = sticker.name
-            announcement_message = f"{sticker_name}スタンプが投稿されました。"
+            announcement_message = f"{sticker_name} スタンプが投稿されました。"
             await self.text_to_speech(
                 message.guild.voice_client,
                 announcement_message,
