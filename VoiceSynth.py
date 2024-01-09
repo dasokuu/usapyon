@@ -151,7 +151,6 @@ class VoiceSynth:
         # 入室アクション時にVOICEVOXのスピーカー名を使用
         if action == "entered":
             user_style_id = voice_config.get_user_style_id(member.id, member.guild.id)
-            voice_config.get_speaker_details
             user_speaker_name, user_style_name = voice_config.get_style_details(user_style_id)
             _, user_display_name = voice_config.get_character_info(
                 user_speaker_name
