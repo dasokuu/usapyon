@@ -58,17 +58,24 @@ class VoiceSynthService:
                 return None
 
     async def synthesis(self, speaker, query_data):
-        # 音声合成を行います。
+        # aiohttpを使用した非同期処理に変更
         synth_payload = {"speaker": speaker}
         headers = {"Content-Type": "application/json", "Accept": "audio/wav"}
-        async with (await self.get_session()).post(  # セッションの取得方法を修正
-            VOICEVOXSettings.SYNTHESIS_URL,
-            headers=headers,
-            params=synth_payload,
-            data=json.dumps(query_data),
-        ) as response:
-            if response.status == 200:
-                return await response.read()
+        try:
+            async with self.session.post(
+                VOICEVOXSettings.SYNTHESIS_URL,
+                headers=headers,
+                params=synth_payload,
+                data=json.dumps(query_data),
+            ) as response:
+                if response.status == 200:
+                    return await response.read()
+                else:
+                    logging.error(
+                        f"Synthesis request failed with status: {response.status}")
+                    return None
+        except Exception as e:
+            logging.error(f"Error in synthesis: {e}")
             return None
 
     async def speak_line(self, voice_client: discord.VoiceClient, line, style_id):
