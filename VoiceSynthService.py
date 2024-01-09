@@ -15,7 +15,9 @@ class VoiceSynthService:
         self.session = None  # セッションは初期化時にはNoneに
 
     async def start(self):
-        self.session = aiohttp.ClientSession()  # セッションを初期化
+        # aiohttp.ClientSessionの再利用を検討
+        if self.session is None or self.session.closed:
+            self.session = aiohttp.ClientSession()
 
     async def close(self):
         if self.session:
@@ -64,22 +66,20 @@ class VoiceSynthService:
             await voice_client.channel.send(message)
 
     async def audio_query(self, text, style_id):
-        # 音声合成用のクエリを作成します。
-        query_payload = {"text": text, "speaker": style_id}
-        session = await self.get_session()  # セッションを取得
-
-        async with session.post(
-            VOICEVOXSettings.AUDIO_QUERY_URL, headers=self.headers, params=query_payload
-        ) as response:
-            if response.status == 200:
+        # エラーハンドリングの改善
+        try:
+            async with self.session.post(
+                VOICEVOXSettings.AUDIO_QUERY_URL, headers=self.headers, params={"text": text, "speaker": style_id}
+            ) as response:
+                response.raise_for_status()
                 return await response.json()
-            elif response.status == 422:
-                error_detail = await response.text()
-                logging.error(f"Unprocessable Entity: {error_detail}")
-                return None
-            else:
-                logging.error(f"HTTP Error {response.status}: {await response.text()}")
-                return None
+        except aiohttp.ClientResponseError as e:
+            logging.error(f"Client Response Error: {e}")
+            # 適切なエラーメッセージを返す
+            return {"error": str(e)}
+        except Exception as e:
+            logging.error(f"Unexpected error during audio query: {e}")
+            return {"error": "Unexpected error"}
 
     async def synthesis(self, speaker, query_data):
         # aiohttpを使用した非同期処理に変更
