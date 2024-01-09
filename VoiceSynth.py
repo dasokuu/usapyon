@@ -92,12 +92,6 @@ class VoiceSynth:
                     message, voice_config, handler, voice_server
                 )
                 return
-            # New Code: Announce sticker name if a sticker is posted
-            elif message.stickers:
-                await self.announce_sticker_post(
-                    voice_config, voice_server, message, handler
-                )
-                return
             if message_content:
                 await self.text_to_speech(
                     message.guild.voice_client,
@@ -113,7 +107,11 @@ class VoiceSynth:
                 await self.announce_file_post(
                     voice_config, voice_server, message, handler
                 )
-
+            # New Code: Announce sticker name if a sticker is posted
+            if message.stickers:
+                await self.announce_sticker_post(
+                    voice_config, voice_server, message, handler
+                )
         except Exception as e:
             logging.error(f"Error in handle_message: {e}")
 
@@ -196,7 +194,7 @@ class VoiceSynth:
 
         for sticker in message.stickers:
             sticker_name = sticker.name
-            announcement_message = f"{sticker_name} スタンプが投稿されました。"
+            announcement_message = f"{sticker_name} のスタンプが投稿されました。"
             await self.text_to_speech(
                 message.guild.voice_client,
                 announcement_message,
