@@ -38,17 +38,15 @@ class VoiceSynthService:
         guild_queue = self.get_guild_playback_queue(guild_id)
         while True:
             voice_client, line, style_id = await guild_queue.get()
-            try:
-                if (
-                    voice_client
-                    and voice_client.is_connected()
-                    and not voice_client.is_playing()
-                ):
-                    await self.speak_line(voice_client, line, style_id)
-            except Exception as e:
-                logging.error(e)  # Log the error or handle it as needed.
-            finally:
-                guild_queue.task_done()
+            if voice_client and voice_client.is_connected() and not voice_client.is_playing():
+                await self.safely_speak_line(voice_client, line, style_id)
+            guild_queue.task_done()
+
+    async def safely_speak_line(self, voice_client, line, style_id):
+        try:
+            await self.speak_line(voice_client, line, style_id)
+        except Exception as e:
+            logging.error(f"Error speaking line: {e}")
 
     async def audio_query(self, text, style_id):
         # 音声合成用のクエリを作成します。
