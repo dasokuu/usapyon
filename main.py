@@ -49,6 +49,7 @@ async def main():
         bot = commands.Bot(
             command_prefix=BotSettings.BOT_PREFIX, intents=intents)
         synth_service = VoiceSynthService()
+        await synth_service.start()
         synth_config = VoiceSynthConfig()
         await synth_config.async_init()
         synth_event_processor = VoiceSynthEventProcessor()
@@ -102,7 +103,7 @@ async def main():
             )
 
         await bot.start(TOKEN)  # bot.run()の代わりにbot.start()を使用します
-        asyncio.run(synth_service.close_session())  # Bot停止時にセッションを閉じる
+        await synth_service.close()
     else:
         print("Server did not become available in time. Exiting.")
 

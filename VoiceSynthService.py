@@ -13,7 +13,14 @@ class VoiceSynthService:
         # Initialize global variables
         self.guild_playback_queues = {}
         self.headers = {"Content-Type": "application/json"}
+        self.session = None  # セッションは初期化時にはNoneに
+
+    async def start(self):
         self.session = aiohttp.ClientSession()  # セッションを初期化
+
+    async def close(self):
+        if self.session and not self.session.closed:
+            await self.session.close()
 
     async def get_session(self):
         if self.session.closed:  # セッションが閉じている場合、新しいセッションを作成
@@ -38,7 +45,11 @@ class VoiceSynthService:
         guild_queue = self.get_guild_playback_queue(guild_id)
         while True:
             voice_client, line, style_id = await guild_queue.get()
-            if voice_client and voice_client.is_connected() and not voice_client.is_playing():
+            if (
+                voice_client
+                and voice_client.is_connected()
+                and not voice_client.is_playing()
+            ):
                 await self.safely_speak_line(voice_client, line, style_id)
             guild_queue.task_done()
 
@@ -46,11 +57,9 @@ class VoiceSynthService:
         try:
             await self.speak_line(voice_client, line, style_id)
         except aiohttp.ClientError as e:
-            logging.error(
-                f"Client error during speaking line: {e}", exc_info=True)
+            logging.error(f"Client error during speaking line: {e}", exc_info=True)
         except Exception as e:
-            logging.error(
-                f"Unexpected error speaking line: {e}", exc_info=True)
+            logging.error(f"Unexpected error speaking line: {e}", exc_info=True)
             if voice_client.is_connected():
                 await voice_client.disconnect()
 
@@ -88,11 +97,9 @@ class VoiceSynthService:
                         f"Synthesis request failed with status: {response.status}"
                     )
         except aiohttp.ClientResponseError as e:
-            logging.error(
-                f"Response error during synthesis: {e}", exc_info=True)
+            logging.error(f"Response error during synthesis: {e}", exc_info=True)
         except Exception as e:
-            logging.error(
-                f"Unexpected error during synthesis: {e}", exc_info=True)
+            logging.error(f"Unexpected error during synthesis: {e}", exc_info=True)
 
     async def speak_line(self, voice_client: discord.VoiceClient, line, style_id):
         try:
@@ -114,8 +121,7 @@ class VoiceSynthService:
 
     async def _play_audio(self, voice_client: discord.VoiceClient, voice_data):
         try:
-            audio_source = discord.FFmpegPCMAudio(
-                io.BytesIO(voice_data), pipe=True)
+            audio_source = discord.FFmpegPCMAudio(io.BytesIO(voice_data), pipe=True)
             voice_client.play(audio_source)
             # Wait for the current audio to finish playing before returning
             while voice_client.is_playing():
