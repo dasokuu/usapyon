@@ -55,13 +55,15 @@ async def main():
     if await wait_for_voice_server(VoiceVoxSettings.SPEAKERS_URL):  # 非同期処理に変更
         intents = discord.Intents.default()
         intents.message_content = True
-        bot = commands.Bot(command_prefix=BotSettings.BOT_PREFIX, intents=intents)
+        bot = commands.Bot(
+            command_prefix=BotSettings.BOT_PREFIX, intents=intents)
         voice_server = VoiceSynthServer()
         voice_config = VoiceSynthConfig()
         event_handler = DiscordEventHandler()
         message_handler = DiscordMessageHandler()
 
-        setup_join_command(bot, event_handler, voice_server, voice_config, message_handler)
+        setup_join_command(bot, event_handler, voice_server,
+                           voice_config, message_handler)
         setup_leave_command(bot, voice_server, voice_config)
         setup_settings_command(bot, voice_config)
         setup_info_command(bot, voice_config)
@@ -83,7 +85,8 @@ async def main():
                                 voice_server.process_playback_queue(guild.id)
                             )
                         else:
-                            logging.error(f"Unable to find guild with ID: {guild_id}")
+                            logging.error(
+                                f"Unable to find guild with ID: {guild_id}")
                     except Exception as e:
                         logging.error(
                             f"Error syncing commands for guild {guild_id}: {e}"
