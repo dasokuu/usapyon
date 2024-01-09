@@ -79,16 +79,17 @@ class VoiceSynthServer:
     async def speak_line(self, voice_client: discord.VoiceClient, line, style_id):
         try:
             query_data = await self.audio_query(line, style_id)
-            if query_data:
-                voice_data = await self.synthesis(style_id, query_data)
-                if voice_data:
-                    await self._play_audio(voice_client, voice_data)
-                else:
-                    logging.error(f"Failed to synthesize audio for: {line}")
-            else:
-                logging.error(f"Failed to get audio query for: {line}")
+            if not query_data:
+                raise RuntimeError(f"Failed to get audio query for: {line}")
+
+            voice_data = await self.synthesis(style_id, query_data)
+            if not voice_data:
+                raise RuntimeError(f"Failed to synthesize audio for: {line}")
+
+            await self._play_audio(voice_client, voice_data)
         except Exception as e:
             logging.error(f"Error in speak_line: {e}")
+            # ここで特定のエラーに対する追加の処理を行うことができます。
 
     async def _play_audio(self, voice_client: discord.VoiceClient, voice_data):
         try:
