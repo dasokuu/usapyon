@@ -46,7 +46,8 @@ class VoiceSynthService:
         try:
             await self.speak_line(voice_client, line, style_id)
         except Exception as e:
-            logging.error(f"Error speaking line: {e}", exc_info=True)  # 詳細なエラー情報をログに記録
+            # 詳細なエラー情報をログに記録
+            logging.error(f"Error speaking line: {e}", exc_info=True)
 
     async def audio_query(self, text, style_id):
         # 音声合成用のクエリを作成します。
@@ -83,7 +84,8 @@ class VoiceSynthService:
                     )
                     return None
         except Exception as e:
-            logging.error(f"Error in synthesis: {e}", exc_info=True)  # 詳細なエラー情報をログに記録
+            # 詳細なエラー情報をログに記録
+            logging.error(f"Error in synthesis: {e}", exc_info=True)
             return None
 
     async def speak_line(self, voice_client: discord.VoiceClient, line, style_id):
@@ -110,7 +112,8 @@ class VoiceSynthService:
             while voice_client.is_playing():
                 await asyncio.sleep(0.1)
         except Exception as e:
-            logging.error(f"Error playing audio: {e}", exc_info=True)  # 詳細なエラー情報をログに記録
+            # 詳細なエラー情報をログに記録
+            logging.error(f"Error playing audio: {e}", exc_info=True)
 
     async def clear_playback_queue(self, guild_id):
         guild_queue = self.get_guild_playback_queue(guild_id)
