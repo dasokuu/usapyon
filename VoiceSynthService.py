@@ -18,17 +18,13 @@ class VoiceSynthService:
         self.session = aiohttp.ClientSession()  # セッションを初期化
 
     async def close(self):
-        if self.session and not self.session.closed:
+        if self.session:
             await self.session.close()
 
     async def get_session(self):
-        if self.session.closed:  # セッションが閉じている場合、新しいセッションを作成
+        if self.session is None or self.session.closed:
             self.session = aiohttp.ClientSession()
         return self.session
-
-    async def close_session(self):
-        if not self.session.closed:
-            await self.session.close()
 
     def get_guild_playback_queue(self, guild_id):
         """指定されたギルドIDのplayback_queueを取得または作成します。"""
