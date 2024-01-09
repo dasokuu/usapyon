@@ -127,33 +127,6 @@ class VoiceSynthConfig:
         self.save_style_settings()
         return guild_id, text_channel_id
 
-    def create_info_message(
-        self, interaction: discord.Interaction, text_channel_id, speaker_details
-    ):
-        user_display_name = interaction.user.display_name
-        user, announcement, default = (
-            speaker_details["user"],
-            speaker_details["announcement"],
-            speaker_details["default"],
-        )
-        return (
-            f"テキストチャンネル: <#{text_channel_id}>\n"
-            f"{user_display_name}さんの読み上げ音声: [{user[0]}] - {user[1]}\n"
-            f"アナウンス音声（サーバー設定）: [{announcement[0]}] - {announcement[1]}\n"
-            f"未設定ユーザーの読み上げ音声（サーバー設定）: [{default[0]}] - {default[1]}\n"
-        )
-
-    async def connect_to_voice_channel(self, interaction: discord.Interaction):
-        try:
-            channel = interaction.user.voice.channel
-            if channel is None:
-                raise ValueError("ユーザーがボイスチャンネルにいません。")
-            voice_client = await channel.connect(self_deaf=True)
-            return voice_client
-        except Exception as e:
-            logging.error(f"Voice channel connection error: {e}")
-            raise
-
     def get_character_info(self, speaker_name):
         # もち子さんの特別な処理
         if speaker_name == "もち子さん":

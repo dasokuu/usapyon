@@ -51,7 +51,7 @@ def setup_join_command(
         else:
             # ボットがVCに接続されていない場合、通常の接続処理を実行
             try:
-                voice_client = await synth_config.connect_to_voice_channel(interaction)
+                voice_client = await synth_handler.connect_to_voice_channel(interaction)
                 await synth_handler.welcome_user(
                     synth_config, synth_server, interaction, voice_client, message_handler
                 )

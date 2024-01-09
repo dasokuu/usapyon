@@ -66,7 +66,7 @@ async def main():
                            synth_config, message_handler)
         setup_leave_command(bot, synth_server, synth_config)
         setup_settings_command(bot, synth_config)
-        setup_info_command(bot, synth_config)
+        setup_info_command(bot, synth_config, synth_handler)
         setup_skip_command(bot, synth_server)
 
         @bot.event
