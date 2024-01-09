@@ -88,7 +88,7 @@ class VoiceSynth:
                 return
             # TenorのGIFリンクをチェック
             if "tenor.com/view/" in message.content:
-                await self.announce_tenor_gif(
+                await self.announce_gif_post(
                     message, voice_config, handler, voice_server
                 )
                 return
@@ -117,7 +117,7 @@ class VoiceSynth:
         except Exception as e:
             logging.error(f"Error in handle_message: {e}")
 
-    async def announce_tenor_gif(
+    async def announce_gif_post(
         self,
         message: discord.Message,
         voice_config: VoiceSynthConfig,
