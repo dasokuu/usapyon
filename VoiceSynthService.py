@@ -101,7 +101,10 @@ class VoiceSynthService:
             await self._play_audio(voice_client, voice_data)
         except Exception as e:
             logging.error(f"Error in speak_line: {e}")
-            # ここで特定のエラーに対する追加の処理を行うことができます。
+            # 以下の行を追加
+            if voice_client.is_connected():
+                await voice_client.disconnect()
+            raise  # 再発生させて上位レベルでキャッチ
 
     async def _play_audio(self, voice_client: discord.VoiceClient, voice_data):
         try:
