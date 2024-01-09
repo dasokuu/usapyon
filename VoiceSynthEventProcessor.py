@@ -98,7 +98,7 @@ class VoiceSynthEventProcessor:
                 return
             # TenorのGIFリンクをチェック
             if "tenor.com/view/" in message.content:
-                await self.announce_gif_post(
+                await self.speach_gif(
                     message, synth_config, text_processor, synth_service
                 )
                 return
@@ -118,13 +118,13 @@ class VoiceSynthEventProcessor:
                 )
             # New Code: Announce sticker name if a sticker is posted
             if message.stickers:
-                await self.announce_sticker_post(
+                await self.speach_sticker(
                     synth_config, synth_service, message, text_processor
                 )
         except Exception as e:
             logging.error(f"Error in handle_message: {e}")
 
-    async def announce_gif_post(
+    async def speach_gif(
         self,
         message: discord.Message,
         synth_config: VoiceSynthConfig,
@@ -144,6 +144,30 @@ class VoiceSynthEventProcessor:
             text_processor,
             message,
         )
+
+    async def speach_sticker(
+        self,
+        synth_config: VoiceSynthConfig,
+        synth_service: VoiceSynthService,
+        message: discord.Message,
+        text_processor: SpeechTextFormatter,
+    ):
+        """スタンプ投稿"""
+        guild_id = message.guild.id
+        user_style_id = synth_config.get_user_style_id(
+            message.author.id, guild_id)
+
+        for sticker in message.stickers:
+            sticker_name = sticker.name
+            text = f"{sticker_name} のスタンプ"
+            await synth_service.text_to_speech(
+                message.guild.voice_client,
+                text,
+                user_style_id,
+                guild_id,
+                text_processor,
+                message,
+            )
 
     async def announce_presence(
         self,
@@ -186,31 +210,6 @@ class VoiceSynthEventProcessor:
             member.guild.id,
             text_processor,
         )
-
-    # New Method: Announce the name of the sticker
-    async def announce_sticker_post(
-        self,
-        synth_config: VoiceSynthConfig,
-        synth_service: VoiceSynthService,
-        message: discord.Message,
-        text_processor: SpeechTextFormatter,
-    ):
-        """スタンプ投稿をアナウンスします。"""
-        guild_id = message.guild.id
-        user_style_id = synth_config.get_user_style_id(
-            message.author.id, guild_id)
-
-        for sticker in message.stickers:
-            sticker_name = sticker.name
-            text = f"{sticker_name} のスタンプ"
-            await synth_service.text_to_speech(
-                message.guild.voice_client,
-                text,
-                user_style_id,
-                guild_id,
-                text_processor,
-                message,
-            )
 
     async def announce_file_post(
         self,
