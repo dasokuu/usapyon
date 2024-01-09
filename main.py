@@ -3,7 +3,6 @@ import logging
 import aiohttp
 import discord
 from discord.ext import commands
-import requests
 from SpeechTextFormatter import SpeechTextFormatter
 from VoiceSynthEventProcessor import VoiceSynthEventProcessor
 from commands.settings import setup_settings_command

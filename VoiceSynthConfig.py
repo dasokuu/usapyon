@@ -2,7 +2,6 @@ import logging
 import pickle
 import aiohttp
 import discord
-import requests
 from settings import (
     CHARACTORS_INFO,
     USER_DEFAULT_STYLE_ID,
