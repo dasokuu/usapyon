@@ -119,8 +119,10 @@ class VoiceSynthEventProcessor:
                 await self.speach_sticker(
                     synth_config, synth_service, message, text_processor
                 )
+        except discord.DiscordException as e:
+            logging.error(f"Discord specific error: {e}")
         except Exception as e:
-            logging.error(f"Error in handle_message: {e}")
+            logging.error(f"General error in handle_message: {e}")
 
     async def speach_gif(
         self,
