@@ -122,7 +122,6 @@ class VoiceSynthConfig:
     def get_and_update_guild_settings(self, interaction: discord.Interaction):
         guild_id = interaction.guild_id
         text_channel_id = interaction.channel_id
-        # Updated to clarify the intention and reduce complexity
         guild_settings = self.voice_synthesis_settings.setdefault(guild_id, {})
         guild_settings["text_channel"] = text_channel_id
         self.save_style_settings()

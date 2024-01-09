@@ -70,6 +70,9 @@ class VoiceSynthService:
                 error_detail = await response.text()
                 logging.error(f"Unprocessable Entity: {error_detail}")
                 return None
+            else:
+                logging.error(f"HTTP Error {response.status}: {await response.text()}")
+                return None
 
     async def synthesis(self, speaker, query_data):
         # aiohttpを使用した非同期処理に変更
