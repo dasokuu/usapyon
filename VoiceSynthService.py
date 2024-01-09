@@ -100,10 +100,7 @@ class VoiceSynthService:
     async def clear_playback_queue(self, guild_id):
         guild_queue = self.get_guild_playback_queue(guild_id)
         while not guild_queue.empty():
-            try:
-                guild_queue.get_nowait()
-            except asyncio.QueueEmpty:
-                continue
+            guild_queue.get_nowait()
             guild_queue.task_done()
 
     async def close_session(self):
