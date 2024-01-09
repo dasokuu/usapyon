@@ -4,7 +4,7 @@ import aiohttp
 import discord
 from discord.ext import commands
 import requests
-from MessageToSpeechProcessor import MessageToSpeechProcessor
+from SpeechTextFormatter import SpeechTextFormatter
 from VoiceSynthEventProcessor import VoiceSynthEventProcessor
 from commands.settings import setup_settings_command
 from commands.info import setup_info_command
@@ -60,13 +60,13 @@ async def main():
         synth_service = VoiceSynthService()
         synth_config = VoiceSynthConfig()
         synth_event_processor = VoiceSynthEventProcessor()
-        message_processor = MessageToSpeechProcessor()
+        text_processor = SpeechTextFormatter()
 
-        setup_join_command(bot, synth_event_processor, synth_service,
-                           synth_config, message_processor)
+        setup_join_command(bot, synth_service,
+                           synth_config, text_processor)
         setup_leave_command(bot, synth_service, synth_config)
         setup_settings_command(bot, synth_config)
-        setup_info_command(bot, synth_config, synth_event_processor)
+        setup_info_command(bot, synth_config)
         setup_skip_command(bot, synth_service)
 
         @bot.event
@@ -100,13 +100,13 @@ async def main():
                 return
             await bot.process_commands(message)
             await synth_event_processor.handle_message(
-                synth_config, synth_service, message, message_processor
+                synth_config, synth_service, message, text_processor
             )
 
         @bot.event
         async def on_voice_state_update(member: discord.Member, before, after):
             await synth_event_processor.handle_voice_state_update(
-                synth_config, synth_service, bot, member, before, after, message_processor
+                synth_config, synth_service, bot, member, before, after, text_processor
             )
 
         await bot.start(TOKEN)  # bot.run()の代わりにbot.start()を使用します

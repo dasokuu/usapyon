@@ -4,6 +4,7 @@ import asyncio
 import json
 import discord
 import io
+from SpeechTextFormatter import SpeechTextFormatter
 from settings import VOICEVOXSettings
 
 
@@ -108,3 +109,27 @@ class VoiceSynthService:
     async def close_session(self):
         if self.session and not self.session.closed:
             await self.session.close()  # セッションが開いていれば閉じる
+
+    async def text_to_speech(
+        self,
+        voice_client: discord.VoiceClient,
+        text,
+        style_id,
+        guild_id,
+        text_processor: SpeechTextFormatter,
+        message: discord.Message = None,
+    ):
+        if not voice_client or not voice_client.is_connected():
+            logging.error("Voice client is not connected.")
+            return
+
+        try:
+            lines = text.split("\n")
+            for line in filter(None, lines):
+                # SpeechTextFormatterを用いてテキストを処理
+                processed_line = await text_processor.replace_content(line, message)
+                guild_queue = self.get_guild_playback_queue(guild_id)
+                await guild_queue.put((voice_client, processed_line, style_id))
+        except Exception as e:
+            logging.error(f"Error in text_to_speech: {e}")
+            # Handle specific exceptions and add remediation here.

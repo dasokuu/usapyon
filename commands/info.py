@@ -5,7 +5,7 @@ from VoiceSynthConfig import VoiceSynthConfig
 
 
 def create_info_message(
-    self, interaction: discord.Interaction, text_channel_id, speaker_details
+    interaction: discord.Interaction, text_channel_id, speaker_details
 ):
     user_display_name = interaction.user.display_name
     user, announcement, default = (
@@ -21,7 +21,7 @@ def create_info_message(
     )
 
 
-def setup_info_command(bot, synth_config: VoiceSynthConfig, synth_event_processor: VoiceSynthEventProcessor):
+def setup_info_command(bot, synth_config: VoiceSynthConfig):
     @bot.tree.command(
         name="info",
         guilds=APPROVED_GUILD_OBJECTS,
@@ -35,7 +35,7 @@ def setup_info_command(bot, synth_config: VoiceSynthConfig, synth_event_processo
         text_channel_id = guild_settings.get("text_channel", "未設定")
         style_ids = synth_config.get_style_ids(guild_id, interaction.user.id)
         speaker_details = synth_config.get_speaker_details(*style_ids)
-        info_message = synth_event_processor.create_info_message(
+        info_message = create_info_message(
             interaction, text_channel_id, speaker_details
         )
 
