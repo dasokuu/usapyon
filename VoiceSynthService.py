@@ -69,7 +69,8 @@ class VoiceSynthService:
         # エラーハンドリングの改善
         try:
             async with self.session.post(
-                VOICEVOXSettings.AUDIO_QUERY_URL, headers=self.headers, params={"text": text, "speaker": style_id}
+                VOICEVOXSettings.AUDIO_QUERY_URL, headers=self.headers, params={
+                    "text": text, "speaker": style_id}
             ) as response:
                 response.raise_for_status()
                 return await response.json()
