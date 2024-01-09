@@ -4,6 +4,23 @@ from settings import APPROVED_GUILD_OBJECTS
 from VoiceSynthConfig import VoiceSynthConfig
 
 
+def create_info_message(
+    self, interaction: discord.Interaction, text_channel_id, speaker_details
+):
+    user_display_name = interaction.user.display_name
+    user, announcement, default = (
+        speaker_details["user"],
+        speaker_details["announcement"],
+        speaker_details["default"],
+    )
+    return (
+        f"テキストチャンネル: <#{text_channel_id}>\n"
+        f"{user_display_name}さんの読み上げ音声: [{user[0]}] - {user[1]}\n"
+        f"アナウンス音声（サーバー設定）: [{announcement[0]}] - {announcement[1]}\n"
+        f"未設定ユーザーの読み上げ音声（サーバー設定）: [{default[0]}] - {default[1]}\n"
+    )
+
+
 def setup_info_command(bot, synth_config: VoiceSynthConfig, synth_event_processor: VoiceSynthEventProcessor):
     @bot.tree.command(
         name="info",
