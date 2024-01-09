@@ -71,21 +71,6 @@ class VoiceSynthHandler:
                     logging.info(f"テキストチャンネルの設定をクリアしました: サーバーID {guild_id}")
                 await member.guild.voice_client.disconnect()
 
-    def should_process_message(self, message: discord.Message, guild_id):
-        """メッセージが処理対象かどうかを判断します。"""
-        voice_client = message.guild.voice_client
-        allowed_text_channel_id = self.synth_config_pickle.get(guild_id, {}).get(
-            "text_channel"
-        )
-        return (
-            voice_client
-            and voice_client.channel
-            and message.author.voice
-            and message.author.voice.channel == voice_client.channel
-            and not message.content.startswith(BotSettings.BOT_PREFIX)
-            and message.channel.id == allowed_text_channel_id
-        )
-
     async def handle_message(
         self,
         synth_config: VoiceSynthConfig,
@@ -94,7 +79,7 @@ class VoiceSynthHandler:
         message_handler: DiscordMessageHandler,
     ):
         # この行を追加
-        if not self.should_process_message(message, message.guild.id):
+        if not synth_config.should_process_message(message, message.guild.id):
             return
         guild_id = message.guild.id
         try:

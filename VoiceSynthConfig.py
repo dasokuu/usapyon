@@ -160,3 +160,18 @@ class VoiceSynthConfig:
                 return pickle.load(f)  # ファイルからpickleオブジェクトをロード
         except (FileNotFoundError, pickle.UnpicklingError):
             return {}  # ファイルが見つからないか、pickle読み込みエラーの場合は空の辞書を返す
+
+    def should_process_message(self, message: discord.Message, guild_id):
+        """メッセージが処理対象かどうかを判断します。"""
+        voice_client = message.guild.voice_client
+        allowed_text_channel_id = self.synth_config_pickle.get(guild_id, {}).get(
+            "text_channel"
+        )
+        return (
+            voice_client
+            and voice_client.channel
+            and message.author.voice
+            and message.author.voice.channel == voice_client.channel
+            and not message.content.startswith(BotSettings.BOT_PREFIX)
+            and message.channel.id == allowed_text_channel_id
+        )
