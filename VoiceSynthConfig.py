@@ -40,21 +40,6 @@ class VoiceSynthConfig:
         with open(CONFIG_PICKLE_FILE, "wb") as f:  # wbモードで開く
             pickle.dump(self.synth_config_pickle, f)  # config_pickleをpickleで保存
 
-    def should_process_message(self, message: discord.Message, guild_id):
-        """メッセージが処理対象かどうかを判断します。"""
-        voice_client = message.guild.voice_client
-        allowed_text_channel_id = self.synth_config_pickle.get(guild_id, {}).get(
-            "text_channel"
-        )
-        return (
-            voice_client
-            and voice_client.channel
-            and message.author.voice
-            and message.author.voice.channel == voice_client.channel
-            and not message.content.startswith(BotSettings.BOT_PREFIX)
-            and message.channel.id == allowed_text_channel_id
-        )
-
     def get_user_style_id(self, user_id, guild_id):
         """指定されたユーザーのスタイルIDを取得します。"""
         # ユーザーに固有のスタイルIDが設定されていればそれを返し、そうでなければギルドのデフォルトを返します。
