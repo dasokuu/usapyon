@@ -5,7 +5,7 @@ from VoiceSynthService import VoiceSynthService
 
 
 def setup_leave_command(
-    bot, synth_server: VoiceSynthService, synth_config: VoiceSynthConfig
+    bot, synth_service: VoiceSynthService, synth_config: VoiceSynthConfig
 ):
     # ボットをボイスチャンネルから切断するコマンド
     @bot.tree.command(
@@ -19,7 +19,7 @@ def setup_leave_command(
 
         guild_id = interaction.guild_id
         # キューをクリア
-        await synth_server.clear_playback_queue(guild_id)
+        await synth_service.clear_playback_queue(guild_id)
 
         # テキストチャンネル設定を削除
         if "text_channel" in synth_config.synth_config_pickle.get(guild_id, {}):

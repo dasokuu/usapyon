@@ -1,7 +1,7 @@
 import logging
 import discord
 from MessageToSpeechProcessor import MessageToSpeechProcessor
-from VoiceSynthEventResponder import VoiceSynthEventResponder
+from VoiceSynthEventProcessor import VoiceSynthEventProcessor
 from settings import APPROVED_GUILD_OBJECTS, error_messages
 from VoiceSynthConfig import VoiceSynthConfig
 from VoiceSynthService import VoiceSynthService
@@ -9,10 +9,10 @@ from VoiceSynthService import VoiceSynthService
 
 def setup_join_command(
     bot,
-    synth_handler: VoiceSynthEventResponder,
-    synth_server: VoiceSynthService,
+    event_processor: VoiceSynthEventProcessor,
+    synth_service: VoiceSynthService,
     synth_config: VoiceSynthConfig,
-    message_handler: MessageToSpeechProcessor
+    message_processor: MessageToSpeechProcessor
 ):
     # ボットをボイスチャンネルに接続するコマンド
     @bot.tree.command(
@@ -51,9 +51,9 @@ def setup_join_command(
         else:
             # ボットがVCに接続されていない場合、通常の接続処理を実行
             try:
-                voice_client = await synth_handler.connect_to_voice_channel(interaction)
-                await synth_handler.welcome_user(
-                    synth_config, synth_server, interaction, voice_client, message_handler
+                voice_client = await event_processor.connect_to_voice_channel(interaction)
+                await event_processor.welcome_user(
+                    synth_config, synth_service, interaction, voice_client, message_processor
                 )
             except discord.ClientException as e:
                 logging.error(f"Connection error: {e}")
