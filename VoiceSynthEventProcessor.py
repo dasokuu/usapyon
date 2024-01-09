@@ -61,12 +61,12 @@ class VoiceSynthEventProcessor:
                 # キューをクリアする
                 await synth_service.clear_playback_queue(guild_id)
                 if (
-                    guild_id in synth_config.synth_config_pickle
+                    guild_id in synth_config.voice_synthesis_settings
                     and "text_channel"
-                    in synth_config.synth_config_pickle.get(guild_id, {})
+                    in synth_config.voice_synthesis_settings.get(guild_id, {})
                 ):
                     # テキストチャンネルIDの設定をクリア
-                    del synth_config.synth_config_pickle[guild_id]["text_channel"]
+                    del synth_config.voice_synthesis_settings[guild_id]["text_channel"]
                     synth_config.save_style_settings()  # 変更を保存
                     logging.info(f"テキストチャンネルの設定をクリアしました: サーバーID {guild_id}")
                 await member.guild.voice_client.disconnect()
@@ -191,7 +191,7 @@ class VoiceSynthEventProcessor:
             )  # display_nameを取得
             send_message = f"{member.display_name}さんの読み上げ音声: [{user_display_name}] - {user_style_name}"
             # テキストチャンネルへのメッセージ送信
-            text_channel_id = synth_config.synth_config_pickle.get(
+            text_channel_id = synth_config.voice_synthesis_settings.get(
                 member.guild.id, {}
             ).get("text_channel")
             if text_channel_id:
@@ -218,7 +218,7 @@ class VoiceSynthEventProcessor:
     ):
         """ファイル投稿をアナウンスします。"""
         guild_id = message.guild.id
-        announcement_style_id = synth_config.synth_config_pickle.get(
+        announcement_style_id = synth_config.voice_synthesis_settings.get(
             message.guild.id, {}
         ).get("announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID)
 

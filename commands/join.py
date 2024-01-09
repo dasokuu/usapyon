@@ -114,11 +114,11 @@ def setup_join_command(
         if interaction.guild.voice_client:
             # 読み上げテキストチャンネルが既に設定されているが、異なる場合は更新
             if (
-                guild_id in synth_config.synth_config_pickle
-                and synth_config.synth_config_pickle[guild_id].get("text_channel")
+                guild_id in synth_config.voice_synthesis_settings
+                and synth_config.voice_synthesis_settings[guild_id].get("text_channel")
                 != text_channel_id
             ):
-                synth_config.synth_config_pickle[guild_id]["text_channel"] = text_channel_id
+                synth_config.voice_synthesis_settings[guild_id]["text_channel"] = text_channel_id
                 synth_config.save_style_settings()
                 # ユーザーに読み上げテキストチャンネルが変更されたことを通知
                 await interaction.followup.send(

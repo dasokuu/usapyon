@@ -15,7 +15,7 @@ from settings import (
 class VoiceSynthConfig:
     async def async_init(self):
         self.speakers = await self.fetch_json(VOICEVOXSettings.SPEAKERS_URL)
-        self.synth_config_pickle = self.load_style_settings()
+        self.voice_synthesis_settings = self.load_style_settings()
 
     def validate_style_id(self, style_id):
         valid_style_ids = [
@@ -38,14 +38,15 @@ class VoiceSynthConfig:
     def save_style_settings(self):
         """スタイル設定を保存します。"""
         with open(CONFIG_PICKLE_FILE, "wb") as f:  # wbモードで開く
-            pickle.dump(self.synth_config_pickle, f)  # config_pickleをpickleで保存
+            # config_pickleをpickleで保存
+            pickle.dump(self.voice_synthesis_settings, f)
 
     def get_user_style_id(self, user_id, guild_id):
         """指定されたユーザーのスタイルIDを取得します。"""
         # ユーザーに固有のスタイルIDが設定されていればそれを返し、そうでなければギルドのデフォルトを返します。
-        return self.synth_config_pickle.get(
+        return self.voice_synthesis_settings.get(
             user_id,
-            self.synth_config_pickle.get(guild_id, {}).get(
+            self.voice_synthesis_settings.get(guild_id, {}).get(
                 "user_default", USER_DEFAULT_STYLE_ID
             ),
         )
@@ -53,24 +54,24 @@ class VoiceSynthConfig:
     def get_announcement_style_id(self, guild_id):
         """指定されたギルドのアナウンス用スタイルIDを取得します。"""
         # ギルドのアナウンス用スタイルIDを返します。設定されていない場合はデフォルトのアナウンススタイルIDを返します。
-        return self.synth_config_pickle.get(guild_id, {}).get(
+        return self.voice_synthesis_settings.get(guild_id, {}).get(
             "announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID
         )
 
     def update_style_setting(self, guild_id, user_id, style_id, voice_scope):
         # Ensure the guild_id exists in the config_pickle
-        if guild_id not in self.synth_config_pickle:
-            self.synth_config_pickle[guild_id] = {}
+        if guild_id not in self.voice_synthesis_settings:
+            self.voice_synthesis_settings[guild_id] = {}
 
         # Ensure the specific voice_scope exists for this guild
-        if voice_scope not in self.synth_config_pickle[guild_id]:
-            self.synth_config_pickle[guild_id][voice_scope] = {}
+        if voice_scope not in self.voice_synthesis_settings[guild_id]:
+            self.voice_synthesis_settings[guild_id][voice_scope] = {}
         if voice_scope == "user_default":
-            self.synth_config_pickle[guild_id]["user_default"] = style_id
+            self.voice_synthesis_settings[guild_id]["user_default"] = style_id
         elif voice_scope == "announcement":
-            self.synth_config_pickle[guild_id]["announcement"] = style_id
+            self.voice_synthesis_settings[guild_id]["announcement"] = style_id
         elif voice_scope == "user":
-            self.synth_config_pickle[user_id] = style_id
+            self.voice_synthesis_settings[user_id] = style_id
         self.save_style_settings()
 
     def get_style_ids(self, guild_id, user_id):
@@ -82,7 +83,7 @@ class VoiceSynthConfig:
     def get_user_default_style_id(self, guild_id):
         """指定されたギルドのデフォルトユーザー読み上げスタイルIDを取得します。"""
         # ギルドに設定されているデフォルトのユーザースタイルIDを返します。設定されていない場合は、事前に定義されたデフォルトのユーザースタイルIDを返します。
-        return self.synth_config_pickle.get(guild_id, {}).get(
+        return self.voice_synthesis_settings.get(guild_id, {}).get(
             "user_default", USER_DEFAULT_STYLE_ID
         )
 
@@ -122,7 +123,7 @@ class VoiceSynthConfig:
         guild_id = interaction.guild_id
         text_channel_id = interaction.channel_id
         # Updated to clarify the intention and reduce complexity
-        guild_settings = self.synth_config_pickle.setdefault(guild_id, {})
+        guild_settings = self.voice_synthesis_settings.setdefault(guild_id, {})
         guild_settings["text_channel"] = text_channel_id
         self.save_style_settings()
         return guild_id, text_channel_id
@@ -165,7 +166,7 @@ class VoiceSynthConfig:
     def should_process_message(self, message: discord.Message, guild_id):
         """メッセージが処理対象かどうかを判断します。"""
         voice_client = message.guild.voice_client
-        allowed_text_channel_id = self.synth_config_pickle.get(guild_id, {}).get(
+        allowed_text_channel_id = self.voice_synthesis_settings.get(guild_id, {}).get(
             "text_channel"
         )
         return (

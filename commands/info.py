@@ -31,7 +31,8 @@ def setup_info_command(bot, synth_config: VoiceSynthConfig):
         guild_id = interaction.guild_id
 
         # サーバーの設定を取得
-        guild_settings = synth_config.synth_config_pickle.get(guild_id, {})
+        guild_settings = synth_config.voice_synthesis_settings.get(
+            guild_id, {})
         text_channel_id = guild_settings.get("text_channel", "未設定")
         style_ids = synth_config.get_style_ids(guild_id, interaction.user.id)
         speaker_details = synth_config.get_speaker_details(*style_ids)

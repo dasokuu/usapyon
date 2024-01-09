@@ -22,8 +22,8 @@ def setup_leave_command(
         await synth_service.clear_playback_queue(guild_id)
 
         # テキストチャンネル設定を削除
-        if "text_channel" in synth_config.synth_config_pickle.get(guild_id, {}):
-            del synth_config.synth_config_pickle[guild_id]["text_channel"]
+        if "text_channel" in synth_config.voice_synthesis_settings.get(guild_id, {}):
+            del synth_config.voice_synthesis_settings[guild_id]["text_channel"]
         synth_config.save_style_settings()
 
         # ボイスクライアントを切断
