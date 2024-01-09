@@ -70,12 +70,6 @@ class VoiceSynthServer:
                 return await response.read()
             return None
 
-    async def _enqueue_line_for_speech(
-        self, voice_client: discord.VoiceClient, line, style_id, guild_id
-    ):
-        guild_queue = self.get_guild_playback_queue(guild_id)
-        await guild_queue.put((voice_client, line, style_id))
-
     async def speak_line(self, voice_client: discord.VoiceClient, line, style_id):
         try:
             query_data = await self.audio_query(line, style_id)
