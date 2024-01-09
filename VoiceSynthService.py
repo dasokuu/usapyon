@@ -10,7 +10,6 @@ from settings import VOICEVOXSettings
 
 class VoiceSynthService:
     def __init__(self):
-        # Initialize global variables
         self.guild_playback_queues = {}
         self.headers = {"Content-Type": "application/json"}
         self.session = None  # セッションは初期化時にはNoneに
@@ -53,9 +52,11 @@ class VoiceSynthService:
         try:
             await self.speak_line(voice_client, line, style_id)
         except aiohttp.ClientError as e:
-            logging.error(f"Client error during speaking line: {e}", exc_info=True)
+            logging.error(
+                f"Client error during speaking line: {e}", exc_info=True)
         except Exception as e:
-            logging.error(f"Unexpected error speaking line: {e}", exc_info=True)
+            logging.error(
+                f"Unexpected error speaking line: {e}", exc_info=True)
             if voice_client.is_connected():
                 await voice_client.disconnect()
 
@@ -93,9 +94,11 @@ class VoiceSynthService:
                         f"Synthesis request failed with status: {response.status}"
                     )
         except aiohttp.ClientResponseError as e:
-            logging.error(f"Response error during synthesis: {e}", exc_info=True)
+            logging.error(
+                f"Response error during synthesis: {e}", exc_info=True)
         except Exception as e:
-            logging.error(f"Unexpected error during synthesis: {e}", exc_info=True)
+            logging.error(
+                f"Unexpected error during synthesis: {e}", exc_info=True)
 
     async def speak_line(self, voice_client: discord.VoiceClient, line, style_id):
         try:
@@ -110,14 +113,14 @@ class VoiceSynthService:
             await self._play_audio(voice_client, voice_data)
         except Exception as e:
             logging.error(f"Error in speak_line: {e}")
-            # 以下の行を追加
             if voice_client.is_connected():
                 await voice_client.disconnect()
             raise  # 再発生させて上位レベルでキャッチ
 
     async def _play_audio(self, voice_client: discord.VoiceClient, voice_data):
         try:
-            audio_source = discord.FFmpegPCMAudio(io.BytesIO(voice_data), pipe=True)
+            audio_source = discord.FFmpegPCMAudio(
+                io.BytesIO(voice_data), pipe=True)
             voice_client.play(audio_source)
             # Wait for the current audio to finish playing before returning
             while voice_client.is_playing():

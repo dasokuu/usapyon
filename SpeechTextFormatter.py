@@ -85,5 +85,5 @@ class SpeechTextFormatter:
         text = self.LAUGH_PATTERN.sub(self.laugh_replace, text)
         text = emoji.demojize(
             text, language="ja"
-        )  # Assuming you meant emojize instead of demojize
+        )
         return text

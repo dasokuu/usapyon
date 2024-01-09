@@ -78,7 +78,6 @@ class VoiceSynthEventProcessor:
         message: discord.Message,
         text_processor: SpeechTextFormatter,
     ):
-        # この行を追加
         if not synth_config.should_process_message(message, message.guild.id):
             return
         guild_id = message.guild.id
@@ -116,7 +115,6 @@ class VoiceSynthEventProcessor:
                 await self.announce_file_post(
                     synth_config, synth_service, message, text_processor
                 )
-            # New Code: Announce sticker name if a sticker is posted
             if message.stickers:
                 await self.speach_sticker(
                     synth_config, synth_service, message, text_processor
@@ -175,7 +173,7 @@ class VoiceSynthEventProcessor:
         voice_client,
         synth_config: VoiceSynthConfig,
         synth_service: VoiceSynthService,
-        text_processor: SpeechTextFormatter,  # text_processorを追加
+        text_processor: SpeechTextFormatter,
         action="entered",
     ):
         action_texts = {"entered": "が入室しました。", "left": "が退室しました。"}
