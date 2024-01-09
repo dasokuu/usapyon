@@ -59,14 +59,14 @@ async def main():
             command_prefix=BotSettings.BOT_PREFIX, intents=intents)
         synth_service = VoiceSynthService()
         synth_config = VoiceSynthConfig()
-        event_processor = VoiceSynthEventProcessor()
+        synth_event_processor = VoiceSynthEventProcessor()
         message_processor = MessageToSpeechProcessor()
 
-        setup_join_command(bot, event_processor, synth_service,
+        setup_join_command(bot, synth_event_processor, synth_service,
                            synth_config, message_processor)
         setup_leave_command(bot, synth_service, synth_config)
         setup_settings_command(bot, synth_config)
-        setup_info_command(bot, synth_config, event_processor)
+        setup_info_command(bot, synth_config, synth_event_processor)
         setup_skip_command(bot, synth_service)
 
         @bot.event
@@ -99,13 +99,13 @@ async def main():
             if message.author.bot:  # これでメッセージがボットからのものかどうかをチェック
                 return
             await bot.process_commands(message)
-            await event_processor.handle_message(
+            await synth_event_processor.handle_message(
                 synth_config, synth_service, message, message_processor
             )
 
         @bot.event
         async def on_voice_state_update(member: discord.Member, before, after):
-            await event_processor.handle_voice_state_update(
+            await synth_event_processor.handle_voice_state_update(
                 synth_config, synth_service, bot, member, before, after, message_processor
             )
 

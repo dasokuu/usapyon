@@ -4,7 +4,7 @@ from settings import APPROVED_GUILD_OBJECTS
 from VoiceSynthConfig import VoiceSynthConfig
 
 
-def setup_info_command(bot, synth_config: VoiceSynthConfig, event_processor: VoiceSynthEventProcessor):
+def setup_info_command(bot, synth_config: VoiceSynthConfig, synth_event_processor: VoiceSynthEventProcessor):
     @bot.tree.command(
         name="info",
         guilds=APPROVED_GUILD_OBJECTS,
@@ -18,7 +18,7 @@ def setup_info_command(bot, synth_config: VoiceSynthConfig, event_processor: Voi
         text_channel_id = guild_settings.get("text_channel", "未設定")
         style_ids = synth_config.get_style_ids(guild_id, interaction.user.id)
         speaker_details = synth_config.get_speaker_details(*style_ids)
-        info_message = event_processor.create_info_message(
+        info_message = synth_event_processor.create_info_message(
             interaction, text_channel_id, speaker_details
         )
 

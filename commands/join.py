@@ -9,7 +9,7 @@ from VoiceSynthService import VoiceSynthService
 
 def setup_join_command(
     bot,
-    event_processor: VoiceSynthEventProcessor,
+    synth_event_processor: VoiceSynthEventProcessor,
     synth_service: VoiceSynthService,
     synth_config: VoiceSynthConfig,
     message_processor: MessageToSpeechProcessor
@@ -51,8 +51,8 @@ def setup_join_command(
         else:
             # ボットがVCに接続されていない場合、通常の接続処理を実行
             try:
-                voice_client = await event_processor.connect_to_voice_channel(interaction)
-                await event_processor.welcome_user(
+                voice_client = await synth_event_processor.connect_to_voice_channel(interaction)
+                await synth_event_processor.welcome_user(
                     synth_config, synth_service, interaction, voice_client, message_processor
                 )
             except discord.ClientException as e:
