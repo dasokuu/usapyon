@@ -70,9 +70,6 @@ class VoiceSynthServer:
                 return await response.read()
             return None
 
-
-
-
     async def _enqueue_line_for_speech(
         self, voice_client: discord.VoiceClient, line, style_id, guild_id
     ):
@@ -95,7 +92,8 @@ class VoiceSynthServer:
 
     async def _play_audio(self, voice_client: discord.VoiceClient, voice_data):
         try:
-            audio_source = discord.FFmpegPCMAudio(io.BytesIO(voice_data), pipe=True)
+            audio_source = discord.FFmpegPCMAudio(
+                io.BytesIO(voice_data), pipe=True)
             voice_client.play(audio_source)
             # Wait for the current audio to finish playing before returning
             while voice_client.is_playing():

@@ -75,7 +75,8 @@ class DiscordMessageHandler:
                 ),
             ]
 
-        text = self.replace_english_to_kana(text)  # First replace English words
+        text = self.replace_english_to_kana(
+            text)  # First replace English words
         if message:
             for pattern, func in replace_operations:
                 text = self.replace_pattern(pattern, text, func)

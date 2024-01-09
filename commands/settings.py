@@ -39,7 +39,8 @@ def setup_settings_command(bot, voice_config: VoiceSynthConfig):
             else discord.ButtonStyle.danger,
             label=label,
         )
-        button.callback = create_button_callback(interaction, button, voice_scope)
+        button.callback = create_button_callback(
+            interaction, button, voice_scope)
         return button
 
     def create_button_callback(interaction: discord.Interaction, button, voice_scope):
@@ -120,7 +121,8 @@ def setup_settings_command(bot, voice_config: VoiceSynthConfig):
             self, interaction: discord.Interaction, button: discord.ui.Button
         ):
             # Move forward 5 pages, but not beyond the last page
-            self.current_page = min(len(self.speakers) - 1, self.current_page + 5)
+            self.current_page = min(
+                len(self.speakers) - 1, self.current_page + 5)
             await self.update_speaker_list(interaction)
 
         @discord.ui.button(
@@ -139,7 +141,8 @@ def setup_settings_command(bot, voice_config: VoiceSynthConfig):
             self.five_forward_button.disabled = (
                 self.current_page > len(self.speakers) - 6
             )
-            self.next_button.disabled = self.current_page == len(self.speakers) - 1
+            self.next_button.disabled = self.current_page == len(
+                self.speakers) - 1
             voice_scope_description = get_voice_scope_description(interaction)
             # 'interaction'を正しく使ってメッセージを編集
             speaker_name = self.speakers[self.current_page]["name"]
@@ -210,7 +213,8 @@ def setup_settings_command(bot, voice_config: VoiceSynthConfig):
                     lambda interaction, button=style_button, style_id=style[
                         "id"
                     ]: asyncio.create_task(
-                        handle_style_button_click(interaction, button, style_id)
+                        handle_style_button_click(
+                            interaction, button, style_id)
                     )
                 )
 

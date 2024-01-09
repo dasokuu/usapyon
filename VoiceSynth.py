@@ -75,7 +75,8 @@ class VoiceSynth:
         try:
             logging.info(f"Handling message: {message.content}")
             if not isinstance(message.content, str):
-                logging.error(f"Message content is not a string: {message.content}")
+                logging.error(
+                    f"Message content is not a string: {message.content}")
                 return
 
             message_content = message.content
@@ -101,7 +102,8 @@ class VoiceSynth:
                 await self.text_to_speech(
                     message.guild.voice_client,
                     message_content,
-                    voice_config.get_user_style_id(message.author.id, guild_id),
+                    voice_config.get_user_style_id(
+                        message.author.id, guild_id),
                     guild_id,
                     handler,
                     voice_server,
@@ -124,7 +126,8 @@ class VoiceSynth:
     ):
         """TenorのGIFリンクが投稿された場合にアナウンスする。"""
         guild_id = message.guild.id
-        announcement_style_id = voice_config.get_announcement_style_id(guild_id)
+        announcement_style_id = voice_config.get_announcement_style_id(
+            guild_id)
         announcement_message = "GIF画像が投稿されました。"
         await self.text_to_speech(
             message.guild.voice_client,
@@ -150,8 +153,10 @@ class VoiceSynth:
 
         # 入室アクション時にVOICEVOXのスピーカー名を使用
         if action == "entered":
-            user_style_id = voice_config.get_user_style_id(member.id, member.guild.id)
-            user_speaker_name, user_style_name = voice_config.get_style_details(user_style_id)
+            user_style_id = voice_config.get_user_style_id(
+                member.id, member.guild.id)
+            user_speaker_name, user_style_name = voice_config.get_style_details(
+                user_style_id)
             _, user_display_name = voice_config.get_character_info(
                 user_speaker_name
             )  # display_nameを取得
@@ -165,7 +170,8 @@ class VoiceSynth:
                 if text_channel:
                     await text_channel.send(send_message)
         announcement_voice = f"{member.display_name}さん{action_text}"
-        announcement_style_id = voice_config.get_announcement_style_id(member.guild.id)
+        announcement_style_id = voice_config.get_announcement_style_id(
+            member.guild.id)
         await self.text_to_speech(
             voice_client,
             announcement_voice,
@@ -185,7 +191,8 @@ class VoiceSynth:
     ):
         """スタンプ投稿をアナウンスします。"""
         guild_id = message.guild.id
-        announcement_style_id = voice_config.get_announcement_style_id(guild_id)
+        announcement_style_id = voice_config.get_announcement_style_id(
+            guild_id)
 
         for sticker in message.stickers:
             sticker_name = sticker.name

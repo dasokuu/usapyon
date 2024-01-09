@@ -56,7 +56,8 @@ async def main():
         intents = discord.Intents.default()
         intents.message_content = True
         voice_config = VoiceSynthConfig()
-        bot = commands.Bot(command_prefix=BotSettings.BOT_PREFIX, intents=intents)
+        bot = commands.Bot(
+            command_prefix=BotSettings.BOT_PREFIX, intents=intents)
         voice_server = VoiceSynthServer()
         voice = VoiceSynth()
         handler = DiscordMessageHandler()
@@ -83,7 +84,8 @@ async def main():
                                 voice_server.process_playback_queue(guild.id)
                             )
                         else:
-                            logging.error(f"Unable to find guild with ID: {guild_id}")
+                            logging.error(
+                                f"Unable to find guild with ID: {guild_id}")
                     except Exception as e:
                         logging.error(
                             f"Error syncing commands for guild {guild_id}: {e}"

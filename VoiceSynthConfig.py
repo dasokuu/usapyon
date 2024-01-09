@@ -107,7 +107,8 @@ class VoiceSynthConfig:
         announcement_style_id,
         user_default_style_id,
     ):
-        user_speaker_name, user_style_name = self.get_style_details(user_style_id)
+        user_speaker_name, user_style_name = self.get_style_details(
+            user_style_id)
         _, user_display_name = self.get_character_info(
             user_speaker_name
         )  # display_nameを取得
@@ -177,7 +178,8 @@ class VoiceSynthConfig:
             character_key = speaker_name  # その他のスピーカーは通常通り処理
             display_name = f"VOICEVOX:{speaker_name}"  # 標準の表示名
 
-        character_id = CHARACTORS_INFO.get(character_key, "unknown")  # キャラクターIDを取得
+        character_id = CHARACTORS_INFO.get(
+            character_key, "unknown")  # キャラクターIDを取得
         return character_id, display_name
 
     def fetch_json(self, url):
