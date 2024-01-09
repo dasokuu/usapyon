@@ -5,7 +5,7 @@ import discord
 from discord.ext import commands
 import requests
 from DiscordMessageHandler import DiscordMessageHandler
-from DiscordEventHandler import DiscordEventHandler
+from VoiceSynthHandler import VoiceSynthHandler
 from commands.settings import setup_settings_command
 from commands.info import setup_info_command
 from commands.join import setup_join_command
@@ -21,7 +21,7 @@ logging.basicConfig(
 )
 
 
-def is_voice_server_up(url):
+def is_synth_server_up(url):
     try:
         response = requests.get(url)
         if response.status_code == 200:
@@ -32,7 +32,7 @@ def is_voice_server_up(url):
         return False
 
 
-async def wait_for_voice_server(url, max_attempts=10, delay=5):
+async def wait_for_synth_server(url, max_attempts=10, delay=5):
     attempts = 0
     async with aiohttp.ClientSession() as session:  # 非同期HTTPセッションを作成
         while attempts < max_attempts:
@@ -52,22 +52,22 @@ async def wait_for_voice_server(url, max_attempts=10, delay=5):
 
 # 変更後
 async def main():
-    if await wait_for_voice_server(VoiceVoxSettings.SPEAKERS_URL):  # 非同期処理に変更
+    if await wait_for_synth_server(VoiceVoxSettings.SPEAKERS_URL):  # 非同期処理に変更
         intents = discord.Intents.default()
         intents.message_content = True
         bot = commands.Bot(
             command_prefix=BotSettings.BOT_PREFIX, intents=intents)
-        voice_server = VoiceSynthServer()
-        voice_config = VoiceSynthConfig()
-        event_handler = DiscordEventHandler()
+        synth_server = VoiceSynthServer()
+        synth_config = VoiceSynthConfig()
+        synth_handler = VoiceSynthHandler()
         message_handler = DiscordMessageHandler()
 
-        setup_join_command(bot, event_handler, voice_server,
-                           voice_config, message_handler)
-        setup_leave_command(bot, voice_server, voice_config)
-        setup_settings_command(bot, voice_config)
-        setup_info_command(bot, voice_config)
-        setup_skip_command(bot, voice_server)
+        setup_join_command(bot, synth_handler, synth_server,
+                           synth_config, message_handler)
+        setup_leave_command(bot, synth_server, synth_config)
+        setup_settings_command(bot, synth_config)
+        setup_info_command(bot, synth_config)
+        setup_skip_command(bot, synth_server)
 
         @bot.event
         async def on_ready():
@@ -82,7 +82,7 @@ async def main():
                         if guild:
                             await bot.tree.sync(guild=guild)
                             bot.loop.create_task(
-                                voice_server.process_playback_queue(guild.id)
+                                synth_server.process_playback_queue(guild.id)
                             )
                         else:
                             logging.error(
@@ -99,18 +99,18 @@ async def main():
             if message.author.bot:  # これでメッセージがボットからのものかどうかをチェック
                 return
             await bot.process_commands(message)
-            await event_handler.handle_message(
-                voice_config, voice_server, message, message_handler
+            await synth_handler.handle_message(
+                synth_config, synth_server, message, message_handler
             )
 
         @bot.event
         async def on_voice_state_update(member: discord.Member, before, after):
-            await event_handler.handle_voice_state_update(
-                voice_config, voice_server, bot, member, before, after, message_handler
+            await synth_handler.handle_voice_state_update(
+                synth_config, synth_server, bot, member, before, after, message_handler
             )
 
         await bot.start(TOKEN)  # bot.run()の代わりにbot.start()を使用します
-        asyncio.run(voice_server.close_session())  # Bot停止時にセッションを閉じる
+        asyncio.run(synth_server.close_session())  # Bot停止時にセッションを閉じる
     else:
         print("Server did not become available in time. Exiting.")
 

@@ -1,7 +1,7 @@
 import logging
 import discord
 from DiscordMessageHandler import DiscordMessageHandler
-from DiscordEventHandler import DiscordEventHandler
+from VoiceSynthHandler import VoiceSynthHandler
 from settings import APPROVED_GUILD_OBJECTS, error_messages
 from VoiceSynthConfig import VoiceSynthConfig
 from VoiceSynthServer import VoiceSynthServer
@@ -9,9 +9,9 @@ from VoiceSynthServer import VoiceSynthServer
 
 def setup_join_command(
     bot,
-    event_handler: DiscordEventHandler,
-    voice_server: VoiceSynthServer,
-    voice_config: VoiceSynthConfig,
+    synth_handler: VoiceSynthHandler,
+    synth_server: VoiceSynthServer,
+    synth_config: VoiceSynthConfig,
     message_handler: DiscordMessageHandler
 ):
     # ボットをボイスチャンネルに接続するコマンド
@@ -35,12 +35,12 @@ def setup_join_command(
         if interaction.guild.voice_client:
             # 読み上げテキストチャンネルが既に設定されているが、異なる場合は更新
             if (
-                guild_id in voice_config.voice_config_pickle
-                and voice_config.voice_config_pickle[guild_id].get("text_channel")
+                guild_id in synth_config.synth_config_pickle
+                and synth_config.synth_config_pickle[guild_id].get("text_channel")
                 != text_channel_id
             ):
-                voice_config.voice_config_pickle[guild_id]["text_channel"] = text_channel_id
-                voice_config.save_style_settings()
+                synth_config.synth_config_pickle[guild_id]["text_channel"] = text_channel_id
+                synth_config.save_style_settings()
                 # ユーザーに読み上げテキストチャンネルが変更されたことを通知
                 await interaction.followup.send(
                     f"読み上げテキストチャンネルを<#{text_channel_id}>に変更しました。"
@@ -51,9 +51,9 @@ def setup_join_command(
         else:
             # ボットがVCに接続されていない場合、通常の接続処理を実行
             try:
-                voice_client = await voice_config.connect_to_voice_channel(interaction)
-                await event_handler.welcome_user(
-                    voice_config, voice_server, interaction, voice_client, message_handler
+                voice_client = await synth_config.connect_to_voice_channel(interaction)
+                await synth_handler.welcome_user(
+                    synth_config, synth_server, interaction, voice_client, message_handler
                 )
             except discord.ClientException as e:
                 logging.error(f"Connection error: {e}")

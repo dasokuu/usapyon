@@ -7,7 +7,7 @@ from discord.ui import Button, View
 from VoiceSynthConfig import VoiceSynthConfig
 
 
-def setup_settings_command(bot, voice_config: VoiceSynthConfig):
+def setup_settings_command(bot, synth_config: VoiceSynthConfig):
     @bot.tree.command(
         name="settings", guilds=APPROVED_GUILD_OBJECTS, description="読み上げ音声を設定します。"
     )
@@ -150,7 +150,7 @@ def setup_settings_command(bot, voice_config: VoiceSynthConfig):
             (
                 speaker_character_id,
                 speaker_display_name,
-            ) = voice_config.get_character_info(speaker_name)
+            ) = synth_config.get_character_info(speaker_name)
             speaker_url = f"{DORMITORY_URL_BASE}/{speaker_character_id}/"
 
             # 歓迎メッセージを作成
@@ -185,7 +185,7 @@ def setup_settings_command(bot, voice_config: VoiceSynthConfig):
                     style_id,
                 ):
                     # スタイル変更をここで処理
-                    valid, speaker_name, style_name = voice_config.validate_style_id(
+                    valid, speaker_name, style_name = synth_config.validate_style_id(
                         style_id
                     )
                     if not valid:
@@ -193,7 +193,7 @@ def setup_settings_command(bot, voice_config: VoiceSynthConfig):
                             f"スタイルID {style_id} は無効です。`/list`で有効なIDを確認し、正しいIDを入力してください。",
                             view=self,
                         )
-                    voice_config.update_style_setting(
+                    synth_config.update_style_setting(
                         interaction.guild.id,
                         interaction.user.id,
                         style_id,
@@ -202,7 +202,7 @@ def setup_settings_command(bot, voice_config: VoiceSynthConfig):
                     (
                         speaker_character_id,
                         speaker_display_name,
-                    ) = voice_config.get_character_info(speaker_name)
+                    ) = synth_config.get_character_info(speaker_name)
                     speaker_url = f"{DORMITORY_URL_BASE}/{speaker_character_id}/"
                     await interaction.response.send_message(
                         f"{voice_scope_description[self.voice_scope]}が「[{speaker_display_name}]({speaker_url}) {style_name}」に更新されました。"
@@ -224,23 +224,23 @@ def setup_settings_command(bot, voice_config: VoiceSynthConfig):
     async def initiate_speaker_paging(interaction: discord.Interaction, voice_scope):
         voice_scope_description = get_voice_scope_description(interaction)
         # 初期ページングビューを作成
-        view = PagingView(voice_config.speakers, voice_scope)
+        view = PagingView(synth_config.speakers, voice_scope)
 
         # 最初のキャラクターを表示
         speaker_name = (
-            voice_config.speakers[0]["name"]
-            if voice_config.speakers
+            synth_config.speakers[0]["name"]
+            if synth_config.speakers
             else "利用可能なキャラクターがいません"
         )
-        content = f"矢印や検索ボタンを活用してお好みのキャラクターを選んだ後、そのキャラクター固有のスタイル（声のバリエーションや特色など）を選択してください：\nキャラクター 1 / {len(voice_config.speakers)}\n"
-        speaker_character_id, speaker_display_name = voice_config.get_character_info(
+        content = f"矢印や検索ボタンを活用してお好みのキャラクターを選んだ後、そのキャラクター固有のスタイル（声のバリエーションや特色など）を選択してください：\nキャラクター 1 / {len(synth_config.speakers)}\n"
+        speaker_character_id, speaker_display_name = synth_config.get_character_info(
             speaker_name
         )
         speaker_url = f"{DORMITORY_URL_BASE}/{speaker_character_id}/"
 
         content += f"[{speaker_display_name}]({speaker_url})"
         # 最初のキャラクターの各スタイルに対応するボタンを追加
-        for style in voice_config.speakers[0][
+        for style in synth_config.speakers[0][
             "styles"
         ]:  # 'styles'は各キャラクターのスタイル辞書のリストと仮定
             style_button = discord.ui.Button(
@@ -262,7 +262,7 @@ def setup_settings_command(bot, voice_config: VoiceSynthConfig):
                 style_id=style["id"],
             ):
                 # スタイル変更をここで処理
-                valid, speaker_name, style_name = voice_config.validate_style_id(
+                valid, speaker_name, style_name = synth_config.validate_style_id(
                     style_id
                 )
                 if not valid:
@@ -270,13 +270,13 @@ def setup_settings_command(bot, voice_config: VoiceSynthConfig):
                         f"スタイルID {style_id} は無効です。`/list`で有効なIDを確認し、正しいIDを入力してください。",
                         view=view,
                     )
-                voice_config.update_style_setting(
+                synth_config.update_style_setting(
                     interaction.guild.id, interaction.user.id, style_id, voice_scope
                 )
                 (
                     speaker_character_id,
                     speaker_display_name,
-                ) = voice_config.get_character_info(speaker_name)
+                ) = synth_config.get_character_info(speaker_name)
                 speaker_url = f"{DORMITORY_URL_BASE}/{speaker_character_id}/"
                 await interaction.response.send_message(
                     f"{voice_scope_description[voice_scope]}が「[{speaker_display_name}]({speaker_url}) {style_name}」に更新されました。"

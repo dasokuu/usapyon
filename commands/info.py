@@ -3,7 +3,7 @@ from settings import APPROVED_GUILD_OBJECTS
 from VoiceSynthConfig import VoiceSynthConfig
 
 
-def setup_info_command(bot, voice_config: VoiceSynthConfig):
+def setup_info_command(bot, synth_config: VoiceSynthConfig):
     @bot.tree.command(
         name="info",
         guilds=APPROVED_GUILD_OBJECTS,
@@ -13,11 +13,11 @@ def setup_info_command(bot, voice_config: VoiceSynthConfig):
         guild_id = interaction.guild_id
 
         # サーバーの設定を取得
-        guild_settings = voice_config.voice_config_pickle.get(guild_id, {})
+        guild_settings = synth_config.synth_config_pickle.get(guild_id, {})
         text_channel_id = guild_settings.get("text_channel", "未設定")
-        style_ids = voice_config.get_style_ids(guild_id, interaction.user.id)
-        speaker_details = voice_config.get_speaker_details(*style_ids)
-        info_message = voice_config.create_info_message(
+        style_ids = synth_config.get_style_ids(guild_id, interaction.user.id)
+        speaker_details = synth_config.get_speaker_details(*style_ids)
+        info_message = synth_config.create_info_message(
             interaction, text_channel_id, speaker_details
         )
 
