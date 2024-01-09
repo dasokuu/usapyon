@@ -59,6 +59,8 @@ class DiscordMessageHandler:
         return pattern.sub(replace_func, text)
 
     async def replace_content(self, text, message: discord.Message):
+        text = self.replace_english_to_kana(
+            text)  # First replace English words
         if message:
             replace_operations = [
                 (
@@ -74,10 +76,6 @@ class DiscordMessageHandler:
                     lambda m: self.replace_channel_mention(m, message),
                 ),
             ]
-
-        text = self.replace_english_to_kana(
-            text)  # First replace English words
-        if message:
             for pattern, func in replace_operations:
                 text = self.replace_pattern(pattern, text, func)
         text = self.CUSTOM_EMOJI_PATTERN.sub(
