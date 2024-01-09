@@ -3,7 +3,6 @@ Description=VoiceChatLoid
 After=network.target voicevox-engine.service
 
 [Service]
-Environment=VOICECHATLOIDTEST_TOKEN=MTE4OTI1NjQwOTc0NTk4OTY3NA.GDv0H4.JSZ8ML6P7zN-0bYkSOcI2q6lRXQ8u3VBOceuAU
 Type=simple
 User=ikeda
 ExecStart=/usr/bin/python3 /home/ikeda/VoiceChatLoid/main.py

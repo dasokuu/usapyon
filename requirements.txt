@@ -3,3 +3,4 @@ discord.py[voice]
 aiohttp
 emoji
 alkana
+python-dotenv

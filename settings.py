@@ -1,6 +1,10 @@
 import os
 import json
 import discord
+from dotenv import load_dotenv
+
+# .envファイルから環境変数を読み込む
+load_dotenv()
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 config_json_file = os.path.join(script_dir, "config.json")
@@ -31,8 +35,8 @@ APPROVED_GUILD_OBJECTS = [
 error_messages = config["error_messages"]
 info_messages = config["info_messages"]
 
-TOKEN = os.getenv("VOICECHATLOIDTEST_TOKEN")
-
+# 特定の環境変数を取得
+TOKEN = os.getenv("DISCORD_TOKEN")
 
 USER_DEFAULT_STYLE_ID = 3
 ANNOUNCEMENT_DEFAULT_STYLE_ID = 8
