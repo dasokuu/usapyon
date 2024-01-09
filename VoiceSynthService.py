@@ -4,10 +4,10 @@ import asyncio
 import json
 import discord
 import io
-from settings import VoiceVoxSettings
+from settings import VOICEVOXSettings
 
 
-class VoiceSynthServer:
+class VoiceSynthService:
     def __init__(self):
         # Initialize global variables
         self.guild_playback_queues = {}
@@ -47,7 +47,7 @@ class VoiceSynthServer:
         session = await self.get_session()  # セッションを取得
 
         async with session.post(
-            VoiceVoxSettings.AUDIO_QUERY_URL, headers=self.headers, params=query_payload
+            VOICEVOXSettings.AUDIO_QUERY_URL, headers=self.headers, params=query_payload
         ) as response:
             if response.status == 200:
                 return await response.json()
@@ -61,7 +61,7 @@ class VoiceSynthServer:
         synth_payload = {"speaker": speaker}
         headers = {"Content-Type": "application/json", "Accept": "audio/wav"}
         async with (await self.get_session()).post(  # セッションの取得方法を修正
-            VoiceVoxSettings.SYNTHESIS_URL,
+            VOICEVOXSettings.SYNTHESIS_URL,
             headers=headers,
             params=synth_payload,
             data=json.dumps(query_data),

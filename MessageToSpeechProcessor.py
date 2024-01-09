@@ -5,7 +5,7 @@ import jaconv
 import alkana
 
 
-class DiscordMessageHandler:
+class MessageToSpeechProcessor:
     USER_MENTION_PATTERN = re.compile(r"<@!?(\d+)>")
     ROLE_MENTION_PATTERN = re.compile(r"<@&(\d+)>")
     CHANNEL_PATTERN = re.compile(r"<#(\d+)>")

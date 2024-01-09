@@ -1,10 +1,10 @@
 import discord
-from VoiceSynthHandler import VoiceSynthHandler
+from VoiceSynthEventResponder import VoiceSynthEventResponder
 from settings import APPROVED_GUILD_OBJECTS
 from VoiceSynthConfig import VoiceSynthConfig
 
 
-def setup_info_command(bot, synth_config: VoiceSynthConfig, synth_handler: VoiceSynthHandler):
+def setup_info_command(bot, synth_config: VoiceSynthConfig, synth_handler: VoiceSynthEventResponder):
     @bot.tree.command(
         name="info",
         guilds=APPROVED_GUILD_OBJECTS,

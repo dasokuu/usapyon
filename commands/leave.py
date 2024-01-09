@@ -1,11 +1,11 @@
 import discord
 from settings import APPROVED_GUILD_OBJECTS, error_messages, info_messages
 from VoiceSynthConfig import VoiceSynthConfig
-from VoiceSynthServer import VoiceSynthServer
+from VoiceSynthService import VoiceSynthService
 
 
 def setup_leave_command(
-    bot, synth_server: VoiceSynthServer, synth_config: VoiceSynthConfig
+    bot, synth_server: VoiceSynthService, synth_config: VoiceSynthConfig
 ):
     # ボットをボイスチャンネルから切断するコマンド
     @bot.tree.command(

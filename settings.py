@@ -16,7 +16,7 @@ class BotSettings:
     MAX_MESSAGE_LENGTH = config["bot_settings"]["max_message_length"]
 
 
-class VoiceVoxSettings:
+class VOICEVOXSettings:
     ENGINE_URL = config["voicevox_settings"]["engine_url"]
     SPEAKERS_URL = config["voicevox_settings"]["speakers_url"]
     AUDIO_QUERY_URL = config["voicevox_settings"]["audio_query_url"]

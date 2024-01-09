@@ -4,16 +4,16 @@ import aiohttp
 import discord
 from discord.ext import commands
 import requests
-from DiscordMessageHandler import DiscordMessageHandler
-from VoiceSynthHandler import VoiceSynthHandler
+from MessageToSpeechProcessor import MessageToSpeechProcessor
+from VoiceSynthEventResponder import VoiceSynthEventResponder
 from commands.settings import setup_settings_command
 from commands.info import setup_info_command
 from commands.join import setup_join_command
 from commands.leave import setup_leave_command
 from commands.skip import setup_skip_command
 from VoiceSynthConfig import VoiceSynthConfig
-from settings import APPROVED_GUILD_IDS_INT, BotSettings, TOKEN, VoiceVoxSettings
-from VoiceSynthServer import VoiceSynthServer
+from settings import APPROVED_GUILD_IDS_INT, BotSettings, TOKEN, VOICEVOXSettings
+from VoiceSynthService import VoiceSynthService
 
 # Improved logging format and level
 logging.basicConfig(
@@ -52,15 +52,15 @@ async def wait_for_synth_server(url, max_attempts=10, delay=5):
 
 # 変更後
 async def main():
-    if await wait_for_synth_server(VoiceVoxSettings.SPEAKERS_URL):  # 非同期処理に変更
+    if await wait_for_synth_server(VOICEVOXSettings.SPEAKERS_URL):  # 非同期処理に変更
         intents = discord.Intents.default()
         intents.message_content = True
         bot = commands.Bot(
             command_prefix=BotSettings.BOT_PREFIX, intents=intents)
-        synth_server = VoiceSynthServer()
+        synth_server = VoiceSynthService()
         synth_config = VoiceSynthConfig()
-        synth_handler = VoiceSynthHandler()
-        message_handler = DiscordMessageHandler()
+        synth_handler = VoiceSynthEventResponder()
+        message_handler = MessageToSpeechProcessor()
 
         setup_join_command(bot, synth_handler, synth_server,
                            synth_config, message_handler)

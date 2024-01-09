@@ -1,21 +1,21 @@
 import logging
 import discord
-from DiscordMessageHandler import DiscordMessageHandler
+from MessageToSpeechProcessor import MessageToSpeechProcessor
 from VoiceSynthConfig import VoiceSynthConfig
-from VoiceSynthServer import VoiceSynthServer
+from VoiceSynthService import VoiceSynthService
 from settings import ANNOUNCEMENT_DEFAULT_STYLE_ID, BotSettings, error_messages
 
 
-class VoiceSynthHandler:
+class VoiceSynthEventResponder:
     async def handle_voice_state_update(
         self,
         synth_config: VoiceSynthConfig,
-        synth_server: VoiceSynthServer,
+        synth_server: VoiceSynthService,
         bot,
         member: discord.Member,
         before,
         after,
-        message_handler: DiscordMessageHandler,
+        message_handler: MessageToSpeechProcessor,
     ):
         guild_id = member.guild.id
         # ボット自身の状態変更を無視
@@ -74,9 +74,9 @@ class VoiceSynthHandler:
     async def handle_message(
         self,
         synth_config: VoiceSynthConfig,
-        synth_server: VoiceSynthServer,
+        synth_server: VoiceSynthService,
         message: discord.Message,
-        message_handler: DiscordMessageHandler,
+        message_handler: MessageToSpeechProcessor,
     ):
         # この行を追加
         if not synth_config.should_process_message(message, message.guild.id):
@@ -129,8 +129,8 @@ class VoiceSynthHandler:
         self,
         message: discord.Message,
         synth_config: VoiceSynthConfig,
-        message_handler: DiscordMessageHandler,
-        synth_server: VoiceSynthServer,
+        message_handler: MessageToSpeechProcessor,
+        synth_server: VoiceSynthService,
     ):
         """TenorのGIFリンクが投稿された場合にアナウンスする。"""
         guild_id = message.guild.id
@@ -152,8 +152,8 @@ class VoiceSynthHandler:
         member: discord.Member,
         voice_client,
         synth_config: VoiceSynthConfig,
-        synth_server: VoiceSynthServer,
-        message_handler: DiscordMessageHandler,  # message_handlerを追加
+        synth_server: VoiceSynthService,
+        message_handler: MessageToSpeechProcessor,  # message_handlerを追加
         action="entered",
     ):
         action_texts = {"entered": "が入室しました。", "left": "が退室しました。"}
@@ -194,9 +194,9 @@ class VoiceSynthHandler:
     async def announce_sticker_post(
         self,
         synth_config: VoiceSynthConfig,
-        synth_server: VoiceSynthServer,
+        synth_server: VoiceSynthService,
         message: discord.Message,
-        message_handler: DiscordMessageHandler,
+        message_handler: MessageToSpeechProcessor,
     ):
         """スタンプ投稿をアナウンスします。"""
         guild_id = message.guild.id
@@ -219,9 +219,9 @@ class VoiceSynthHandler:
     async def announce_file_post(
         self,
         synth_config: VoiceSynthConfig,
-        synth_server: VoiceSynthServer,
+        synth_server: VoiceSynthService,
         message: discord.Message,
-        message_handler: DiscordMessageHandler,
+        message_handler: MessageToSpeechProcessor,
     ):
         """ファイル投稿をアナウンスします。"""
         guild_id = message.guild.id
@@ -257,10 +257,10 @@ class VoiceSynthHandler:
     async def welcome_user(
         self,
         synth_config: VoiceSynthConfig,
-        synth_server: VoiceSynthServer,
+        synth_server: VoiceSynthService,
         interaction: discord.Interaction,
         voice_client: discord.VoiceClient,
-        message_handler: DiscordMessageHandler,
+        message_handler: MessageToSpeechProcessor,
     ):
         guild_id, text_channel_id = synth_config.get_and_update_guild_settings(
             interaction
@@ -286,8 +286,8 @@ class VoiceSynthHandler:
         text,
         style_id,
         guild_id,
-        message_handler: DiscordMessageHandler,
-        synth_server: VoiceSynthServer,
+        message_handler: MessageToSpeechProcessor,
+        synth_server: VoiceSynthService,
         message: discord.Message = None,
     ):
         if not voice_client or not voice_client.is_connected():
@@ -297,7 +297,7 @@ class VoiceSynthHandler:
         try:
             lines = text.split("\n")
             for line in filter(None, lines):
-                # DiscordMessageHandlerを用いてテキストを処理
+                # MessageToSpeechProcessorを用いてテキストを処理
                 processed_line = await message_handler.replace_content(line, message)
                 guild_queue = synth_server.get_guild_playback_queue(guild_id)
                 await guild_queue.put((voice_client, processed_line, style_id))
@@ -312,8 +312,8 @@ class VoiceSynthHandler:
         style_id,
         message,
         interaction: discord.Interaction,
-        message_handler: DiscordMessageHandler,
-        synth_server: VoiceSynthServer,
+        message_handler: MessageToSpeechProcessor,
+        synth_server: VoiceSynthService,
     ):
         welcome_voice = "読み上げを開始します。"
         try:

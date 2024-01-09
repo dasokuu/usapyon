@@ -1,18 +1,18 @@
 import logging
 import discord
-from DiscordMessageHandler import DiscordMessageHandler
-from VoiceSynthHandler import VoiceSynthHandler
+from MessageToSpeechProcessor import MessageToSpeechProcessor
+from VoiceSynthEventResponder import VoiceSynthEventResponder
 from settings import APPROVED_GUILD_OBJECTS, error_messages
 from VoiceSynthConfig import VoiceSynthConfig
-from VoiceSynthServer import VoiceSynthServer
+from VoiceSynthService import VoiceSynthService
 
 
 def setup_join_command(
     bot,
-    synth_handler: VoiceSynthHandler,
-    synth_server: VoiceSynthServer,
+    synth_handler: VoiceSynthEventResponder,
+    synth_server: VoiceSynthService,
     synth_config: VoiceSynthConfig,
-    message_handler: DiscordMessageHandler
+    message_handler: MessageToSpeechProcessor
 ):
     # ボットをボイスチャンネルに接続するコマンド
     @bot.tree.command(

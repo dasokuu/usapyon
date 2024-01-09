@@ -7,14 +7,14 @@ from settings import (
     USER_DEFAULT_STYLE_ID,
     ANNOUNCEMENT_DEFAULT_STYLE_ID,
     BotSettings,
-    VoiceVoxSettings,
+    VOICEVOXSettings,
     CONFIG_PICKLE_FILE,
 )
 
 
 class VoiceSynthConfig:
     def __init__(self):
-        self.speakers = self.fetch_json(VoiceVoxSettings.SPEAKERS_URL)
+        self.speakers = self.fetch_json(VOICEVOXSettings.SPEAKERS_URL)
         self.synth_config_pickle = self.load_style_settings()
 
     def validate_style_id(self, style_id):
