@@ -131,15 +131,15 @@ class VoiceSynthEventProcessor:
         text_processor: SpeechTextFormatter,
         synth_service: VoiceSynthService,
     ):
-        """TenorのGIFリンクが投稿された場合にアナウンスする。"""
+        """TenorのGIFが投稿された場合"""
         guild_id = message.guild.id
-        announcement_style_id = synth_config.get_announcement_style_id(
-            guild_id)
-        announcement_message = "GIF画像が投稿されました。"
+        user_style_id = synth_config.get_user_style_id(
+            message.author.id, guild_id)
+        text = "GIF画像"
         await synth_service.text_to_speech(
             message.guild.voice_client,
-            announcement_message,
-            announcement_style_id,
+            text,
+            user_style_id,
             guild_id,
             text_processor,
             message,
@@ -197,16 +197,16 @@ class VoiceSynthEventProcessor:
     ):
         """スタンプ投稿をアナウンスします。"""
         guild_id = message.guild.id
-        announcement_style_id = synth_config.get_announcement_style_id(
-            guild_id)
+        user_style_id = synth_config.get_user_style_id(
+            message.author.id, guild_id)
 
         for sticker in message.stickers:
             sticker_name = sticker.name
-            announcement_message = f"{sticker_name} のスタンプが投稿されました。"
+            text = f"{sticker_name} のスタンプ"
             await synth_service.text_to_speech(
                 message.guild.voice_client,
-                announcement_message,
-                announcement_style_id,
+                text,
+                user_style_id,
                 guild_id,
                 text_processor,
                 message,
