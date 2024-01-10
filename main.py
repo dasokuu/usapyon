@@ -73,8 +73,8 @@ async def main():
                     for guild_id in APPROVED_GUILD_IDS_INT:
                         try:
                             guild = bot.get_guild(guild_id)
+                            await bot.tree.sync()
                             if guild:
-                                await bot.tree.sync(guild=guild)
                                 bot.loop.create_task(
                                     synth_service.process_playback_queue(
                                         guild.id)
