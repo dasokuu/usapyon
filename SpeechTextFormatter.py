@@ -10,7 +10,7 @@ class SpeechTextFormatter:
     ROLE_MENTION_PATTERN = re.compile(r"<@&(\d+)>")
     CHANNEL_PATTERN = re.compile(r"<#(\d+)>")
     CUSTOM_EMOJI_PATTERN = re.compile(r"<:\w+:(\d+)>")
-    LAUGH_PATTERN = re.compile(r"ｗ+$")
+    LAUGH_PATTERN = re.compile(r"(?<=\s)w+$|ｗ+$")
     ENGLISH_WORD_PATTERN = re.compile(r"\b[a-zA-Z_]+\b")
     URL_PATTERN = re.compile(r"http[s]?://\S+")
 
