@@ -12,12 +12,9 @@ from commands.leave import setup_leave_command
 from commands.skip import setup_skip_command
 from VoiceSynthConfig import VoiceSynthConfig
 from settings import (
-    APPROVED_GUILD_IDS_INT,
-    APPROVED_GUILD_OBJECTS,
     BotSettings,
     TOKEN,
     VOICEVOXSettings,
-    update_approved_guilds,
 )
 from VoiceSynthService import VoiceSynthService
 
@@ -67,24 +64,6 @@ async def main():
             setup_settings_command(bot, synth_config)
             setup_info_command(bot, synth_config)
             setup_skip_command(bot, synth_service)
-            @bot.tree.command(
-                name="approve",
-                guild=discord.Object(id="1190673139072516096"),
-                description="Approve a guild",
-            )
-            async def approve(interaction: discord.Interaction, guild_id: int):
-                # あなたのIDを確認
-                if interaction.user.id == "812308518140903434":
-                    update_approved_guilds(guild_id)
-                    await bot.tree.sync(guild=guild_id)
-                    await interaction.response.send_message(
-                        f"Guild {guild_id} approved and synced."
-                    )
-                else:
-                    await interaction.response.send_message(
-                        "You do not have permission to use this command.",
-                        ephemeral=True,
-                    )
             @bot.event
             async def on_ready():
                 try:
@@ -92,21 +71,21 @@ async def main():
                     await bot.change_presence(
                         activity=discord.Game(name=BotSettings.GAME_NAME)
                     )
-                    for guild_id in APPROVED_GUILD_IDS_INT:
+                    await bot.tree.sync()
+                    for guild in bot.guilds:
+                        print(f"Guild ID: {guild.id}, Name: {guild.name}")
                         try:
-                            guild = bot.get_guild(guild_id)
                             if guild:
-                                await bot.tree.sync(guild=APPROVED_GUILD_OBJECTS)
                                 bot.loop.create_task(
                                     synth_service.process_playback_queue(guild.id)
                                 )
                             else:
                                 logging.error(
-                                    f"Unable to find guild with ID: {guild_id}"
+                                    f"Unable to find guild with ID: {guild.name}"
                                 )
                         except Exception as e:
                             logging.error(
-                                f"Error syncing commands for guild {guild_id}: {e}"
+                                f"Error syncing commands for guild {guild.name}: {e}"
                             )
                 except Exception as e:
                     logging.error(f"Error occurred in on_ready: {e}")

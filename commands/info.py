@@ -1,5 +1,4 @@
 import discord
-from settings import APPROVED_GUILD_OBJECTS
 from VoiceSynthConfig import VoiceSynthConfig
 
 
@@ -23,7 +22,6 @@ def create_info_message(
 def setup_info_command(bot, synth_config: VoiceSynthConfig):
     @bot.tree.command(
         name="info",
-        guilds=APPROVED_GUILD_OBJECTS,
         description="現在の設定を表示します。",
     )
     async def info(interaction: discord.Interaction):

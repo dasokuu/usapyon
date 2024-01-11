@@ -48,9 +48,3 @@ with open(characters_info_file, "r") as f:
     CHARACTORS_INFO = json.load(f)
 
 DORMITORY_URL_BASE = "https://voicevox.hiroshiba.jp/dormitory"
-
-def update_approved_guilds(new_guild_id):
-    if new_guild_id not in APPROVED_GUILD_IDS_INT:
-        APPROVED_GUILD_IDS_INT.append(new_guild_id)
-        with open(config_json_file, "w") as f:
-            json.dump(config, f, indent=4)
