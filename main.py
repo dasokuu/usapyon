@@ -75,7 +75,7 @@ async def main():
                     )
                     await bot.tree.sync()
                     for guild in bot.guilds:
-                        logging.INFO(
+                        logging.info(
                             f"Guild ID: {guild.id}, Name: {guild.name}")
                         try:
                             if guild:
@@ -93,6 +93,12 @@ async def main():
                             )
                 except Exception as e:
                     logging.error(f"Error occurred in on_ready: {e}")
+
+            @bot.event
+            async def on_guild_join(guild):
+                logging.info(f"Joined new guild: {guild.name}")
+                bot.loop.create_task(
+                    synth_service.process_playback_queue(guild.id))
 
             @bot.event
             async def on_message(message: discord.Message):
