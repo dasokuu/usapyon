@@ -11,7 +11,11 @@ from commands.join import setup_join_command
 from commands.leave import setup_leave_command
 from commands.skip import setup_skip_command
 from VoiceSynthConfig import VoiceSynthConfig
-from settings import APPROVED_GUILD_IDS_INT, BotSettings, TOKEN, VOICEVOXSettings
+from settings import (
+    BotSettings,
+    TOKEN,
+    VOICEVOXSettings,
+)
 from VoiceSynthService import VoiceSynthService
 
 # Improved logging format and level
@@ -62,7 +66,6 @@ async def main():
             setup_settings_command(bot, synth_config)
             setup_info_command(bot, synth_config)
             setup_skip_command(bot, synth_service)
-
             @bot.event
             async def on_ready():
                 try:
@@ -70,10 +73,11 @@ async def main():
                     await bot.change_presence(
                         activity=discord.Game(name=BotSettings.GAME_NAME)
                     )
-                    for guild_id in APPROVED_GUILD_IDS_INT:
+                    await bot.tree.sync()
+                    for guild in bot.guilds:
+                        logging.info(
+                            f"Guild ID: {guild.id}, Name: {guild.name}")
                         try:
-                            guild = bot.get_guild(guild_id)
-                            await bot.tree.sync()
                             if guild:
                                 bot.loop.create_task(
                                     synth_service.process_playback_queue(
@@ -81,13 +85,20 @@ async def main():
                                 )
                             else:
                                 logging.error(
-                                    f"Unable to find guild with ID: {guild_id}")
+                                    f"Unable to find guild with ID: {guild.name}"
+                                )
                         except Exception as e:
                             logging.error(
-                                f"Error syncing commands for guild {guild_id}: {e}"
+                                f"Error syncing commands for guild {guild.name}: {e}"
                             )
                 except Exception as e:
                     logging.error(f"Error occurred in on_ready: {e}")
+
+            @bot.event
+            async def on_guild_join(guild):
+                logging.info(f"Joined new guild: {guild.name}")
+                bot.loop.create_task(
+                    synth_service.process_playback_queue(guild.id))
 
             @bot.event
             async def on_message(message: discord.Message):
@@ -101,7 +112,13 @@ async def main():
             @bot.event
             async def on_voice_state_update(member: discord.Member, before, after):
                 await synth_event_processor.handle_voice_state_update(
-                    synth_config, synth_service, bot, member, before, after, text_processor
+                    synth_config,
+                    synth_service,
+                    bot,
+                    member,
+                    before,
+                    after,
+                    text_processor,
                 )
 
             await bot.start(TOKEN)  # bot.run()の代わりにbot.start()を使用します
@@ -111,6 +128,7 @@ async def main():
     except Exception as e:
         logging.error(f"Unexpected error in main function: {e}", exc_info=True)
         print("アプリケーションの起動中にエラーが発生しました。詳細はログを確認してください。")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

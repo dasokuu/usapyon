@@ -1,8 +1,7 @@
 import logging
 import discord
 from SpeechTextFormatter import SpeechTextFormatter
-from VoiceSynthEventProcessor import VoiceSynthEventProcessor
-from settings import APPROVED_GUILD_OBJECTS, error_messages
+from settings import error_messages
 from VoiceSynthConfig import VoiceSynthConfig
 from VoiceSynthService import VoiceSynthService
 
@@ -94,7 +93,6 @@ def setup_join_command(
     # ボットをボイスチャンネルに接続するコマンド
     @bot.tree.command(
         name="join",
-        guilds=APPROVED_GUILD_OBJECTS,
         description="ボットをボイスチャンネルに接続し、読み上げを開始します。",
     )
     async def join(interaction: discord.Interaction):

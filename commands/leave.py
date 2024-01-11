@@ -1,5 +1,5 @@
 import discord
-from settings import APPROVED_GUILD_OBJECTS, error_messages, info_messages
+from settings import error_messages, info_messages
 from VoiceSynthConfig import VoiceSynthConfig
 from VoiceSynthService import VoiceSynthService
 
@@ -9,7 +9,7 @@ def setup_leave_command(
 ):
     # ボットをボイスチャンネルから切断するコマンド
     @bot.tree.command(
-        name="leave", guilds=APPROVED_GUILD_OBJECTS, description="ボットをボイスチャンネルから切断します。"
+        name="leave", description="ボットをボイスチャンネルから切断します。"
     )
     async def leave(interaction: discord.Interaction):
         # ボイスクライアントが存在しない場合、何もせずに終了

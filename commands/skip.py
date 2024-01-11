@@ -1,12 +1,11 @@
 import discord
-from settings import APPROVED_GUILD_OBJECTS, info_messages
+from settings import info_messages
 from VoiceSynthService import VoiceSynthService
 
 
 def setup_skip_command(bot, synth_service: VoiceSynthService):
     @bot.tree.command(
         name="skip",
-        guilds=APPROVED_GUILD_OBJECTS,
         description="現在の読み上げをスキップし、再生キューをクリアします。",
     )
     async def skip(interaction: discord.Interaction):
