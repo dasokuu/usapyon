@@ -1,5 +1,4 @@
 import discord
-from VoiceSynthEventProcessor import VoiceSynthEventProcessor
 from settings import APPROVED_GUILD_OBJECTS
 from VoiceSynthConfig import VoiceSynthConfig
 

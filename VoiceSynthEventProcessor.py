@@ -3,7 +3,7 @@ import discord
 from SpeechTextFormatter import SpeechTextFormatter
 from VoiceSynthConfig import VoiceSynthConfig
 from VoiceSynthService import VoiceSynthService
-from settings import ANNOUNCEMENT_DEFAULT_STYLE_ID, BotSettings, error_messages
+from settings import ANNOUNCEMENT_DEFAULT_STYLE_ID
 
 
 class VoiceSynthEventProcessor:

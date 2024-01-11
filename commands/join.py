@@ -1,7 +1,6 @@
 import logging
 import discord
 from SpeechTextFormatter import SpeechTextFormatter
-from VoiceSynthEventProcessor import VoiceSynthEventProcessor
 from settings import APPROVED_GUILD_OBJECTS, error_messages
 from VoiceSynthConfig import VoiceSynthConfig
 from VoiceSynthService import VoiceSynthService
