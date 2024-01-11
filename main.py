@@ -51,7 +51,8 @@ async def main():
         if await wait_for_synth_service(VOICEVOXSettings.SPEAKERS_URL):  # 非同期処理に変更
             intents = discord.Intents.default()
             intents.message_content = True
-            bot = commands.Bot(command_prefix=BotSettings.BOT_PREFIX, intents=intents)
+            bot = commands.Bot(
+                command_prefix=BotSettings.BOT_PREFIX, intents=intents)
             synth_service = VoiceSynthService()
             await synth_service.start()
             synth_config = VoiceSynthConfig()
@@ -59,7 +60,8 @@ async def main():
             synth_event_processor = VoiceSynthEventProcessor()
             text_processor = SpeechTextFormatter()
 
-            setup_join_command(bot, synth_service, synth_config, text_processor)
+            setup_join_command(bot, synth_service,
+                               synth_config, text_processor)
             setup_leave_command(bot, synth_service, synth_config)
             setup_settings_command(bot, synth_config)
             setup_info_command(bot, synth_config)
@@ -73,11 +75,13 @@ async def main():
                     )
                     await bot.tree.sync()
                     for guild in bot.guilds:
-                        print(f"Guild ID: {guild.id}, Name: {guild.name}")
+                        logging.INFO(
+                            f"Guild ID: {guild.id}, Name: {guild.name}")
                         try:
                             if guild:
                                 bot.loop.create_task(
-                                    synth_service.process_playback_queue(guild.id)
+                                    synth_service.process_playback_queue(
+                                        guild.id)
                                 )
                             else:
                                 logging.error(
@@ -110,8 +114,6 @@ async def main():
                     after,
                     text_processor,
                 )
-
-
 
             await bot.start(TOKEN)  # bot.run()の代わりにbot.start()を使用します
             await synth_service.close()
