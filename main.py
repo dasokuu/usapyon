@@ -52,7 +52,7 @@ def setup_help_command(bot):
     )
     async def help(interaction: discord.Interaction):
         commands_description = "\n".join(
-            f"/`{command.name}`: {command.description}"
+            f"`/{command.name}`: {command.description}"
             for command in bot.tree.get_commands()
         )
         await interaction.response.send_message(
