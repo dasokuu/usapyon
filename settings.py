@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
-config_json_file = os.path.join(script_dir, "config.json")
+config_json_file = os.path.join(script_dir, "settings.json")
 
 # 設定ファイルの読み込み
 with open(config_json_file, "r") as f:
@@ -26,11 +26,6 @@ class VOICEVOXSettings:
     AUDIO_QUERY_URL = config["voicevox_settings"]["audio_query_url"]
     SYNTHESIS_URL = config["voicevox_settings"]["synthesis_url"]
 
-
-APPROVED_GUILD_IDS_INT = config["guild_settings"]["approved_guild_ids"]
-APPROVED_GUILD_OBJECTS = [
-    discord.Object(id=guild_id) for guild_id in APPROVED_GUILD_IDS_INT
-]
 
 error_messages = config["error_messages"]
 info_messages = config["info_messages"]

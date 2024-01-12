@@ -10,15 +10,6 @@
     "audio_query_url": "http://127.0.0.1:50021/audio_query",
     "synthesis_url": "http://127.0.0.1:50021/synthesis"
   },
-  "guild_settings": {
-    "approved_guild_ids": [
-      1189256965172514836,
-      1190673139072516096,
-      1129051248574869617,
-      1156189448288079882,
-      1063029852862676992
-    ]
-  },
   "error_messages": {
     "connection": "ボイスチャンネルに接続できませんでした。ボイスチャンネルに入ってから、もう一度お試しください。",
     "invalid_style": "選択したスタイルIDが無効です。",
