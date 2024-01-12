@@ -5,7 +5,7 @@ import json
 import discord
 import io
 from SpeechTextFormatter import SpeechTextFormatter
-from settings import VOICEVOXSettings
+from settings import BotSettings, VOICEVOXSettings
 
 
 class VoiceSynthService:
@@ -154,14 +154,17 @@ class VoiceSynthService:
         if not voice_client or not voice_client.is_connected():
             logging.error("Voice client is not connected.")
             return
-
         try:
             lines = text.split("\n")
             for line in filter(None, lines):
-                # SpeechTextFormatterを用いてテキストを処理
+                if len(line) > BotSettings.MAX_TEXT_LENGTH:
+                    # 長すぎるテキストの場合、メッセージを送信する
+                    if message.channel:
+                        await message.channel.send("テキストが長すぎるため、音声合成はスキップされました。")
+                    continue  # この行の処理をスキップ
+
                 processed_line = await text_processor.replace_content(line, message)
                 guild_queue = self.get_guild_playback_queue(guild_id)
                 await guild_queue.put((voice_client, processed_line, style_id))
         except Exception as e:
             logging.error(f"Error in text_to_speech: {e}")
-            # Handle specific exceptions and add remediation here.
