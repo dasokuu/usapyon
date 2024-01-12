@@ -218,27 +218,43 @@ class VoiceSynthEventProcessor:
         message: discord.Message,
         text_processor: SpeechTextFormatter,
     ):
+
         """ファイル投稿をアナウンスします。"""
         guild_id = message.guild.id
-        announcement_style_id = synth_config.voice_synthesis_settings.get(
-            message.guild.id, {}
-        ).get("announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID)
+        announcement_style_id = synth_config.get_announcement_style_id(
+            guild_id)
 
-        file_messages = []
+        file_counts = {"image/": 0, "video/": 0,
+                       "audio/": 0, "text/": 0, "other": 0}
         for attachment in message.attachments:
             if attachment.content_type.startswith("image/"):
-                file_messages.append("画像")
+                file_counts["image/"] += 1
             elif attachment.content_type.startswith("video/"):
-                file_messages.append("動画")
+                file_counts["video/"] += 1
             elif attachment.content_type.startswith("audio/"):
-                file_messages.append("音声ファイル")
+                file_counts["audio/"] += 1
             elif attachment.content_type.startswith("text/"):
-                file_messages.append("テキストファイル")
+                file_counts["text/"] += 1
             else:
-                file_messages.append("ファイル")
+                file_counts["other"] += 1
+
+        file_messages = []
+        for file_type, count in file_counts.items():
+            if count > 0:
+                if file_type == "image/":
+                    file_msg = "画像" if count == 1 else f"{count}枚の画像"
+                elif file_type == "video/":
+                    file_msg = "動画" if count == 1 else f"{count}個の動画"
+                elif file_type == "audio/":
+                    file_msg = "音声ファイル" if count == 1 else f"{count}個の音声ファイル"
+                elif file_type == "text/":
+                    file_msg = "テキストファイル" if count == 1 else f"{count}個のテキストファイル"
+                else:
+                    file_msg = "ファイル" if count == 1 else f"{count}個のファイル"
+                file_messages.append(file_msg)
 
         if file_messages:
-            file_message = f"{', '.join(file_messages)}が投稿されました。"
+            file_message = f"{'と'.join(file_messages)}が投稿されました。"
             await synth_service.text_to_speech(
                 message.guild.voice_client,
                 file_message,
