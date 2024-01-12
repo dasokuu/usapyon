@@ -25,7 +25,7 @@ class VoiceSynthEventProcessor:
         # ボットが接続しているボイスチャンネルを取得
         voice_client = member.guild.voice_client
 
-        # 新しいVCにメンバーが接続した場合、ボットがまだそのVCに接続していなければ接続を試みる
+        # ボットが新しいVCに接続した場合の処理
         if before.channel != after.channel and after.channel is not None:
             if voice_client is None or not voice_client.is_connected():
                 # ボットが接続していない場合、新しいVCに接続を試みる
@@ -34,8 +34,20 @@ class VoiceSynthEventProcessor:
                     # テキストチャンネルの設定を更新
                     synth_config.voice_synthesis_settings[guild_id]["text_channel"] = after.channel.id
                     synth_config.save_style_settings()
+                    announcement_style_id = synth_config.get_announcement_style_id(
+                        guild_id)
+                    # 接続成功時の読み上げメッセージ
+                    welcome_message = "読み上げを開始します。"
+                    await synth_service.text_to_speech(
+                        voice_client,
+                        welcome_message,
+                        announcement_style_id,
+                        guild_id,
+                        text_processor,
+                    )
                 except discord.ClientException as e:
                     logging.error(f"Connection error: {e}")
+                return
 
         # ボットがボイスチャンネルに接続していなければ何もしない
         if not voice_client or not voice_client.channel:
@@ -53,18 +65,21 @@ class VoiceSynthEventProcessor:
                 text_processor,
                 "entered",
             )
+        # ユーザーがボイスチャンネルから退出した場合の処理
         elif (
             before.channel == voice_client.channel
             and after.channel != voice_client.channel
         ):
-            await self.announce_presence(
-                member,
-                voice_client,
-                synth_config,
-                synth_service,
-                text_processor,
-                "left",
-            )
+            # ボイスチャンネルに他の非ボットユーザーがまだいるか確認
+            if any(not user.bot for user in before.channel.members if user != member):
+                await self.announce_presence(
+                    member,
+                    voice_client,
+                    synth_config,
+                    synth_service,
+                    text_processor,
+                    "left",
+                )
         # ボイスチャンネルに誰もいなくなったら自動的に切断します。
         if after.channel is None and voice_client and voice_client.channel:
             # ボイスチャンネルにまだ非ボットユーザーがいるか確認します。
@@ -81,6 +96,32 @@ class VoiceSynthEventProcessor:
                     synth_config.save_style_settings()  # 変更を保存
                     logging.info(f"テキストチャンネルの設定をクリアしました: サーバーID {guild_id}")
                 await voice_client.disconnect()
+        # ボットがボイスチャンネルに接続しているかどうかを確認
+        voice_client = member.guild.voice_client
+        if not voice_client or not voice_client.channel:
+            return
+
+        # ボットのいるチャンネルに他にユーザーがいないか確認
+        if not any(not user.bot for user in voice_client.channel.members):
+            # 移動先のボイスチャンネルを決定（ここでは単純にメンバーが移動したチャンネルを使用）
+            new_channel = after.channel
+
+            if new_channel:
+                # 新しいチャンネルにボットを接続
+                await voice_client.move_to(new_channel)
+                # 新しいチャンネルのテキストチャンネルIDを更新
+                synth_config.voice_synthesis_settings[member.guild.id]["text_channel"] = new_channel.id
+                synth_config.save_style_settings()
+                # 新しいチャンネルへの移動をアナウンス
+                announcement_style_id = synth_config.get_announcement_style_id(
+                    member.guild.id)
+                await synth_service.text_to_speech(
+                    voice_client,
+                    f"読み上げチャンネルを {new_channel.name} に変更しました。",
+                    announcement_style_id,
+                    member.guild.id,
+                    text_processor,
+                )
 
     async def handle_message(
         self,
