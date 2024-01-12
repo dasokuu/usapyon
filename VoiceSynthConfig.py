@@ -171,8 +171,6 @@ class VoiceSynthConfig:
         return (
             voice_client
             and voice_client.channel
-            and message.author.voice
-            and message.author.voice.channel == voice_client.channel
             and not message.content.startswith(BotSettings.BOT_PREFIX)
             and message.channel.id == allowed_text_channel_id
         )

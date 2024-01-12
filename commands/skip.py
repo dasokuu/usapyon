@@ -1,5 +1,5 @@
 import discord
-from settings import info_messages
+from settings import info_messages, error_messages
 from VoiceSynthService import VoiceSynthService
 
 
@@ -9,7 +9,10 @@ def setup_skip_command(bot, synth_service: VoiceSynthService):
         description="現在の読み上げをスキップし、再生キューをクリアします。",
     )
     async def skip(interaction: discord.Interaction):
-        await interaction.response.defer()  # 迅速な応答でインタラクションを保持
+        # ユーザーがボイスチャンネルにいるかどうか確認
+        if not interaction.user.voice or not interaction.user.voice.channel:
+            await interaction.response.send_message(error_messages["no_vc_user"], ephemeral=True)
+            return
 
         guild_id = interaction.guild_id
         voice_client = interaction.guild.voice_client
@@ -26,8 +29,8 @@ def setup_skip_command(bot, synth_service: VoiceSynthService):
         # ギルドの再生キューを確認し、空の場合はユーザーに通知
         guild_queue = synth_service.get_guild_playback_queue(guild_id)
         if guild_queue.empty():
-            await interaction.followup.send(info_messages["no_queue"])
+            await interaction.response.send_message(error_messages["no_queue"])
         else:
             # キューが空ではない場合、キューをクリアしてスキップされたことをユーザーに通知
             await synth_service.clear_playback_queue(guild_id)
-            await interaction.followup.send(info_messages["skip"])
+            await interaction.response.send_message(info_messages["skip"])

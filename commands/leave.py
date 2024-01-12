@@ -14,7 +14,12 @@ def setup_leave_command(
     async def leave(interaction: discord.Interaction):
         # ボイスクライアントが存在しない場合、何もせずに終了
         if not interaction.guild.voice_client:
-            await interaction.response.send_message(error_messages["not_connected"])
+            await interaction.response.send_message(error_messages["not_connected"], ephemeral=True)
+            return
+
+        # ユーザーがボイスチャンネルにいるかどうか確認
+        if not interaction.user.voice or not interaction.user.voice.channel:
+            await interaction.response.send_message(error_messages["no_vc_user"], ephemeral=True)
             return
 
         guild_id = interaction.guild_id
