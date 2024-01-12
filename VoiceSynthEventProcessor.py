@@ -55,9 +55,9 @@ class VoiceSynthEventProcessor:
             )
 
         # ボイスチャンネルに誰もいなくなったら自動的に切断します。
-        if after.channel is None and member.guild.voice_client:
-            # ボイスチャンネルにまだ誰かいるか確認します。
-            if not any(not user.bot for user in before.channel.members):
+        if after.channel is None and voice_client and voice_client.channel:
+            # ボイスチャンネルにまだ非ボットユーザーがいるか確認します。
+            if not any(not user.bot for user in voice_client.channel.members):
                 # キューをクリアする
                 await synth_service.clear_playback_queue(guild_id)
                 if (
@@ -69,7 +69,7 @@ class VoiceSynthEventProcessor:
                     del synth_config.voice_synthesis_settings[guild_id]["text_channel"]
                     synth_config.save_style_settings()  # 変更を保存
                     logging.info(f"テキストチャンネルの設定をクリアしました: サーバーID {guild_id}")
-                await member.guild.voice_client.disconnect()
+                await voice_client.disconnect()
 
     async def handle_message(
         self,
