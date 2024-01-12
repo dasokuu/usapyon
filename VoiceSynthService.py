@@ -157,7 +157,7 @@ class VoiceSynthService:
         try:
             lines = text.split("\n")
             for line in filter(None, lines):
-                if len(line) > BotSettings.MAX_TEXT_LENGTH:
+                if len(line) > BotSettings.MAX_MESSAGE_LENGTH:
                     # 長すぎるテキストの場合、メッセージを送信する
                     if message.channel:
                         await message.channel.send("テキストが長すぎるため、音声合成はスキップされました。")
