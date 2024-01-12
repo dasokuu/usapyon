@@ -45,7 +45,22 @@ async def wait_for_synth_service(url, max_attempts=10, delay=5):
     return False
 
 
-# 変更後
+def setup_help_command(bot):
+    @bot.tree.command(
+        name="help",
+        description="使用可能なコマンドのリストと説明を表示します。"
+    )
+    async def help(interaction: discord.Interaction):
+        commands_description = "\n".join(
+            f"/{command.name}: {command.description}"
+            for command in bot.tree.get_commands()
+        )
+        await interaction.response.send_message(
+            f"**利用可能なコマンド一覧:**\n{commands_description}",
+            ephemeral=True
+        )
+
+
 async def main():
     try:
         if await wait_for_synth_service(VOICEVOXSettings.SPEAKERS_URL):  # 非同期処理に変更
@@ -66,6 +81,8 @@ async def main():
             setup_settings_command(bot, synth_config)
             setup_info_command(bot, synth_config)
             setup_skip_command(bot, synth_service)
+            setup_help_command(bot)
+
             @bot.event
             async def on_ready():
                 try:
