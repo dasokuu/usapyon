@@ -6,6 +6,19 @@ from VoiceSynthConfig import VoiceSynthConfig
 from VoiceSynthService import VoiceSynthService
 
 
+class ConnectionButtons(discord.ui.View):
+    def __init__(self):
+        super().__init__()
+
+        # /settingsコマンドをトリガーするボタン
+        self.add_item(discord.ui.Button(
+            label="設定", style=discord.ButtonStyle.primary, custom_id="settings_button"))
+
+        # /leaveコマンドをトリガーするボタン
+        self.add_item(discord.ui.Button(
+            label="切断", style=discord.ButtonStyle.danger, custom_id="leave_button"))
+
+
 async def execute_welcome_message(
     voice_client,
     guild_id,
@@ -127,6 +140,7 @@ def setup_join_command(
             # ボットがVCに接続されていない場合、通常の接続処理を実行
             try:
                 voice_client = await connect_to_voice_channel(interaction)
+                await voice_client.channel.send("Hello World")
                 await welcome_user(
                     synth_config, synth_service, interaction, voice_client, text_processor
                 )

@@ -25,6 +25,18 @@ class VoiceSynthEventProcessor:
         # ボットが接続しているボイスチャンネルを取得
         voice_client = member.guild.voice_client
 
+        # 新しいVCにメンバーが接続した場合、ボットがまだそのVCに接続していなければ接続を試みる
+        if before.channel != after.channel and after.channel is not None:
+            if voice_client is None or not voice_client.is_connected():
+                # ボットが接続していない場合、新しいVCに接続を試みる
+                try:
+                    voice_client = await after.channel.connect()
+                    # テキストチャンネルの設定を更新
+                    synth_config.voice_synthesis_settings[guild_id]["text_channel"] = after.channel.id
+                    synth_config.save_style_settings()
+                except discord.ClientException as e:
+                    logging.error(f"Connection error: {e}")
+
         # ボットがボイスチャンネルに接続していなければ何もしない
         if not voice_client or not voice_client.channel:
             return
@@ -53,7 +65,6 @@ class VoiceSynthEventProcessor:
                 text_processor,
                 "left",
             )
-
         # ボイスチャンネルに誰もいなくなったら自動的に切断します。
         if after.channel is None and voice_client and voice_client.channel:
             # ボイスチャンネルにまだ非ボットユーザーがいるか確認します。
