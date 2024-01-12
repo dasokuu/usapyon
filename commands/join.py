@@ -103,47 +103,29 @@ def setup_join_command(
     synth_config: VoiceSynthConfig,
     text_processor: SpeechTextFormatter
 ):
-    # ボットをボイスチャンネルに接続するコマンド
     @bot.tree.command(
         name="join",
         description="ボットをボイスチャンネルに接続し、読み上げを開始します。",
     )
     async def join(interaction: discord.Interaction):
-        # defer the response to keep the interaction alive
         await interaction.response.defer()
-        guild_id = interaction.guild.id
-        text_channel_id = interaction.channel_id
 
         # ユーザーがボイスチャンネルにいない場合、エラーメッセージを表示
         if not interaction.user.voice or not interaction.user.voice.channel:
             await interaction.followup.send(error_messages["connection"])
             return
 
-        # VCにすでに接続されている場合
+        # ボットが既に接続されている場合、エラーメッセージを表示して処理を終了
         if interaction.guild.voice_client:
-            # 読み上げテキストチャンネルが既に設定されているが、異なる場合は更新
-            if (
-                guild_id in synth_config.voice_synthesis_settings
-                and synth_config.voice_synthesis_settings[guild_id].get("text_channel")
-                != text_channel_id
-            ):
-                synth_config.voice_synthesis_settings[guild_id]["text_channel"] = text_channel_id
-                synth_config.save_style_settings()
-                # ユーザーに読み上げテキストチャンネルが変更されたことを通知
-                await interaction.followup.send(
-                    f"読み上げテキストチャンネルを<#{text_channel_id}>に変更しました。"
-                )
-            else:
-                # テキストチャンネルが変更されていない場合
-                await interaction.followup.send("ボットはすでにボイスチャンネルに接続されています。")
-        else:
-            # ボットがVCに接続されていない場合、通常の接続処理を実行
-            try:
-                voice_client = await connect_to_voice_channel(interaction)
-                await voice_client.channel.send("Hello World")
-                await welcome_user(
-                    synth_config, synth_service, interaction, voice_client, text_processor
-                )
-            except discord.ClientException as e:
-                logging.error(f"Connection error: {e}")
-                await interaction.followup.send(f"接続中にエラーが発生しました: {e}")
+            await interaction.followup.send("ボットはすでにボイスチャンネルに接続されています。")
+            return
+
+        # ここから通常の接続処理
+        try:
+            voice_client = await connect_to_voice_channel(interaction)
+            await welcome_user(
+                synth_config, synth_service, interaction, voice_client, text_processor
+            )
+        except discord.ClientException as e:
+            logging.error(f"Connection error: {e}")
+            await interaction.followup.send(f"接続中にエラーが発生しました: {e}")
