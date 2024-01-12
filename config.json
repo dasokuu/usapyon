@@ -1,7 +1,7 @@
 {
   "bot_settings": {
     "bot_prefix": "!",
-    "game_name": "/helpでヘルプを表示",
+    "game_name": "/joinで読み上げ開始",
     "max_message_length": 200
   },
   "voicevox_settings": {
