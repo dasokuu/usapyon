@@ -1,7 +1,7 @@
 {
   "bot_settings": {
     "bot_prefix": "!",
-    "game_name": "リクエストを待機中",
+    "game_name": "`/help`でヘルプを表示",
     "max_message_length": 200
   },
   "voicevox_settings": {
