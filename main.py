@@ -71,7 +71,7 @@ async def main():
             bot = commands.Bot(
                 command_prefix=BotSettings.BOT_PREFIX, intents=intents)
             synth_service = VoiceSynthService()
-            await synth_service.start()
+            await synth_service.ensure_session()
             synth_config = VoiceSynthConfig()
             await synth_config.async_init()
             text_processor = SpeechTextFormatter()
@@ -127,19 +127,16 @@ async def main():
                     return
                 await bot.process_commands(message)
                 await synth_event_processor.handle_message(
-                    synth_config, synth_service, message, text_processor
+                    message
                 )
 
             @bot.event
             async def on_voice_state_update(member: discord.Member, before, after):
                 await synth_event_processor.handle_voice_state_update(
-                    synth_config,
-                    synth_service,
                     bot,
                     member,
                     before,
                     after,
-                    text_processor,
                 )
 
             await bot.start(TOKEN)  # bot.run()の代わりにbot.start()を使用します

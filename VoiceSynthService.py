@@ -18,12 +18,7 @@ class VoiceSynthService:
     async def close(self):
         await self.session.close()
 
-    async def start(self):
-        # aiohttp.ClientSessionの再利用を検討
-        if self.session is None or self.session.closed:
-            self.session = aiohttp.ClientSession()
-
-    async def get_session(self):
+    async def ensure_session(self):
         if self.session is None or self.session.closed:
             self.session = aiohttp.ClientSession()
         return self.session
@@ -67,7 +62,6 @@ class VoiceSynthService:
             await voice_client.channel.send(message)
 
     async def audio_query(self, text, style_id):
-        # エラーハンドリングの改善
         try:
             async with self.session.post(
                 VOICEVOXSettings.AUDIO_QUERY_URL, headers=self.headers, params={
@@ -75,17 +69,21 @@ class VoiceSynthService:
             ) as response:
                 response.raise_for_status()
                 return await response.json()
-        except aiohttp.ClientResponseError as e:
-            logging.error(f"Client Response Error: {e}")
-            # 適切なエラーメッセージを返す
-            return {"error": str(e)}
+        except asyncio.TimeoutError:
+            logging.error("Timeout occurred during audio query")
+            return {"error": "Timeout during audio query"}
+        except aiohttp.ClientConnectionError:
+            logging.error("Connection error during audio query")
+            return {"error": "Connection error during audio query"}
         except Exception as e:
             logging.error(f"Unexpected error during audio query: {e}")
             return {"error": "Unexpected error"}
 
     async def synthesis(self, speaker, query_data):
-        # aiohttpを使用した非同期処理に変更
-        session = await self.get_session()  # セッションを取得
+        session = await self.ensure_session()
+        if not session:
+            logging.error("Failed to establish session for synthesis")
+            return None
         synth_payload = {"speaker": speaker}
         headers = {"Content-Type": "application/json", "Accept": "audio/wav"}
         try:
@@ -99,8 +97,7 @@ class VoiceSynthService:
                     return await response.read()
                 else:
                     logging.error(
-                        f"Synthesis request failed with status: {response.status}"
-                    )
+                        f"Synthesis request failed with status: {response.status}")
         except aiohttp.ClientResponseError as e:
             logging.error(
                 f"Response error during synthesis: {e}", exc_info=True)
