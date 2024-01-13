@@ -27,7 +27,7 @@ def create_info_message(
 
 class ConnectionButtons(discord.ui.View):
     def __init__(self, synth_config, synth_service):
-        super().__init__()
+        super().__init__(timeout=1800)
         self.settings_logic = settings_logic
         self.leave_logic = leave_logic
         self.synth_config = synth_config
