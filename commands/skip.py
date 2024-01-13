@@ -26,11 +26,10 @@ def setup_skip_command(bot, synth_service: VoiceSynthService):
         if voice_client.is_playing():
             voice_client.stop()
 
-        # ギルドの再生キューを確認し、空の場合はユーザーに通知
-        guild_queue = synth_service.get_guild_playback_queue(guild_id)
-        if guild_queue.empty():
-            await interaction.response.send_message(error_messages["no_queue"], ephemeral=True)
-        else:
-            # キューが空ではない場合、キューをクリアしてスキップされたことをユーザーに通知
-            await synth_service.clear_playback_queue(guild_id)
-            await interaction.response.send_message(info_messages["skip"])
+        # ギルドの再生キューを確認し、キューをクリア
+        synth_service.get_guild_playback_queue(guild_id)
+        await synth_service.clear_playback_queue(guild_id)
+
+        # 再生キューが空かどうかに関わらず、スキップされたことをユーザーに通知
+        # 「エラー」ではなく「情報」メッセージとして扱う
+        await interaction.response.send_message("現在の読み上げがスキップされ、キューがクリアされました。")
