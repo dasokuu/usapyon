@@ -1,8 +1,6 @@
 import logging
 import discord
-from SpeechTextFormatter import SpeechTextFormatter
 from VoiceSynthConfig import VoiceSynthConfig
-from VoiceSynthService import VoiceSynthService
 from commands.info import info_logic
 from commands.leave import leave_logic
 from commands.settings import settings_logic
