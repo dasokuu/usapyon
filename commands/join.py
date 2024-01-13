@@ -115,7 +115,7 @@ def setup_join_command(
             # 新たな読み上げ対象チャンネルとしてユーザーのテキストチャンネルを追加
             synth_config.add_additional_channel(
                 interaction.guild.id, interaction.channel.id)
-            await interaction.response.send_message(f"ボイスチャンネル '{voice_client.channel.name}' に接続済みです。チャンネル '{interaction.channel.name}' が読み上げ対象に追加されました。")
+            await interaction.response.send_message(f"ボイスチャンネル `{voice_client.channel.name}` に接続済みです。チャンネル `{interaction.channel.name}` が読み上げ対象に追加されました。")
         else:
             # 通常の接続処理
             try:

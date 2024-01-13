@@ -18,7 +18,7 @@ def setup_additional_channel_command(bot, synth_config: VoiceSynthConfig):
         # 追加されたチャンネルの名前を取得
         channel_name = interaction.guild.get_channel(
             interaction.channel_id).name
-        await interaction.response.send_message(f"チャンネル `{channel_name}` を読み上げ対象に追加しました。")
+        await interaction.response.send_message(f"ボイスチャンネル `{interaction.user.voice.channel.name}` に接続済みです。チャンネル `{channel_name}` を新たな読み上げ対象として追加しました。")
 
     @bot.tree.command(
         name="unlist_channel",
