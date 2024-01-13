@@ -21,13 +21,13 @@ def create_info_message(
     return (
         f"テキストチャンネル: <#{text_channel_id}>\n"
         f"{user_display_name}さんの読み上げ音声: [{user[0]}] - {user[1]}\n"
-        f"アナウンス音声（サーバー設定）: [{announcement[0]}] - {announcement[1]}\n"
+        f"入退室時等の音声（サーバー設定）: [{announcement[0]}] - {announcement[1]}\n"
     )
 
 
 class ConnectionButtons(discord.ui.View):
     def __init__(self, synth_config, synth_service):
-        super().__init__(timeout=1800)
+        super().__init__(timeout=43200)
         self.settings_logic = settings_logic
         self.leave_logic = leave_logic
         self.synth_config = synth_config
