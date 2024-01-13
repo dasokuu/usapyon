@@ -115,9 +115,6 @@ class VoiceSynthEventProcessor:
             await self.announce_presence(
                 member,
                 voice_client,
-                self.synth_config,
-                self.synth_service,
-                self.text_processor,
                 "entered",
             )
         # ユーザーがボイスチャンネルから退出した場合の処理
@@ -130,9 +127,6 @@ class VoiceSynthEventProcessor:
                 await self.announce_presence(
                     member,
                     voice_client,
-                    self.synth_config,
-                    self.synth_service,
-                    self.text_processor,
                     "left",
                 )
         if after.channel is None and voice_client and voice_client.channel:
@@ -212,7 +206,7 @@ class VoiceSynthEventProcessor:
             # TenorのGIFリンクをチェック
             if "tenor.com/view/" in message.content:
                 await self.speach_gif(
-                    message, self.synth_config, self.text_processor, self.synth_service
+                    message
                 )
                 return
             if message_content:
@@ -227,11 +221,11 @@ class VoiceSynthEventProcessor:
                 )
             if message.attachments:
                 await self.announce_file_post(
-                    self.synth_config, self.synth_service, message, self.text_processor
+                    message
                 )
             if message.stickers:
                 await self.speach_sticker(
-                    self.synth_config, self.synth_service, message, self.text_processor
+                    message
                 )
         except discord.DiscordException as e:
             logging.error(f"Discord specific error: {e}")
