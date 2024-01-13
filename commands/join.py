@@ -1,22 +1,10 @@
 import logging
 import discord
 from SpeechTextFormatter import SpeechTextFormatter
+from VoiceSynthEventProcessor import ConnectionButtons
 from settings import error_messages
 from VoiceSynthConfig import VoiceSynthConfig
 from VoiceSynthService import VoiceSynthService
-
-
-class ConnectionButtons(discord.ui.View):
-    def __init__(self):
-        super().__init__()
-
-        # /settingsコマンドをトリガーするボタン
-        self.add_item(discord.ui.Button(
-            label="設定", style=discord.ButtonStyle.primary, custom_id="settings_button"))
-
-        # /leaveコマンドをトリガーするボタン
-        self.add_item(discord.ui.Button(
-            label="切断", style=discord.ButtonStyle.danger, custom_id="leave_button"))
 
 
 async def execute_welcome_message(
@@ -27,6 +15,7 @@ async def execute_welcome_message(
     interaction: discord.Interaction,
     text_processor: SpeechTextFormatter,
     synth_service: VoiceSynthService,
+    synth_config: VoiceSynthConfig
 ):
     welcome_voice = "読み上げを開始します。"
     try:
@@ -38,10 +27,10 @@ async def execute_welcome_message(
             text_processor,
             message,
         )
-        await interaction.followup.send(message)
+        await interaction.response.send_message(message, view=ConnectionButtons(synth_config))
     except Exception as e:
         logging.error(f"Welcome message execution failed: {e}")
-        await interaction.followup.send(error_messages["welcome"])
+        await interaction.response.send_message(error_messages["welcome"], ephemeral=True)
 
 
 def create_info_message(
@@ -94,6 +83,7 @@ async def welcome_user(
         interaction,
         text_processor,
         synth_service,
+        synth_config
     )
 
 
@@ -108,16 +98,14 @@ def setup_join_command(
         description="ボットをボイスチャンネルに接続し、読み上げを開始します。",
     )
     async def join(interaction: discord.Interaction):
-        await interaction.response.defer()
-
         # ユーザーがボイスチャンネルにいない場合、エラーメッセージを表示
         if not interaction.user.voice or not interaction.user.voice.channel:
-            await interaction.followup.send(error_messages["connection"])
+            await interaction.response.send_message(error_messages["connection"], ephemeral=True)
             return
 
         # ボットが既に接続されている場合、エラーメッセージを表示して処理を終了
         if interaction.guild.voice_client:
-            await interaction.followup.send("ボットはすでにボイスチャンネルに接続されています。")
+            await interaction.response.send_message("ボットはすでにボイスチャンネルに接続されています。")
             return
 
         # ここから通常の接続処理
@@ -128,4 +116,4 @@ def setup_join_command(
             )
         except discord.ClientException as e:
             logging.error(f"Connection error: {e}")
-            await interaction.followup.send(f"接続中にエラーが発生しました: {e}")
+            await interaction.response.send_message(f"接続中にエラーが発生しました: {e}")

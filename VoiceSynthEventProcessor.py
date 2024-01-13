@@ -3,7 +3,46 @@ import discord
 from SpeechTextFormatter import SpeechTextFormatter
 from VoiceSynthConfig import VoiceSynthConfig
 from VoiceSynthService import VoiceSynthService
-from settings import ANNOUNCEMENT_DEFAULT_STYLE_ID
+from commands.settings import settings_logic
+from settings import error_messages
+
+
+def create_info_message(
+    member: discord.Member, text_channel_id, guild_id, synth_config: VoiceSynthConfig
+):
+    style_ids = synth_config.get_style_ids(guild_id, member.id)
+    speaker_details = synth_config.get_speaker_details(*style_ids)
+    user_display_name = member.display_name
+    user, announcement = (
+        speaker_details["user"],
+        speaker_details["announcement"],
+    )
+    return (
+        f"テキストチャンネル: <#{text_channel_id}>\n"
+        f"{user_display_name}さんの読み上げ音声: [{user[0]}] - {user[1]}\n"
+        f"アナウンス音声（サーバー設定）: [{announcement[0]}] - {announcement[1]}\n"
+    )
+
+
+class ConnectionButtons(discord.ui.View):
+    def __init__(self, synth_config):
+        super().__init__()
+        self.settings_logic = settings_logic
+        self.synth_config = synth_config
+
+    @discord.ui.button(
+        label="設定", style=discord.ButtonStyle.primary, custom_id="settings_button"
+    )
+    async def settings_button(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        # Correctly pass the interaction object
+        await self.settings_logic(interaction, self.synth_config)
+
+    # @discord.ui.button(label="切断", style=discord.ButtonStyle.danger, custom_id="leave_button")
+    # async def leave_button(self, button: discord.ui.Button, interaction: discord.Interaction):
+    #     # This will trigger the /leave command
+    #     await self.leave_logic(interaction)
 
 
 class VoiceSynthEventProcessor:
@@ -32,10 +71,21 @@ class VoiceSynthEventProcessor:
                 try:
                     voice_client = await after.channel.connect()
                     # テキストチャンネルの設定を更新
-                    synth_config.voice_synthesis_settings[guild_id]["text_channel"] = after.channel.id
+                    synth_config.voice_synthesis_settings[guild_id][
+                        "text_channel"
+                    ] = after.channel.id
                     synth_config.save_style_settings()
                     announcement_style_id = synth_config.get_announcement_style_id(
-                        guild_id)
+                        guild_id
+                    )
+                    message = create_info_message(
+                        member, after.channel.id, guild_id, synth_config
+                    )
+                    await voice_client.channel.send(
+                        "**読み上げを開始します。\n**" + message,
+                        view=ConnectionButtons(synth_config),
+                    )
+                    await synth_service.clear_playback_queue(guild_id)
                     # 接続成功時の読み上げメッセージ
                     welcome_message = "読み上げを開始します。"
                     await synth_service.text_to_speech(
@@ -45,11 +95,10 @@ class VoiceSynthEventProcessor:
                         guild_id,
                         text_processor,
                     )
+
                 except discord.ClientException as e:
                     logging.error(f"Connection error: {e}")
                 return
-
-        # ボットがボイスチャンネルに接続していなければ何もしない
         if not voice_client or not voice_client.channel:
             return
 
@@ -110,17 +159,28 @@ class VoiceSynthEventProcessor:
                 # 新しいチャンネルにボットを接続
                 await voice_client.move_to(new_channel)
                 # 新しいチャンネルのテキストチャンネルIDを更新
-                synth_config.voice_synthesis_settings[member.guild.id]["text_channel"] = new_channel.id
+                synth_config.voice_synthesis_settings[member.guild.id][
+                    "text_channel"
+                ] = new_channel.id
                 synth_config.save_style_settings()
                 # 新しいチャンネルへの移動をアナウンス
                 announcement_style_id = synth_config.get_announcement_style_id(
-                    member.guild.id)
+                    member.guild.id
+                )
+                await synth_service.clear_playback_queue(guild_id)
                 await synth_service.text_to_speech(
                     voice_client,
-                    f"読み上げチャンネルを {new_channel.name} に変更しました。",
+                    f"読み上げボットが移動しました。",
                     announcement_style_id,
                     member.guild.id,
                     text_processor,
+                )
+                await new_channel.send(
+                    "**読み上げボットが移動しました。**\n"
+                    + create_info_message(
+                        member, new_channel.id, guild_id, synth_config
+                    ),
+                    view=ConnectionButtons(synth_config),
                 )
 
     async def handle_message(
@@ -270,7 +330,6 @@ class VoiceSynthEventProcessor:
         message: discord.Message,
         text_processor: SpeechTextFormatter,
     ):
-
         """ファイル投稿をアナウンスします。"""
         guild_id = message.guild.id
         announcement_style_id = synth_config.get_announcement_style_id(

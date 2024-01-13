@@ -7,16 +7,7 @@ from discord.ui import Button, View
 from VoiceSynthConfig import VoiceSynthConfig
 
 
-def setup_settings_command(bot, synth_config: VoiceSynthConfig):
-    @bot.tree.command(
-        name="settings", description="読み上げ音声を設定します。"
-    )
-    async def settings(interaction: discord.Interaction):
-        voice_scope_description = get_voice_scope_description(interaction)
-        view = create_settings_view(interaction, voice_scope_description)
-        await interaction.response.send_message(
-            "設定対象を選んでください：", view=view, ephemeral=True
-        )
+async def settings_logic(interaction: discord.Interaction, synth_config: VoiceSynthConfig):
 
     def get_voice_scope_description(interaction: discord.Interaction):
         return {
@@ -294,3 +285,16 @@ def setup_settings_command(bot, synth_config: VoiceSynthConfig):
             view.previous_button.disabled = True
             view.add_item(style_button)
         await interaction.response.edit_message(content=content, view=view)
+    voice_scope_description = get_voice_scope_description(interaction)
+    view = create_settings_view(interaction, voice_scope_description)
+    await interaction.response.send_message(
+        "設定対象を選んでください：", view=view, ephemeral=True
+    )
+
+
+def setup_settings_command(bot, synth_config: VoiceSynthConfig):
+    @bot.tree.command(
+        name="settings", description="読み上げ音声を設定します。"
+    )
+    async def settings(interaction: discord.Interaction):
+        await settings_logic(interaction, synth_config)
