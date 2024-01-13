@@ -173,13 +173,13 @@ class VoiceSynthEventProcessor:
                 await synth_service.clear_playback_queue(guild_id)
                 await synth_service.text_to_speech(
                     voice_client,
-                    f"移動しました。",
+                    f"読み上げボットが移動しました。",
                     announcement_style_id,
                     member.guild.id,
                     text_processor,
                 )
                 await new_channel.send(
-                    "**移動しました。**\n"
+                    "**読み上げボットが移動しました。**\n"
                     + create_info_message(
                         member, new_channel.id, guild_id, synth_config
                     ),
