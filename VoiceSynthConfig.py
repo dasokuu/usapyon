@@ -17,6 +17,19 @@ class VoiceSynthConfig:
         self.speakers = await self.fetch_json(VOICEVOXSettings.SPEAKERS_URL)
         self.voice_synthesis_settings = self.load_style_settings()
 
+    def add_additional_channel(self, guild_id, channel_id):
+        """指定されたギルドに追加のテキストチャンネルを追加します。"""
+        if guild_id not in self.voice_synthesis_settings:
+            self.voice_synthesis_settings[guild_id] = {}
+        self.voice_synthesis_settings[guild_id]["additional_channel"] = channel_id
+        self.save_style_settings()
+
+    def remove_additional_channel(self, guild_id):
+        """指定されたギルドの追加テキストチャンネルを削除します。"""
+        if guild_id in self.voice_synthesis_settings and "additional_channel" in self.voice_synthesis_settings[guild_id]:
+            del self.voice_synthesis_settings[guild_id]["additional_channel"]
+            self.save_style_settings()
+
     def validate_style_id(self, style_id):
         valid_style_ids = [
             style["id"] for speaker in self.speakers for style in speaker["styles"]
@@ -165,12 +178,12 @@ class VoiceSynthConfig:
     def should_process_message(self, message: discord.Message, guild_id):
         """メッセージが処理対象かどうかを判断します。"""
         voice_client = message.guild.voice_client
-        allowed_text_channel_id = self.voice_synthesis_settings.get(guild_id, {}).get(
-            "text_channel"
-        )
+        settings = self.voice_synthesis_settings.get(guild_id, {})
+        allowed_text_channel_id = settings.get("text_channel")
+        additional_channel_id = settings.get("additional_channel")
         return (
             voice_client
             and voice_client.channel
             and not message.content.startswith(BotSettings.BOT_PREFIX)
-            and message.channel.id == allowed_text_channel_id
+            and (message.channel.id == allowed_text_channel_id or message.channel.id == additional_channel_id)
         )

@@ -3,6 +3,7 @@ import discord
 from SpeechTextFormatter import SpeechTextFormatter
 from VoiceSynthConfig import VoiceSynthConfig
 from VoiceSynthService import VoiceSynthService
+from commands.info import info_logic
 from commands.leave import leave_logic
 from commands.settings import settings_logic
 from settings import error_messages
@@ -30,22 +31,21 @@ class ConnectionButtons(discord.ui.View):
         super().__init__(timeout=43200)
         self.settings_logic = settings_logic
         self.leave_logic = leave_logic
+        self.info_logic = info_logic  # infoコマンドのロジックを追加
         self.synth_config = synth_config
         self.synth_service = synth_service
 
-    @discord.ui.button(
-        label="設定", style=discord.ButtonStyle.primary, custom_id="settings_button"
-    )
-    async def settings_button(
-        self, interaction: discord.Interaction, button: discord.ui.Button
-    ):
-        # Correctly pass the interaction object
+    @discord.ui.button(label="設定", style=discord.ButtonStyle.primary, custom_id="settings_button")
+    async def settings_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.settings_logic(interaction, self.synth_config)
 
     @discord.ui.button(label="切断", style=discord.ButtonStyle.danger, custom_id="leave_button")
     async def leave_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        # Correctly pass the interaction object
         await self.leave_logic(interaction, self.synth_config, self.synth_service)
+
+    @discord.ui.button(label="情報", style=discord.ButtonStyle.secondary, custom_id="info_button")
+    async def info_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.info_logic(interaction, self.synth_config)  # infoコマンドの実行
 
 
 class VoiceSynthEventProcessor:
@@ -132,21 +132,19 @@ class VoiceSynthEventProcessor:
                     text_processor,
                     "left",
                 )
-        # ボイスチャンネルに誰もいなくなったら自動的に切断します。
         if after.channel is None and voice_client and voice_client.channel:
             # ボイスチャンネルにまだ非ボットユーザーがいるか確認します。
             if not any(not user.bot for user in voice_client.channel.members):
                 # キューをクリアする
                 await synth_service.clear_playback_queue(guild_id)
-                if (
-                    guild_id in synth_config.voice_synthesis_settings
-                    and "text_channel"
-                    in synth_config.voice_synthesis_settings.get(guild_id, {})
-                ):
-                    # テキストチャンネルIDの設定をクリア
-                    del synth_config.voice_synthesis_settings[guild_id]["text_channel"]
-                    synth_config.save_style_settings()  # 変更を保存
-                    logging.info(f"テキストチャンネルの設定をクリアしました: サーバーID {guild_id}")
+                # テキストチャンネルIDと追加チャンネルIDの設定をクリア
+                guild_settings = synth_config.voice_synthesis_settings.get(
+                    guild_id, {})
+                if "text_channel" in guild_settings:
+                    del guild_settings["text_channel"]
+                if "additional_channel" in guild_settings:
+                    del guild_settings["additional_channel"]
+                synth_config.save_style_settings()  # 変更を保存
                 await voice_client.disconnect()
         # ボットがボイスチャンネルに接続しているかどうかを確認
         voice_client = member.guild.voice_client
@@ -315,16 +313,20 @@ class VoiceSynthEventProcessor:
                 text_channel = member.guild.get_channel(text_channel_id)
                 if text_channel:
                     await text_channel.send(send_message)
-        announcement_voice = f"{member.display_name}さん{action_text}"
-        announcement_style_id = synth_config.get_announcement_style_id(
-            member.guild.id)
-        await synth_service.text_to_speech(
-            voice_client,
-            announcement_voice,
-            announcement_style_id,
-            member.guild.id,
-            text_processor,
-        )
+        try:
+            announcement_voice = f"{member.display_name}さん{action_text}"
+            announcement_style_id = synth_config.get_announcement_style_id(
+                member.guild.id)
+            await synth_service.text_to_speech(
+                voice_client,
+                announcement_voice,
+                announcement_style_id,
+                member.guild.id,
+                text_processor,
+            )
+        except Exception as e:
+            logging.error(f"Failed to announce presence: {e}")
+            # 必要に応じて、復旧処理や追加のエラーメッセージをここに追加
 
     async def announce_file_post(
         self,

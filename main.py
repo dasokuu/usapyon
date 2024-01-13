@@ -6,6 +6,7 @@ import discord
 from discord.ext import commands
 from SpeechTextFormatter import SpeechTextFormatter
 from VoiceSynthEventProcessor import VoiceSynthEventProcessor
+from commands.add_channel import setup_additional_channel_command
 from commands.settings import setup_settings_command
 from commands.info import setup_info_command
 from commands.join import setup_join_command
@@ -83,6 +84,7 @@ async def main():
             setup_info_command(bot, synth_config)
             setup_skip_command(bot, synth_service)
             setup_help_command(bot)
+            setup_additional_channel_command(bot, synth_config)
 
             @bot.event
             async def on_ready():
