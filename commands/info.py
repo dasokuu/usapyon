@@ -9,10 +9,11 @@ def create_info_message(interaction: discord.Interaction, text_channel_id, addit
         speaker_details["announcement"],
         speaker_details["default"],
     )
-    additional_channel_info = f"追加の読み上げチャンネル: <#{additional_channel_id}>" if additional_channel_id else "追加の読み上げチャンネル: なし"
+    text_channel_info = f"読み上げチャンネル: <#{text_channel_id}>" if text_channel_id != "未設定" else "読み上げチャンネル: 未設定"
+    additional_channel_info = f"追加の読み上げチャンネル: <#{additional_channel_id}>" if additional_channel_id else "追加の読み上げチャンネル: 未設定"
 
     return (
-        f"テキストチャンネル: <#{text_channel_id}>\n"
+        f"{text_channel_info}\n"
         f"{additional_channel_info}\n"
         f"{user_display_name}さんの読み上げ音声: [{user[0]}] - {user[1]}\n"
         f"入退室時等の音声（サーバー設定）: [{announcement[0]}] - {announcement[1]}\n"
