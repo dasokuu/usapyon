@@ -8,20 +8,20 @@ from SpeechTextFormatter import SpeechTextFormatter
 from settings import BotSettings, VOICEVOXSettings
 
 
+# aiohttp.ClientSession の改善
 class VoiceSynthService:
     def __init__(self):
         self.guild_playback_queues = {}
         self.headers = {"Content-Type": "application/json"}
-        self.session = None  # セッションは初期化時にはNoneに
+        self.session = aiohttp.ClientSession()
+
+    async def close(self):
+        await self.session.close()
 
     async def start(self):
         # aiohttp.ClientSessionの再利用を検討
         if self.session is None or self.session.closed:
             self.session = aiohttp.ClientSession()
-
-    async def close(self):
-        if self.session:
-            await self.session.close()
 
     async def get_session(self):
         if self.session is None or self.session.closed:
@@ -46,6 +46,7 @@ class VoiceSynthService:
                 await self.safely_speak_line(voice_client, line, style_id)
             guild_queue.task_done()
 
+    # 例外処理時にユーザーへのフィードバックを追加
     async def safely_speak_line(self, voice_client, line, style_id):
         try:
             await self.speak_line(voice_client, line, style_id)

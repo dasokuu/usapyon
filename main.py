@@ -74,8 +74,9 @@ async def main():
             await synth_service.start()
             synth_config = VoiceSynthConfig()
             await synth_config.async_init()
-            synth_event_processor = VoiceSynthEventProcessor()
             text_processor = SpeechTextFormatter()
+            synth_event_processor = VoiceSynthEventProcessor(
+                synth_config, synth_service, text_processor)
 
             setup_join_command(bot, synth_service,
                                synth_config, text_processor)
