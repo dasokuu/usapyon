@@ -196,7 +196,8 @@ async def settings_logic(interaction: discord.Interaction, synth_config: VoiceSy
                     ) = synth_config.get_character_info(speaker_name)
                     speaker_url = f"{DORMITORY_URL_BASE}/{speaker_character_id}/"
                     try:
-                        channel_id = synth_config.voice_synthesis_settings[interaction.guild.id]["text_channel"]
+                        channel_id = synth_config.voice_synthesis_settings[
+                            interaction.guild.id]["text_channel"]
                         channel = interaction.guild.get_channel(channel_id)
                         await interaction.response.defer()
                         await channel.send(
@@ -278,7 +279,8 @@ async def settings_logic(interaction: discord.Interaction, synth_config: VoiceSy
                 ) = synth_config.get_character_info(speaker_name)
                 speaker_url = f"{DORMITORY_URL_BASE}/{speaker_character_id}/"
                 try:
-                    channel_id = synth_config.voice_synthesis_settings[interaction.guild.id]["text_channel"]
+                    channel_id = synth_config.voice_synthesis_settings[
+                        interaction.guild.id]["text_channel"]
                     channel = interaction.guild.get_channel(channel_id)
                     await interaction.response.defer()
                     await channel.send(

@@ -27,7 +27,7 @@ async def execute_welcome_message(
             text_processor,
             message,
         )
-        await interaction.response.send_message(message, view=ConnectionButtons(synth_config,synth_service))
+        await interaction.response.send_message(message, view=ConnectionButtons(synth_config, synth_service))
     except Exception as e:
         logging.error(f"Welcome message execution failed: {e}")
         await interaction.response.send_message(error_messages["welcome"], ephemeral=True)
