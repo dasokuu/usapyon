@@ -195,9 +195,17 @@ async def settings_logic(interaction: discord.Interaction, synth_config: VoiceSy
                         speaker_display_name,
                     ) = synth_config.get_character_info(speaker_name)
                     speaker_url = f"{DORMITORY_URL_BASE}/{speaker_character_id}/"
-                    await interaction.response.send_message(
-                        f"{voice_scope_description[self.voice_scope]}が「[{speaker_display_name}]({speaker_url}) {style_name}」に更新されました。"
-                    )
+                    try:
+                        channel_id = synth_config.voice_synthesis_settings[interaction.guild.id]["text_channel"]
+                        channel = interaction.guild.get_channel(channel_id)
+                        await interaction.response.defer()
+                        await channel.send(
+                            f"{voice_scope_description[self.voice_scope]}が「[{speaker_display_name}]({speaker_url}) {style_name}」に更新されました。"
+                        )
+                    except KeyError:
+                        await interaction.response.send_message(
+                            f"{voice_scope_description[self.voice_scope]}が「[{speaker_display_name}]({speaker_url}) {style_name}」に更新されました。"
+                        )
 
                 # Capture the current button and style_id using default arguments
                 style_button.callback = (
@@ -269,9 +277,17 @@ async def settings_logic(interaction: discord.Interaction, synth_config: VoiceSy
                     speaker_display_name,
                 ) = synth_config.get_character_info(speaker_name)
                 speaker_url = f"{DORMITORY_URL_BASE}/{speaker_character_id}/"
-                await interaction.response.send_message(
-                    f"{voice_scope_description[voice_scope]}が「[{speaker_display_name}]({speaker_url}) {style_name}」に更新されました。"
-                )
+                try:
+                    channel_id = synth_config.voice_synthesis_settings[interaction.guild.id]["text_channel"]
+                    channel = interaction.guild.get_channel(channel_id)
+                    await interaction.response.defer()
+                    await channel.send(
+                        f"{voice_scope_description[voice_scope]}が「[{speaker_display_name}]({speaker_url}) {style_name}」に更新されました。"
+                    )
+                except KeyError:
+                    await interaction.response.send_message(
+                        f"{voice_scope_description[voice_scope]}が「[{speaker_display_name}]({speaker_url}) {style_name}」に更新されました。"
+                    )
 
             # Replace the existing 'style_button.callback' assignment with the following:
             style_button.callback = (
