@@ -34,7 +34,7 @@ class VoiceSynthConfig:
     def add_additional_channel(self, guild_id, channel_id):
         """指定されたギルドに追加のテキストチャンネルを追加します。"""
         if not self.is_different_from_existing_channel(guild_id, channel_id):
-            print("追加チャンネルが既存の読み上げチャンネルと同じです。")
+            logging.info("追加チャンネルが既存の読み上げチャンネルと同じです。")
             return
 
         if guild_id not in self.voice_synthesis_settings:

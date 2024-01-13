@@ -40,7 +40,7 @@ async def wait_for_synth_service(url, max_attempts=10, delay=5):
     attempts = 0
     while attempts < max_attempts:
         if await is_synth_service_up(url):
-            print("Server is up!")
+            logging.info("Server is up!")
             return True
         await asyncio.sleep(delay)
         attempts += 1
@@ -143,10 +143,9 @@ async def main():
             await bot.start(GlobalSettings.TOKEN)
             await synth_service.close()
         else:
-            print("Server did not become available in time. Exiting.")
+            logging.error("Server did not become available in time. Exiting.")
     except Exception as e:
         logging.error(f"Unexpected error in main function: {e}", exc_info=True)
-        print("アプリケーションの起動中にエラーが発生しました。詳細はログを確認してください。")
 
 
 if __name__ == "__main__":
