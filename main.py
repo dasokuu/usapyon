@@ -20,7 +20,9 @@ from settings import (
 from VoiceSynthService import VoiceSynthService
 
 # Improved logging format and level
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    format="%(asctime)s - %(levelname)s - %(message)s", level=logging.INFO
+)
 
 
 async def is_synth_service_up(url):
