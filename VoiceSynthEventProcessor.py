@@ -6,7 +6,6 @@ from VoiceSynthService import VoiceSynthService
 from commands.info import info_logic
 from commands.leave import leave_logic
 from commands.settings import settings_logic
-from settings import error_messages
 
 
 def create_info_message(
@@ -252,25 +251,22 @@ class VoiceSynthEventProcessor:
 
     async def speach_sticker(
         self,
-        synth_config: VoiceSynthConfig,
-        synth_service: VoiceSynthService,
         message: discord.Message,
-        text_processor: SpeechTextFormatter,
     ):
         """スタンプ投稿"""
         guild_id = message.guild.id
-        user_style_id = synth_config.get_user_style_id(
+        user_style_id = self.synth_config.get_user_style_id(
             message.author.id, guild_id)
 
         for sticker in message.stickers:
             sticker_name = sticker.name
             text = f"{sticker_name} のスタンプ"
-            await synth_service.text_to_speech(
+            await self.synth_service.text_to_speech(
                 message.guild.voice_client,
                 text,
                 user_style_id,
                 guild_id,
-                text_processor,
+                self.text_processor,
                 message,
             )
 
@@ -317,51 +313,38 @@ class VoiceSynthEventProcessor:
             logging.error(f"Failed to announce presence: {e}")
             # 必要に応じて、復旧処理や追加のエラーメッセージをここに追加
 
-    async def announce_file_post(
-        self,
-        message: discord.Message,
-    ):
+    async def announce_file_post(self, message: discord.Message):
         """ファイル投稿をアナウンスします。"""
-        guild_id = message.guild.id
-        announcement_style_id = self.synth_config.get_announcement_style_id(
-            guild_id)
-
-        file_counts = {"image/": 0, "video/": 0,
-                       "audio/": 0, "text/": 0, "other": 0}
-        for attachment in message.attachments:
-            if attachment.content_type.startswith("image/"):
-                file_counts["image/"] += 1
-            elif attachment.content_type.startswith("video/"):
-                file_counts["video/"] += 1
-            elif attachment.content_type.startswith("audio/"):
-                file_counts["audio/"] += 1
-            elif attachment.content_type.startswith("text/"):
-                file_counts["text/"] += 1
-            else:
-                file_counts["other"] += 1
-
-        file_messages = []
-        for file_type, count in file_counts.items():
-            if count > 0:
-                if file_type == "image/":
-                    file_msg = "画像" if count == 1 else f"{count}枚の画像"
-                elif file_type == "video/":
-                    file_msg = "動画" if count == 1 else f"{count}個の動画"
-                elif file_type == "audio/":
-                    file_msg = "音声ファイル" if count == 1 else f"{count}個の音声ファイル"
-                elif file_type == "text/":
-                    file_msg = "テキストファイル" if count == 1 else f"{count}個のテキストファイル"
-                else:
-                    file_msg = "ファイル" if count == 1 else f"{count}個のファイル"
-                file_messages.append(file_msg)
-
+        file_messages = self._get_file_messages(message.attachments)
         if file_messages:
             file_message = f"{'と'.join(file_messages)}が投稿されました。"
-            await self.synth_service.text_to_speech(
-                message.guild.voice_client,
-                file_message,
-                announcement_style_id,
-                guild_id,
-                self.text_processor,
-                message,
-            )
+            await self._announce_message(file_message, message)
+
+    def _get_file_messages(self, attachments):
+        file_counts = {"image/": 0, "video/": 0,
+                       "audio/": 0, "text/": 0, "other": 0}
+        for attachment in attachments:
+            file_type = next(
+                (ft for ft in file_counts if attachment.content_type.startswith(ft)), "other")
+            file_counts[file_type] += 1
+
+        return [self._format_file_message(ft, count) for ft, count in file_counts.items() if count > 0]
+
+    @staticmethod
+    def _format_file_message(file_type, count):
+        type_names = {"image/": "画像", "video/": "動画",
+                      "audio/": "音声ファイル", "text/": "テキストファイル", "other": "ファイル"}
+        return f"{count}個の{type_names[file_type]}" if count > 1 else type_names[file_type]
+
+    async def _announce_message(self, message, discord_message):
+        guild_id = discord_message.guild.id
+        announcement_style_id = self.synth_config.get_announcement_style_id(
+            guild_id)
+        await self.synth_service.text_to_speech(
+            discord_message.guild.voice_client,
+            message,
+            announcement_style_id,
+            guild_id,
+            self.text_processor,
+            discord_message,
+        )

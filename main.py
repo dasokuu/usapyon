@@ -15,7 +15,7 @@ from commands.skip import setup_skip_command
 from VoiceSynthConfig import VoiceSynthConfig
 from settings import (
     BotSettings,
-    TOKEN,
+    GlobalSettings,
     VOICEVOXSettings,
 )
 from VoiceSynthService import VoiceSynthService
@@ -139,7 +139,8 @@ async def main():
                     after,
                 )
 
-            await bot.start(TOKEN)  # bot.run()の代わりにbot.start()を使用します
+            # bot.run()の代わりにbot.start()を使用します
+            await bot.start(GlobalSettings.TOKEN)
             await synth_service.close()
         else:
             print("Server did not become available in time. Exiting.")

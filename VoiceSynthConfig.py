@@ -4,8 +4,7 @@ import aiohttp
 import discord
 from settings import (
     CHARACTORS_INFO,
-    USER_DEFAULT_STYLE_ID,
-    ANNOUNCEMENT_DEFAULT_STYLE_ID,
+    GlobalSettings,
     BotSettings,
     VOICEVOXSettings,
     CONFIG_PICKLE_FILE,
@@ -60,7 +59,7 @@ class VoiceSynthConfig:
         return self.voice_synthesis_settings.get(
             user_id,
             self.voice_synthesis_settings.get(guild_id, {}).get(
-                "user_default", USER_DEFAULT_STYLE_ID
+                "user_default", GlobalSettings.USER_DEFAULT_STYLE_ID
             ),
         )
 
@@ -68,7 +67,7 @@ class VoiceSynthConfig:
         """指定されたギルドのアナウンス用スタイルIDを取得します。"""
         # ギルドのアナウンス用スタイルIDを返します。設定されていない場合はデフォルトのアナウンススタイルIDを返します。
         return self.voice_synthesis_settings.get(guild_id, {}).get(
-            "announcement", ANNOUNCEMENT_DEFAULT_STYLE_ID
+            "announcement", GlobalSettings.ANNOUNCEMENT_DEFAULT_STYLE_ID
         )
 
     def update_style_setting(self, guild_id, user_id, style_id, voice_scope):
@@ -97,7 +96,7 @@ class VoiceSynthConfig:
         """指定されたギルドのデフォルトユーザー読み上げスタイルIDを取得します。"""
         # ギルドに設定されているデフォルトのユーザースタイルIDを返します。設定されていない場合は、事前に定義されたデフォルトのユーザースタイルIDを返します。
         return self.voice_synthesis_settings.get(guild_id, {}).get(
-            "user_default", USER_DEFAULT_STYLE_ID
+            "user_default", GlobalSettings.USER_DEFAULT_STYLE_ID
         )
 
     def get_speaker_details(

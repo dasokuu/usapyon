@@ -1,10 +1,10 @@
 import asyncio
 import discord
 import jaconv
-from settings import DORMITORY_URL_BASE
 from discord.ui import Button, View
 
 from VoiceSynthConfig import VoiceSynthConfig
+from settings import GlobalSettings
 
 
 async def settings_logic(interaction: discord.Interaction, synth_config: VoiceSynthConfig):
@@ -142,7 +142,7 @@ async def settings_logic(interaction: discord.Interaction, synth_config: VoiceSy
                 speaker_character_id,
                 speaker_display_name,
             ) = synth_config.get_character_info(speaker_name)
-            speaker_url = f"{DORMITORY_URL_BASE}/{speaker_character_id}/"
+            speaker_url = f"{GlobalSettings.DORMITORY_URL_BASE}/{speaker_character_id}/"
 
             # 歓迎メッセージを作成
             content += f"[{speaker_display_name}]({speaker_url})"
@@ -194,7 +194,7 @@ async def settings_logic(interaction: discord.Interaction, synth_config: VoiceSy
                         speaker_character_id,
                         speaker_display_name,
                     ) = synth_config.get_character_info(speaker_name)
-                    speaker_url = f"{DORMITORY_URL_BASE}/{speaker_character_id}/"
+                    speaker_url = f"{GlobalSettings.DORMITORY_URL_BASE}/{speaker_character_id}/"
                     await interaction.response.send_message(
                         f"{voice_scope_description[self.voice_scope]}が「[{speaker_display_name}]({speaker_url}) {style_name}」に更新されました。"
                     )
@@ -227,7 +227,7 @@ async def settings_logic(interaction: discord.Interaction, synth_config: VoiceSy
         speaker_character_id, speaker_display_name = synth_config.get_character_info(
             speaker_name
         )
-        speaker_url = f"{DORMITORY_URL_BASE}/{speaker_character_id}/"
+        speaker_url = f"{GlobalSettings.DORMITORY_URL_BASE}/{speaker_character_id}/"
 
         content += f"[{speaker_display_name}]({speaker_url})"
         # 最初のキャラクターの各スタイルに対応するボタンを追加
@@ -268,7 +268,7 @@ async def settings_logic(interaction: discord.Interaction, synth_config: VoiceSy
                     speaker_character_id,
                     speaker_display_name,
                 ) = synth_config.get_character_info(speaker_name)
-                speaker_url = f"{DORMITORY_URL_BASE}/{speaker_character_id}/"
+                speaker_url = f"{GlobalSettings.DORMITORY_URL_BASE}/{speaker_character_id}/"
                 await interaction.response.send_message(
                     f"{voice_scope_description[voice_scope]}が「[{speaker_display_name}]({speaker_url}) {style_name}」に更新されました。"
                 )
