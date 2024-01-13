@@ -72,7 +72,7 @@ class VoiceSynthEventProcessor:
             if voice_client is None or not voice_client.is_connected():
                 # ボットが接続していない場合、新しいVCに接続を試みる
                 try:
-                    voice_client = await after.channel.connect()
+                    voice_client = await after.channel.connect(self_deaf=True)
                     # テキストチャンネルの設定を更新
                     synth_config.voice_synthesis_settings[guild_id][
                         "text_channel"
