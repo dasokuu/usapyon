@@ -3,6 +3,7 @@ import discord
 from SpeechTextFormatter import SpeechTextFormatter
 from VoiceSynthConfig import VoiceSynthConfig
 from VoiceSynthService import VoiceSynthService
+from commands.leave import leave_logic
 from commands.settings import settings_logic
 from settings import error_messages
 
@@ -25,10 +26,12 @@ def create_info_message(
 
 
 class ConnectionButtons(discord.ui.View):
-    def __init__(self, synth_config):
+    def __init__(self, synth_config, synth_service):
         super().__init__()
         self.settings_logic = settings_logic
+        self.leave_logic = leave_logic
         self.synth_config = synth_config
+        self.synth_service = synth_service
 
     @discord.ui.button(
         label="設定", style=discord.ButtonStyle.primary, custom_id="settings_button"
@@ -39,10 +42,11 @@ class ConnectionButtons(discord.ui.View):
         # Correctly pass the interaction object
         await self.settings_logic(interaction, self.synth_config)
 
-    # @discord.ui.button(label="切断", style=discord.ButtonStyle.danger, custom_id="leave_button")
-    # async def leave_button(self, button: discord.ui.Button, interaction: discord.Interaction):
-    #     # This will trigger the /leave command
-    #     await self.leave_logic(interaction)
+    @discord.ui.button(label="切断", style=discord.ButtonStyle.danger, custom_id="leave_button")
+    async def leave_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        # Correctly pass the interaction object
+        await self.leave_logic(interaction, self.synth_config, self.synth_service)
+
 
 
 class VoiceSynthEventProcessor:
@@ -83,7 +87,7 @@ class VoiceSynthEventProcessor:
                     )
                     await voice_client.channel.send(
                         "**読み上げを開始します。\n**" + message,
-                        view=ConnectionButtons(synth_config),
+                        view=ConnectionButtons(synth_config, synth_service),
                     )
                     await synth_service.clear_playback_queue(guild_id)
                     # 接続成功時の読み上げメッセージ
@@ -180,7 +184,7 @@ class VoiceSynthEventProcessor:
                     + create_info_message(
                         member, new_channel.id, guild_id, synth_config
                     ),
-                    view=ConnectionButtons(synth_config),
+                    view=ConnectionButtons(synth_config, synth_service),
                 )
 
     async def handle_message(
