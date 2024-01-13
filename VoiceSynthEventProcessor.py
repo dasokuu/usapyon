@@ -48,7 +48,6 @@ class ConnectionButtons(discord.ui.View):
         await self.leave_logic(interaction, self.synth_config, self.synth_service)
 
 
-
 class VoiceSynthEventProcessor:
     async def handle_voice_state_update(
         self,
