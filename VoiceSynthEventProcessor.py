@@ -1,6 +1,8 @@
 import logging
 import discord
+from SpeechTextFormatter import SpeechTextFormatter
 from VoiceSynthConfig import VoiceSynthConfig
+from VoiceSynthService import VoiceSynthService
 from commands.info import info_logic
 from commands.leave import leave_logic
 from commands.settings import settings_logic
@@ -46,7 +48,7 @@ class ConnectionButtons(discord.ui.View):
 
 
 class VoiceSynthEventProcessor:
-    def __init__(self, synth_config, synth_service, text_processor):
+    def __init__(self, synth_config: VoiceSynthConfig, synth_service: VoiceSynthService, text_processor: SpeechTextFormatter):
         self.synth_config = synth_config
         self.synth_service = synth_service
         self.text_processor = text_processor
@@ -59,6 +61,8 @@ class VoiceSynthEventProcessor:
         after,
     ):
         guild_id = member.guild.id
+        if self.synth_config.get_manual_disconnection(guild_id):
+            return  # マニュアル切断が有効な場合は何もしない
         # ボット自身の状態変更を無視
         if member == bot.user:
             return

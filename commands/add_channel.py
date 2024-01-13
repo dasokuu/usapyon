@@ -21,10 +21,10 @@ def setup_additional_channel_command(bot, synth_config: VoiceSynthConfig):
         await interaction.response.send_message(f"チャンネル `{channel_name}` を読み上げ対象に追加しました。")
 
     @bot.tree.command(
-        name="remove_channel",
+        name="unlist_channel",
         description="追加の読み上げ対象チャンネルを削除します。"
     )
-    async def remove_channel(interaction: discord.Interaction):
+    async def unlist_channel(interaction: discord.Interaction):
         # 追加チャンネルの削除
         synth_config.remove_additional_channel(interaction.guild_id)
         await interaction.response.send_message("追加の読み上げ対象チャンネルを削除しました。")

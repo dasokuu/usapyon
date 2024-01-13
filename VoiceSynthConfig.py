@@ -15,6 +15,15 @@ class VoiceSynthConfig:
     async def async_init(self):
         self.speakers = await self.fetch_json(VOICEVOXSettings.SPEAKERS_URL)
         self.voice_synthesis_settings = self.load_style_settings()
+        self.manually_disconnected = {}  # ギルドごとのフラグ
+    # /leave コマンドで使用されるメソッド
+
+    def set_manual_disconnection(self, guild_id, value):
+        self.manually_disconnected[guild_id] = value
+
+    # フラグの状態を取得するメソッド
+    def get_manual_disconnection(self, guild_id):
+        return self.manually_disconnected.get(guild_id, False)
 
     def add_additional_channel(self, guild_id, channel_id):
         """指定されたギルドに追加のテキストチャンネルを追加します。"""

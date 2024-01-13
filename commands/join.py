@@ -103,17 +103,26 @@ def setup_join_command(
             await interaction.response.send_message(error_messages["connection"], ephemeral=True)
             return
 
-        # ボットが既に接続されている場合、エラーメッセージを表示して処理を終了
-        if interaction.guild.voice_client:
-            await interaction.response.send_message("ボットはすでにボイスチャンネルに接続されています。")
+        # ユーザーがボイスチャンネルにいない場合、エラーメッセージを表示
+        if not interaction.user.voice or not interaction.user.voice.channel:
+            await interaction.response.send_message(error_messages["connection"], ephemeral=True)
             return
 
-        # ここから通常の接続処理
-        try:
-            voice_client = await connect_to_voice_channel(interaction)
-            await welcome_user(
-                synth_config, synth_service, interaction, voice_client, text_processor
-            )
-        except discord.ClientException as e:
-            logging.error(f"Connection error: {e}")
-            await interaction.response.send_message(f"接続中にエラーが発生しました: {e}")
+        # ボットが既に接続されているかどうかをチェック
+        voice_client = interaction.guild.voice_client
+        if voice_client and voice_client.channel:
+            # ボットが既に接続されている場合
+            # 新たな読み上げ対象チャンネルとしてユーザーのテキストチャンネルを追加
+            synth_config.add_additional_channel(
+                interaction.guild.id, interaction.channel.id)
+            await interaction.response.send_message(f"ボイスチャンネル '{voice_client.channel.name}' に接続済みです。チャンネル '{interaction.channel.name}' が読み上げ対象に追加されました。")
+        else:
+            # 通常の接続処理
+            try:
+                voice_client = await connect_to_voice_channel(interaction)
+                await welcome_user(
+                    synth_config, synth_service, interaction, voice_client, text_processor
+                )
+            except discord.ClientException as e:
+                logging.error(f"Connection error: {e}")
+                await interaction.response.send_message(f"接続中にエラーが発生しました: {e}")
