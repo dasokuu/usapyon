@@ -26,5 +26,5 @@ def setup_additional_channel_command(bot, synth_config: VoiceSynthConfig):
     )
     async def unlist_channel(interaction: discord.Interaction):
         # 追加チャンネルの削除
-        synth_config.remove_additional_channel(interaction.guild_id)
+        synth_config.unlist_channel(interaction.guild_id)
         await interaction.response.send_message("追加の読み上げ対象チャンネルを削除しました。")

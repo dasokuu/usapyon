@@ -161,6 +161,9 @@ class VoiceSynthEventProcessor:
                 self.synth_config.voice_synthesis_settings[member.guild.id][
                     "text_channel"
                 ] = new_channel.id
+                # 追加の読み上げチャンネルをクリア
+                if "additional_channel" in self.synth_config.voice_synthesis_settings[member.guild.id]:
+                    del self.synth_config.voice_synthesis_settings[member.guild.id]["additional_channel"]
                 self.synth_config.save_style_settings()
                 # 新しいチャンネルへの移動をアナウンス
                 announcement_style_id = self.synth_config.get_announcement_style_id(

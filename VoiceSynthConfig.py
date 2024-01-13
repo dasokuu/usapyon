@@ -25,14 +25,24 @@ class VoiceSynthConfig:
     def get_manual_disconnection(self, guild_id):
         return self.manually_disconnected.get(guild_id, False)
 
+    def is_different_from_existing_channel(self, guild_id, channel_id):
+        """追加チャンネルが既存の読み上げチャンネルと異なるか確認する"""
+        existing_channel_id = self.voice_synthesis_settings.get(
+            guild_id, {}).get("text_channel")
+        return existing_channel_id != channel_id
+
     def add_additional_channel(self, guild_id, channel_id):
         """指定されたギルドに追加のテキストチャンネルを追加します。"""
+        if not self.is_different_from_existing_channel(guild_id, channel_id):
+            print("追加チャンネルが既存の読み上げチャンネルと同じです。")
+            return
+
         if guild_id not in self.voice_synthesis_settings:
             self.voice_synthesis_settings[guild_id] = {}
         self.voice_synthesis_settings[guild_id]["additional_channel"] = channel_id
         self.save_style_settings()
 
-    def remove_additional_channel(self, guild_id):
+    def unlist_channel(self, guild_id):
         """指定されたギルドの追加テキストチャンネルを削除します。"""
         if guild_id in self.voice_synthesis_settings and "additional_channel" in self.voice_synthesis_settings[guild_id]:
             del self.voice_synthesis_settings[guild_id]["additional_channel"]
