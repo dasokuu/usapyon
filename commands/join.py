@@ -130,7 +130,7 @@ def setup_join_command(
             try:
                 voice_client = await connect_to_voice_channel(interaction, synth_config)
                 synth_config.set_manual_disconnection(
-                    interaction.guild.id, False)
+                    interaction.guild.id, interaction.channel.id, False)
                 await welcome_user(
                     synth_config, synth_service, interaction, voice_client, text_processor
                 )
