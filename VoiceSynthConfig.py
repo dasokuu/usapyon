@@ -23,7 +23,13 @@ class VoiceSynthConfig:
 
     def get_manual_disconnection(self, guild_id, channel_id):
         return self.manually_disconnected.get((guild_id, channel_id), False)
+    def toggle_auto_connect(self, guild_id):
+        auto_connect = self.voice_synthesis_settings.get(guild_id, {}).get("auto_connect", True)
+        self.voice_synthesis_settings[guild_id]["auto_connect"] = not auto_connect
+        self.save_style_settings()
 
+    def get_auto_connect_state(self, guild_id):
+        return self.voice_synthesis_settings.get(guild_id, {}).get("auto_connect", True)
     def is_different_from_existing_channel(self, guild_id, channel_id):
         """追加チャンネルが既存の読み上げチャンネルと異なるか確認する"""
         existing_channel_id = self.voice_synthesis_settings.get(

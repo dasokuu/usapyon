@@ -16,12 +16,36 @@ async def settings_logic(interaction: discord.Interaction, synth_config: VoiceSy
             "user_default": "未設定ユーザーの読み上げ音声（サーバー設定）",
         }
 
-    def create_settings_view(interaction: discord.Interaction, voice_scope_description):
+    def create_settings_view(interaction: discord.Interaction, voice_scope_description, synth_config: VoiceSynthConfig):
         view = View()
         for voice_scope, label in voice_scope_description.items():
-            button = create_scope_button(interaction, label, voice_scope)
+            button = create_scope_button(interaction, label, voice_scope, synth_config)
             view.add_item(button)
+
+        # 自動接続トグルボタンの追加
+        auto_connect_state = synth_config.get_auto_connect_state(interaction.guild_id)
+        auto_connect_button = Button(
+            style=discord.ButtonStyle.secondary,
+            label=f"自動接続: {'有効' if auto_connect_state else '無効'}",
+            custom_id="toggle_auto_connect"
+        )
+        auto_connect_button.callback = create_auto_connect_callback(interaction, auto_connect_button, synth_config)
+        view.add_item(auto_connect_button)
+
         return view
+
+    def create_auto_connect_callback(interaction: discord.Interaction, button, synth_config: VoiceSynthConfig):
+        async def on_auto_connect_click(interaction: discord.Interaction):
+            # 自動接続の状態をトグル
+            synth_config.toggle_auto_connect(interaction.guild_id)
+            # ボタンの表示を更新
+            new_state = synth_config.get_auto_connect_state(interaction.guild_id)
+            button.label = f"自動接続: {'有効' if new_state else '無効'}"
+            # ユーザーに結果を通知
+            await interaction.response.edit_message(view=interaction.message.components[0])
+
+        return on_auto_connect_click
+
 
     def create_scope_button(interaction: discord.Interaction, label, voice_scope):
         button = Button(
@@ -298,3 +322,8 @@ def setup_settings_command(bot, synth_config: VoiceSynthConfig):
     )
     async def settings(interaction: discord.Interaction):
         await settings_logic(interaction, synth_config)
+    @bot.tree.command(name="toggle_auto_connect", description="自動接続機能を切り替えます。")
+    async def toggle_auto_connect(interaction: discord.Interaction):
+        synth_config.toggle_auto_connect(interaction.guild.id)
+        current_state = "有効" if synth_config.get_auto_connect_state(interaction.guild.id) else "無効"
+        await interaction.response.send_message(f"自動接続機能は現在「{current_state}」に設定されています。")

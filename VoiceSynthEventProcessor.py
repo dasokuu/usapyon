@@ -63,6 +63,9 @@ class VoiceSynthEventProcessor:
     ):
         guild_id = member.guild.id
         channel_id = after.channel.id if after.channel else None
+        # 自動接続が無効の場合、処理を行わない
+        if not self.synth_config.get_auto_connect_state(guild_id):
+            return
         if self.synth_config.get_manual_disconnection(guild_id, channel_id):
             return  # このチャンネルに対してマニュアル切断が有効な場合は何もしない
         # ボット自身の状態変更を無視
