@@ -45,6 +45,7 @@ def create_info_message(
         f"テキストチャンネル: <#{text_channel_id}>\n"
         f"{user_display_name}さんの読み上げ音声: [{user[0]}]\n"
         f"入退室時等の音声（サーバー設定）: [{announcement[0]}]\n"
+        f"__VOICEVOXを使用するにはすべてのキャラクターでクレジットを記載する必要があります。__配信や録画などの際には特にご注意ください。"
     )
 
 
