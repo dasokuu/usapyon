@@ -26,8 +26,8 @@ async def settings_logic(interaction: discord.Interaction, synth_config: VoiceSy
         auto_connect_state = synth_config.get_auto_connect_state(
             interaction.guild_id)
         auto_connect_button = Button(
-            style=discord.ButtonStyle.secondary,
-            label=f"自動接続: {'有効' if auto_connect_state else '無効'}",
+            style=discord.ButtonStyle.danger,
+            label=f"自動接続: {'有効' if auto_connect_state else '無効'}（サーバー設定）",
             custom_id="toggle_auto_connect"
         )
         auto_connect_button.callback = create_auto_connect_callback(
