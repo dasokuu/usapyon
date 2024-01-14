@@ -61,11 +61,9 @@ class VoiceSynthEventProcessor:
         before,
         after,
     ):
+
         guild_id = member.guild.id
         channel_id = after.channel.id if after.channel else None
-        # 自動接続が無効の場合、処理を行わない
-        if not self.synth_config.get_auto_connect_state(guild_id):
-            return
         if self.synth_config.get_manual_disconnection(guild_id, channel_id):
             return  # このチャンネルに対してマニュアル切断が有効な場合は何もしない
         # ボット自身の状態変更を無視
@@ -77,42 +75,44 @@ class VoiceSynthEventProcessor:
 
         # ボットが新しいVCに接続した場合の処理
         if before.channel != after.channel and after.channel is not None:
-            if voice_client is None or not voice_client.is_connected():
-                # ボットが接続していない場合、新しいVCに接続を試みる
-                try:
-                    voice_client = await after.channel.connect(self_deaf=True)
-                    # テキストチャンネルの設定を更新
-                    self.synth_config.voice_synthesis_settings[guild_id][
-                        "text_channel"
-                    ] = after.channel.id
-                    self.synth_config.save_style_settings()
-                    # 追加の読み上げ対象チャンネルをクリア
-                    self.synth_config.unlist_channel(guild_id)
-                    announcement_style_id = self.synth_config.get_announcement_style_id(
-                        guild_id
-                    )
-                    message = create_info_message(
-                        member, after.channel.id, guild_id, self.synth_config
-                    )
-                    await voice_client.channel.send(
-                        "**読み上げを開始します。\n**" + message,
-                        view=ConnectionButtons(
-                            self.synth_config, self.synth_service),
-                    )
-                    await self.synth_service.clear_playback_queue(guild_id)
-                    # 接続成功時の読み上げメッセージ
-                    welcome_message = "読み上げを開始します。"
-                    await self.synth_service.text_to_speech(
-                        voice_client,
-                        welcome_message,
-                        announcement_style_id,
-                        guild_id,
-                        self.text_processor,
-                    )
+            # 自動接続が有効か確認
+            if self.synth_config.get_auto_connect_state(guild_id):
+                if voice_client is None or not voice_client.is_connected():
+                    # ボットが接続していない場合、新しいVCに接続を試みる
+                    try:
+                        voice_client = await after.channel.connect(self_deaf=True)
+                        # テキストチャンネルの設定を更新
+                        self.synth_config.voice_synthesis_settings[guild_id][
+                            "text_channel"
+                        ] = after.channel.id
+                        self.synth_config.save_style_settings()
+                        # 追加の読み上げ対象チャンネルをクリア
+                        self.synth_config.unlist_channel(guild_id)
+                        announcement_style_id = self.synth_config.get_announcement_style_id(
+                            guild_id
+                        )
+                        message = create_info_message(
+                            member, after.channel.id, guild_id, self.synth_config
+                        )
+                        await voice_client.channel.send(
+                            "**読み上げを開始します。\n**" + message,
+                            view=ConnectionButtons(
+                                self.synth_config, self.synth_service),
+                        )
+                        await self.synth_service.clear_playback_queue(guild_id)
+                        # 接続成功時の読み上げメッセージ
+                        welcome_message = "読み上げを開始します。"
+                        await self.synth_service.text_to_speech(
+                            voice_client,
+                            welcome_message,
+                            announcement_style_id,
+                            guild_id,
+                            self.text_processor,
+                        )
 
-                except discord.ClientException as e:
-                    logging.error(f"Connection error: {e}")
-                return
+                    except discord.ClientException as e:
+                        logging.error(f"Connection error: {e}")
+                    return
         if not voice_client or not voice_client.channel:
             return
 

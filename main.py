@@ -13,7 +13,7 @@ from commands.join import setup_join_command
 from commands.leave import setup_leave_command
 from commands.skip import setup_skip_command
 from VoiceSynthConfig import VoiceSynthConfig
-from settings import (
+from settings_loader import (
     BotSettings,
     GlobalSettings,
     VOICEVOXSettings,

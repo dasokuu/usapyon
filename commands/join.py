@@ -2,7 +2,7 @@ import logging
 import discord
 from SpeechTextFormatter import SpeechTextFormatter
 from VoiceSynthEventProcessor import ConnectionButtons
-from settings import error_messages
+from settings_loader import error_messages
 from VoiceSynthConfig import VoiceSynthConfig
 from VoiceSynthService import VoiceSynthService
 

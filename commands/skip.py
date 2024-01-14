@@ -1,5 +1,5 @@
 import discord
-from settings import info_messages, error_messages
+from settings_loader import info_messages, error_messages
 from VoiceSynthService import VoiceSynthService
 
 

@@ -4,7 +4,7 @@ import jaconv
 from discord.ui import Button, View
 
 from VoiceSynthConfig import VoiceSynthConfig
-from settings import GlobalSettings
+from settings_loader import GlobalSettings
 
 
 async def settings_logic(interaction: discord.Interaction, synth_config: VoiceSynthConfig):
@@ -19,17 +19,19 @@ async def settings_logic(interaction: discord.Interaction, synth_config: VoiceSy
     def create_settings_view(interaction: discord.Interaction, voice_scope_description, synth_config: VoiceSynthConfig):
         view = View()
         for voice_scope, label in voice_scope_description.items():
-            button = create_scope_button(interaction, label, voice_scope, synth_config)
+            button = create_scope_button(interaction, label, voice_scope)
             view.add_item(button)
 
         # 自動接続トグルボタンの追加
-        auto_connect_state = synth_config.get_auto_connect_state(interaction.guild_id)
+        auto_connect_state = synth_config.get_auto_connect_state(
+            interaction.guild_id)
         auto_connect_button = Button(
             style=discord.ButtonStyle.secondary,
             label=f"自動接続: {'有効' if auto_connect_state else '無効'}",
             custom_id="toggle_auto_connect"
         )
-        auto_connect_button.callback = create_auto_connect_callback(interaction, auto_connect_button, synth_config)
+        auto_connect_button.callback = create_auto_connect_callback(
+            interaction, auto_connect_button, synth_config)
         view.add_item(auto_connect_button)
 
         return view
@@ -39,13 +41,17 @@ async def settings_logic(interaction: discord.Interaction, synth_config: VoiceSy
             # 自動接続の状態をトグル
             synth_config.toggle_auto_connect(interaction.guild_id)
             # ボタンの表示を更新
-            new_state = synth_config.get_auto_connect_state(interaction.guild_id)
+            new_state = synth_config.get_auto_connect_state(
+                interaction.guild_id)
             button.label = f"自動接続: {'有効' if new_state else '無効'}"
+            # Viewを再構築
+            voice_scope_description = get_voice_scope_description(interaction)
+            view = create_settings_view(
+                interaction, voice_scope_description, synth_config)
             # ユーザーに結果を通知
-            await interaction.response.edit_message(view=interaction.message.components[0])
+            await interaction.response.edit_message(view=view)
 
         return on_auto_connect_click
-
 
     def create_scope_button(interaction: discord.Interaction, label, voice_scope):
         button = Button(
@@ -310,7 +316,8 @@ async def settings_logic(interaction: discord.Interaction, synth_config: VoiceSy
             view.add_item(style_button)
         await interaction.response.edit_message(content=content, view=view)
     voice_scope_description = get_voice_scope_description(interaction)
-    view = create_settings_view(interaction, voice_scope_description)
+    view = create_settings_view(
+        interaction, voice_scope_description, synth_config)
     await interaction.response.send_message(
         "設定対象を選んでください：", view=view, ephemeral=True
     )
@@ -322,8 +329,10 @@ def setup_settings_command(bot, synth_config: VoiceSynthConfig):
     )
     async def settings(interaction: discord.Interaction):
         await settings_logic(interaction, synth_config)
+
     @bot.tree.command(name="toggle_auto_connect", description="自動接続機能を切り替えます。")
     async def toggle_auto_connect(interaction: discord.Interaction):
         synth_config.toggle_auto_connect(interaction.guild.id)
-        current_state = "有効" if synth_config.get_auto_connect_state(interaction.guild.id) else "無効"
+        current_state = "有効" if synth_config.get_auto_connect_state(
+            interaction.guild.id) else "無効"
         await interaction.response.send_message(f"自動接続機能は現在「{current_state}」に設定されています。")

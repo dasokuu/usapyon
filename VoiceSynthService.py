@@ -5,7 +5,7 @@ import json
 import discord
 import io
 from SpeechTextFormatter import SpeechTextFormatter
-from settings import BotSettings, VOICEVOXSettings
+from settings_loader import BotSettings, VOICEVOXSettings
 
 
 # aiohttp.ClientSession の改善
