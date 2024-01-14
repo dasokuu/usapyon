@@ -318,7 +318,7 @@ class VoiceSynthEventProcessor:
                 if text_channel:
                     await text_channel.send(send_message)
         try:
-            announcement_voice = f"{member.display_name}さん{action_text}"
+            announcement_voice = f"{member.display_name} さん{action_text}"
             announcement_style_id = self.synth_config.get_announcement_style_id(
                 member.guild.id)
             await self.synth_service.text_to_speech(
