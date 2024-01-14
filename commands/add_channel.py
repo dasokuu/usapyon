@@ -12,13 +12,17 @@ def setup_additional_channel_command(bot, synth_config: VoiceSynthConfig):
             return
 
         # 現在のチャンネルIDを使用
-        synth_config.add_additional_channel(
+        is_different = synth_config.add_additional_channel(
             interaction.guild_id, interaction.channel_id)
 
         # 追加されたチャンネルの名前を取得
         channel_name = interaction.guild.get_channel(
             interaction.channel_id).name
-        await interaction.response.send_message(f"ボイスチャンネル `{interaction.user.voice.channel.name}` に接続済みです。チャンネル `{channel_name}` を新たな読み上げ対象として追加しました。")
+
+        if is_different:
+            await interaction.response.send_message(f"ボイスチャンネル `{interaction.user.voice.channel.name}` に接続済みです。チャンネル `{channel_name}` を追加の読み上げ対象にしました。")
+        else:
+            await interaction.response.send_message(f"チャンネル `{channel_name}` は既に読み上げ対象として設定されています。", ephemeral=True)
 
     @bot.tree.command(
         name="unlist_channel",

@@ -81,6 +81,8 @@ class VoiceSynthEventProcessor:
                         "text_channel"
                     ] = after.channel.id
                     self.synth_config.save_style_settings()
+                    # 追加の読み上げ対象チャンネルをクリア
+                    self.synth_config.unlist_channel(guild_id)
                     announcement_style_id = self.synth_config.get_announcement_style_id(
                         guild_id
                     )

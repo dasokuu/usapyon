@@ -22,9 +22,7 @@ async def leave_logic(interaction: discord.Interaction, synth_config: VoiceSynth
     if "text_channel" in synth_config.voice_synthesis_settings.get(guild_id, {}):
         del synth_config.voice_synthesis_settings[guild_id]["text_channel"]
     # 追加チャンネル設定の削除
-    if "additional_channel" in synth_config.voice_synthesis_settings.get(guild_id, {}):
-        del synth_config.voice_synthesis_settings[guild_id]["additional_channel"]
-    synth_config.save_style_settings()
+    synth_config.unlist_channel(interaction.guild_id)
     # ボイスクライアントを切断
     await interaction.guild.voice_client.disconnect()
     synth_config.set_manual_disconnection(interaction.guild_id, True)
