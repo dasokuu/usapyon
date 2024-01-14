@@ -18,12 +18,11 @@ class VoiceSynthConfig:
         self.manually_disconnected = {}  # ギルドごとのフラグ
     # /leave コマンドで使用されるメソッド
 
-    def set_manual_disconnection(self, guild_id, value):
-        self.manually_disconnected[guild_id] = value
+    def set_manual_disconnection(self, guild_id, channel_id, value):
+        self.manually_disconnected[(guild_id, channel_id)] = value
 
-    # フラグの状態を取得するメソッド
-    def get_manual_disconnection(self, guild_id):
-        return self.manually_disconnected.get(guild_id, False)
+    def get_manual_disconnection(self, guild_id, channel_id):
+        return self.manually_disconnected.get((guild_id, channel_id), False)
 
     def is_different_from_existing_channel(self, guild_id, channel_id):
         """追加チャンネルが既存の読み上げチャンネルと異なるか確認する"""

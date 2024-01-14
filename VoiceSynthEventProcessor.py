@@ -62,8 +62,9 @@ class VoiceSynthEventProcessor:
         after,
     ):
         guild_id = member.guild.id
-        if self.synth_config.get_manual_disconnection(guild_id):
-            return  # マニュアル切断が有効な場合は何もしない
+        channel_id = after.channel.id if after.channel else None
+        if self.synth_config.get_manual_disconnection(guild_id, channel_id):
+            return  # このチャンネルに対してマニュアル切断が有効な場合は何もしない
         # ボット自身の状態変更を無視
         if member == bot.user:
             return
