@@ -122,9 +122,9 @@ def setup_join_command(
             if interaction.channel.id != current_channel_id:
                 synth_config.add_additional_channel(
                     interaction.guild.id, interaction.channel.id)
-                await interaction.response.send_message(f"ボイスチャンネル `{voice_client.channel.name}` に接続済みです。チャンネル `{interaction.channel.name}` を追加の読み上げ対象にしました。")
+                await interaction.response.send_message(f"ボイスチャンネル <#{current_channel_id}> に接続済みです。チャンネル <#{interaction.channel_id}> を追加の読み上げ対象にしました。")
             else:
-                await interaction.response.send_message(f"チャンネル `{interaction.channel.name}` は既に読み上げ対象として設定されています。", ephemeral=True)
+                await interaction.response.send_message(f"チャンネル <#{interaction.channel_id}> は既に読み上げ対象として設定されています。", ephemeral=True)
         else:
             # 通常の接続処理
             try:
