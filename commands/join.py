@@ -15,7 +15,8 @@ async def execute_welcome_message(
     interaction: discord.Interaction,
     text_processor: SpeechTextFormatter,
     synth_service: VoiceSynthService,
-    synth_config: VoiceSynthConfig
+    synth_config: VoiceSynthConfig,
+    bot
 ):
     welcome_voice = "読み上げを開始します。"
     try:
@@ -27,7 +28,7 @@ async def execute_welcome_message(
             text_processor,
             message,
         )
-        await interaction.response.send_message(message, view=ConnectionButtons(synth_config, synth_service))
+        await interaction.response.send_message(message, view=ConnectionButtons(synth_config, synth_service, bot))
     except Exception as e:
         logging.error(f"Welcome message execution failed: {e}")
         await interaction.response.send_message(error_messages["welcome"], ephemeral=True)
@@ -71,6 +72,7 @@ async def welcome_user(
     interaction: discord.Interaction,
     voice_client: discord.VoiceClient,
     text_processor: SpeechTextFormatter,
+    bot
 ):
     guild_id, text_channel_id = synth_config.get_and_update_guild_settings(
         interaction
@@ -88,7 +90,8 @@ async def welcome_user(
         interaction,
         text_processor,
         synth_service,
-        synth_config
+        synth_config,
+        bot
     )
 
 
@@ -132,7 +135,7 @@ def setup_join_command(
                 synth_config.set_manual_disconnection(
                     interaction.guild.id, interaction.channel.id, False)
                 await welcome_user(
-                    synth_config, synth_service, interaction, voice_client, text_processor
+                    synth_config, synth_service, interaction, voice_client, text_processor, bot
                 )
             except discord.ClientException as e:
                 logging.error(f"Connection error: {e}")
