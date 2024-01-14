@@ -3,6 +3,7 @@ Description=VoiceChatLoid
 After=network.target voicevox-engine.service
 
 [Service]
+Environment=MECABRC=/etc/mecabrc
 Type=simple
 User=ikeda
 ExecStart=/usr/bin/python3 /home/ikeda/VoiceChatLoid/main.py

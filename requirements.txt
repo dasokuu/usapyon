@@ -4,3 +4,4 @@ aiohttp
 emoji
 alkana
 python-dotenv
+mecab-python3
