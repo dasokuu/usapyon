@@ -3,6 +3,7 @@ import discord
 import emoji
 import jaconv
 import alkana
+import MeCab
 
 
 class SpeechTextFormatter:
@@ -15,7 +16,13 @@ class SpeechTextFormatter:
     URL_PATTERN = re.compile(r"http[s]?://\S+")
 
     def __init__(self):
-        pass
+        # MeCabの初期化
+        self.mecab = MeCab.Tagger("-Owakati")
+
+    def mecab_tokenize(self, text):
+        # MeCabを使用してテキストを単語に分割する
+        result = self.mecab.parse(text)
+        return result.split()
 
     def replace_user_mention(self, match, message: discord.Message):
         user_id = int(match.group(1))
@@ -40,50 +47,63 @@ class SpeechTextFormatter:
         # 絵文字名をひらがなに変換して返す
         return jaconv.alphabet2kana(emoji_name_cleaned) + " "
 
-    def replace_english_to_kana(self, text):
-        def replace_to_kana(match):
-            word = match.group(0)
-            sub_words = word.split("_")
-            kana_words = []
-            for sub_word in sub_words:
-                kana = alkana.get_kana(sub_word)
-                kana_words.append(kana if kana is not None else sub_word)
-            return "".join(kana_words)
+    def replace_english_to_kana(self, words):
+        processed_words = []
+        for word in words:
+            if re.match(self.ENGLISH_WORD_PATTERN, word):
+                # 英単語をカタカナに変換
+                kana = alkana.get_kana(word)
+                processed_word = kana if kana else word
+            else:
+                processed_word = word
+            processed_words.append(processed_word)
+        return processed_words
 
-        return self.ENGLISH_WORD_PATTERN.sub(replace_to_kana, text)
-
-    def laugh_replace(self, match):
-        return "わら" * len(match.group(0))
+    def laugh_replace(self, words):
+        # 単語リストを受け取り、笑い表現を置換
+        replaced_words = []
+        for word in words:
+            if re.match(self.LAUGH_PATTERN, word):
+                replaced_words.append("わら")
+            else:
+                replaced_words.append(word)
+        return replaced_words
 
     def replace_pattern(self, pattern, text, replace_func):
         return pattern.sub(replace_func, text)
 
     async def replace_content(self, text, message: discord.Message):
-        text = self.replace_english_to_kana(
-            text)  # First replace English words
+        # 英語の単語を特定し、スペースで区切る
+        english_words = re.findall(self.ENGLISH_WORD_PATTERN, text)
+        for english_word in english_words:
+            kana = alkana.get_kana(english_word)
+            if kana:
+                text = text.replace(english_word, kana)
+
+        # テキストをMeCabで単語に分割
+        words = self.mecab_tokenize(text)
+
+        # 笑い表現の置換
+        words = self.laugh_replace(words)
+
+        # 処理された単語を結合して完全なテキストに戻す
+        text = ''.join(words)
+
         if message:
             replace_operations = [
-                (
-                    self.USER_MENTION_PATTERN,
-                    lambda m: self.replace_user_mention(m, message),
-                ),
-                (
-                    self.ROLE_MENTION_PATTERN,
-                    lambda m: self.replace_role_mention(m, message),
-                ),
-                (
-                    self.CHANNEL_PATTERN,
-                    lambda m: self.replace_channel_mention(m, message),
-                ),
+                (self.USER_MENTION_PATTERN,
+                 lambda m: self.replace_user_mention(m, message)),
+                (self.ROLE_MENTION_PATTERN,
+                 lambda m: self.replace_role_mention(m, message)),
+                (self.CHANNEL_PATTERN,
+                 lambda m: self.replace_channel_mention(m, message)),
             ]
             for pattern, func in replace_operations:
                 text = self.replace_pattern(pattern, text, func)
+
         text = self.CUSTOM_EMOJI_PATTERN.sub(
-            self.replace_custom_emoji_name_to_kana, text
-        )
+            self.replace_custom_emoji_name_to_kana, text)
         text = self.URL_PATTERN.sub("URL省略", text)
-        text = self.LAUGH_PATTERN.sub(self.laugh_replace, text)
-        text = emoji.demojize(
-            text, language="ja"
-        )
+        text = emoji.demojize(text, language="ja")
+
         return text
