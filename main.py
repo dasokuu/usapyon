@@ -12,6 +12,7 @@ from commands.info import setup_info_command
 from commands.join import setup_join_command
 from commands.leave import setup_leave_command
 from commands.skip import setup_skip_command
+from commands.help import setup_help_command
 from VoiceSynthConfig import VoiceSynthConfig
 from settings_loader import (
     BotSettings,
@@ -45,22 +46,6 @@ async def wait_for_synth_service(url, max_attempts=10, delay=5):
         await asyncio.sleep(delay)
         attempts += 1
     return False
-
-
-def setup_help_command(bot):
-    @bot.tree.command(
-        name="help",
-        description="使用可能なコマンドのリストと説明を表示します。"
-    )
-    async def help(interaction: discord.Interaction):
-        commands_description = "\n".join(
-            f"`/{command.name}`: {command.description}"
-            for command in bot.tree.get_commands()
-        )
-        await interaction.response.send_message(
-            f"**利用可能なコマンド一覧:**\n{commands_description}",
-            ephemeral=True
-        )
 
 
 async def main():
