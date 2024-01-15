@@ -165,16 +165,15 @@ class VoiceSynthEventProcessor:
 
         # ボットのいるチャンネルに他にユーザーがいないか確認
         if not any(not user.bot for user in voice_client.channel.members):
-            # 移動先のボイスチャンネルを決定（ここでは単純にメンバーが移動したチャンネルを使用）
-            new_channel = after.channel
-
-            if new_channel:
+            if after.channel:
                 # 新しいチャンネルにボットを接続
-                await voice_client.move_to(new_channel)
+                await voice_client.move_to(after.channel)
+                # 移動後にボットをdeaf状態に設定
+                await voice_client.guild.change_voice_state(channel=after.channel, self_deaf=True)
                 # 新しいチャンネルのテキストチャンネルIDを更新
                 self.synth_config.voice_synthesis_settings[member.guild.id][
                     "text_channel"
-                ] = new_channel.id
+                ] = after.channel.id
                 # 追加の読み上げチャンネルをクリア
                 if "additional_channel" in self.synth_config.voice_synthesis_settings[member.guild.id]:
                     del self.synth_config.voice_synthesis_settings[member.guild.id]["additional_channel"]
@@ -191,10 +190,10 @@ class VoiceSynthEventProcessor:
                     member.guild.id,
                     self.text_processor,
                 )
-                await new_channel.send(
+                await after.channel.send(
                     "**読み上げボットが移動しました。**\n"
                     + create_info_message(
-                        member, new_channel.id, guild_id, self.synth_config
+                        member, after.channel.id, guild_id, self.synth_config
                     ),
                     view=ConnectionButtons(
                         self.synth_config, self.synth_service, bot),
