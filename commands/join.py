@@ -115,16 +115,16 @@ class MoveBotView(discord.ui.View):
 
     @discord.ui.button(label="はい", style=discord.ButtonStyle.success)
     async def yes_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        # Proceed with the normal join procedure
-        await normal_join_procedure(interaction, self.synth_config, self.synth_service, self.text_processor, self.bot)
-        
         # Edit the original message to indicate that the operation was successful or to remove the message
         try:
-            await interaction.response.edit_message(content="新しいチャンネルにボットを移動しました。", view=None)
+            await interaction.response.edit_message(content="新しいチャンネルにボットを移動させます。", view=None)
+            await normal_join_procedure(interaction, self.synth_config, self.synth_service, self.text_processor, self.bot)
+
         except Exception as e:
             logging.error(f"Error in yes_button: {e}")
         finally:
             self.stop()
+        # Proceed with the normal join procedure
 
     @discord.ui.button(label="いいえ", style=discord.ButtonStyle.danger)
     async def no_button(self, interaction: discord.Interaction, button: discord.ui.Button):
