@@ -1,7 +1,6 @@
 import logging
 import discord
 from SpeechTextFormatter import SpeechTextFormatter
-from VoiceSynthEventProcessor import ConnectionButtons
 from settings_loader import error_messages
 from VoiceSynthConfig import VoiceSynthConfig
 from VoiceSynthService import VoiceSynthService
@@ -30,8 +29,6 @@ async def execute_welcome_message(
         )
         await interaction.response.send_message(
             message,
-            view=MoveBotView(synth_config, synth_service, text_processor, bot),
-            ephemeral=True,
         )
     except Exception as e:
         logging.error(f"Welcome message execution failed: {e}")
@@ -82,10 +79,12 @@ async def welcome_user(
     text_processor: SpeechTextFormatter,
     bot,
 ):
-    guild_id, text_channel_id = synth_config.get_and_update_guild_settings(interaction)
+    guild_id, text_channel_id = synth_config.get_and_update_guild_settings(
+        interaction)
     style_ids = synth_config.get_style_ids(guild_id, interaction.user.id)
     speaker_details = synth_config.get_speaker_details(*style_ids)
-    info_message = create_info_message(interaction, text_channel_id, speaker_details)
+    info_message = create_info_message(
+        interaction, text_channel_id, speaker_details)
     await execute_welcome_message(
         voice_client,
         guild_id,
@@ -130,8 +129,6 @@ class MoveBotView(discord.ui.View):
             self.stop()
 
 
-
-
 def setup_join_command(
     bot,
     synth_service: VoiceSynthService,
@@ -169,7 +166,8 @@ def setup_join_command(
                 await interaction.response.send_message(
                     f"ボットは既にボイスチャンネル <#{voice_client.channel.id}> に接続しています。"
                     "新しいチャンネルにボットを移動させますか？",
-                    view=MoveBotView(synth_config, synth_service, text_processor, bot),
+                    view=MoveBotView(
+                        synth_config, synth_service, text_processor, bot),
                     ephemeral=True,
                 )
             else:
@@ -202,7 +200,8 @@ async def normal_join_procedure(
 
         # ボットを新しいボイスチャンネルに接続する
         voice_client = await interaction.user.voice.channel.connect(self_deaf=True)
-        synth_config.set_manual_disconnection(guild_id, interaction.channel.id, False)
+        synth_config.set_manual_disconnection(
+            guild_id, interaction.channel.id, False)
         await welcome_user(
             synth_config, synth_service, interaction, voice_client, text_processor, bot
         )
