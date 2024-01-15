@@ -114,12 +114,11 @@ class MoveBotView(discord.ui.View):
         self.bot = bot
 
     @discord.ui.button(label="はい", style=discord.ButtonStyle.success)
-    async def yes_button(self, button: discord.ui.Button, interaction: discord.Interaction):
+    async def yes_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await normal_join_procedure(interaction, self.synth_config, self.synth_service, self.text_processor, self.bot)
 
-
     @discord.ui.button(label="いいえ", style=discord.ButtonStyle.danger)
-    async def no_button(self, button: discord.ui.Button, interaction: discord.Interaction):
+    async def no_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         try:
             if interaction.response.is_done():
                 await interaction.edit_original_response(content="操作がキャンセルされました。")
@@ -129,6 +128,7 @@ class MoveBotView(discord.ui.View):
             logging.error(f"Error in no_button: {e}")
         finally:
             self.stop()
+
 
 
 
