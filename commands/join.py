@@ -119,10 +119,7 @@ class MoveBotView(discord.ui.View):
     @discord.ui.button(label="いいえ", style=discord.ButtonStyle.danger)
     async def no_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         try:
-            if interaction.response.is_done():
-                await interaction.edit_original_response(content="操作がキャンセルされました。")
-            else:
-                await interaction.response.send_message("操作がキャンセルされました。", ephemeral=True)
+            await interaction.response.edit_message(content="操作がキャンセルされました。", view=None)
         except Exception as e:
             logging.error(f"Error in no_button: {e}")
         finally:
