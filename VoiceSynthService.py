@@ -1,4 +1,5 @@
 import logging
+import random
 import aiohttp
 import asyncio
 import json
@@ -14,9 +15,96 @@ class VoiceSynthService:
         self.guild_playback_queues = {}
         self.headers = {"Content-Type": "application/json"}
         self.session = aiohttp.ClientSession()
+        self.active_engines = []
+
+    async def check_and_update_active_engines(self, interval_seconds):
+        while True:
+            await asyncio.sleep(interval_seconds)  # 指定した秒数だけ待つ
+            # 各エンジンの状態をチェックして active_engines リストを更新
+            self.active_engines = []
+            for engine_url in VOICEVOXSettings.ENGINE_URLS:
+                try:
+                    async with self.session.get(engine_url + VOICEVOXSettings.SPEAKERS_URL) as response:
+                        if response.status == 200:
+                            self.active_engines.append(engine_url)
+                except Exception as e:
+                    logging.error(f"Engine {engine_url} is not reachable: {e}")
+
+    async def synthesis(self, speaker, query_data):
+        engine_url = await self.get_preferred_or_random_active_engine("http://i5-8400:50021")
+        if not engine_url:
+            return None
+        headers = {"Content-Type": "application/json", "Accept": "audio/wav"}
+        params = {"speaker": speaker}
+        try:
+            async with self.session.post(
+                engine_url + VOICEVOXSettings.SYNTHESIS_URL,
+                headers=headers,
+                params=params,
+                data=json.dumps(query_data),
+            ) as response:
+                if response.status == 200:
+                    logging.info(f"using {engine_url}")
+                    return await response.read()
+                else:
+                    logging.error(
+                        f"Synthesis request failed with status: {response.status}"
+                    )
+                    return None
+        except Exception as e:
+            logging.error(
+                f"Error during synthesis request to {engine_url}: {e}")
+            self.active_engines.remove(engine_url)
+            return await self.retry_synthesis_on_different_engine(speaker, query_data)
+
+    async def retry_synthesis_on_different_engine(self, speaker, query_data):
+        retry_engines = self.active_engines.copy()
+        while retry_engines:
+            retry_engine = random.choice(retry_engines)
+            headers = {"Content-Type": "application/json",
+                       "Accept": "audio/wav"}
+            params = {"speaker": speaker}
+            try:
+                async with self.session.post(
+                    retry_engine + VOICEVOXSettings.SYNTHESIS_URL,
+                    headers=headers,
+                    params=params,
+                    data=json.dumps(query_data),
+                ) as response:
+                    if response.status == 200:
+                        logging.info(f"using {retry_engine}")
+                        return await response.read()
+                    else:
+                        logging.error(
+                            f"Retry synthesis request failed with status: {response.status}"
+                        )
+            except Exception as e:
+                logging.error(
+                    f"Error during retry synthesis request to {retry_engine}: {e}"
+                )
+            finally:
+                retry_engines.remove(retry_engine)
+        logging.error("All engines failed to process the request.")
+        return None
 
     async def close(self):
         await self.session.close()
+
+    async def get_random_active_engine(self):
+        if not self.active_engines:
+            return None
+        return random.choice(self.active_engines)
+
+    async def get_preferred_or_random_active_engine(self, preferred_engine):
+        if not self.active_engines:
+            return None
+
+        # 指定した優先エンジンがリストに含まれているか確認
+        if preferred_engine in self.active_engines:
+            return preferred_engine
+
+        # リストからランダムにエンジンを選択
+        return random.choice(self.active_engines)
 
     async def ensure_session(self):
         if self.session is None or self.session.closed:
@@ -64,8 +152,10 @@ class VoiceSynthService:
     async def audio_query(self, text, style_id):
         try:
             async with self.session.post(
-                VOICEVOXSettings.AUDIO_QUERY_URL, headers=self.headers, params={
-                    "text": text, "speaker": style_id}
+                VOICEVOXSettings.ENGINE_URLS[0] +
+                    VOICEVOXSettings.AUDIO_QUERY_URL,
+                headers=self.headers,
+                params={"text": text, "speaker": style_id},
             ) as response:
                 response.raise_for_status()
                 return await response.json()
@@ -79,31 +169,30 @@ class VoiceSynthService:
             logging.error(f"Unexpected error during audio query: {e}")
             return {"error": "Unexpected error"}
 
-    async def synthesis(self, speaker, query_data):
-        session = await self.ensure_session()
-        if not session:
-            logging.error("Failed to establish session for synthesis")
-            return None
-        synth_payload = {"speaker": speaker}
-        headers = {"Content-Type": "application/json", "Accept": "audio/wav"}
-        try:
-            async with session.post(
-                VOICEVOXSettings.SYNTHESIS_URL,
-                headers=headers,
-                params=synth_payload,
-                data=json.dumps(query_data),
-            ) as response:
-                if response.status == 200:
-                    return await response.read()
-                else:
-                    logging.error(
-                        f"Synthesis request failed with status: {response.status}")
-        except aiohttp.ClientResponseError as e:
-            logging.error(
-                f"Response error during synthesis: {e}", exc_info=True)
-        except Exception as e:
-            logging.error(
-                f"Unexpected error during synthesis: {e}", exc_info=True)
+    # async def synthesis(self, speaker, query_data):
+    #     session = await self.ensure_session()
+    #     if not session:
+    #         logging.error("Failed to establish session for synthesis")
+    #         return None
+    #     synth_payload = {"speaker": speaker}
+    #     headers = {"Content-Type": "application/json", "Accept": "audio/wav"}
+    #     try:
+    #         async with session.post(
+    #             VOICEVOXSettings.SYNTHESIS_URL,
+    #             headers=headers,
+    #             params=synth_payload,
+    #             data=json.dumps(query_data),
+    #         ) as response:
+    #             if response.status == 200:
+    #                 return await response.read()
+    #             else:
+    #                 logging.error(
+    #                     f"Synthesis request failed with status: {response.status}"
+    #                 )
+    #     except aiohttp.ClientResponseError as e:
+    #         logging.error(f"Response error during synthesis: {e}", exc_info=True)
+    #     except Exception as e:
+    #         logging.error(f"Unexpected error during synthesis: {e}", exc_info=True)
 
     async def speak_line(self, voice_client: discord.VoiceClient, line, style_id):
         try:

@@ -50,12 +50,15 @@ async def wait_for_synth_service(url, max_attempts=10, delay=5):
 
 async def main():
     try:
-        if await wait_for_synth_service(VOICEVOXSettings.SPEAKERS_URL):  # 非同期処理に変更
+        # 非同期処理に変更
+        if await wait_for_synth_service(VOICEVOXSettings.ENGINE_URLS[0] + VOICEVOXSettings.SPEAKERS_URL):
             intents = discord.Intents.default()
             intents.message_content = True
             bot = commands.Bot(
                 command_prefix=BotSettings.BOT_PREFIX, intents=intents)
             synth_service = VoiceSynthService()
+            asyncio.create_task(
+                synth_service.check_and_update_active_engines(5))
             await synth_service.ensure_session()
             synth_config = VoiceSynthConfig()
             await synth_config.async_init()

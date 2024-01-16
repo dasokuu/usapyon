@@ -36,7 +36,7 @@ class BotSettings:
 
 
 class VOICEVOXSettings:
-    ENGINE_URL = config["voicevox_settings"]["engine_url"]
-    SPEAKERS_URL = config["voicevox_settings"]["speakers_url"]
-    AUDIO_QUERY_URL = config["voicevox_settings"]["audio_query_url"]
-    SYNTHESIS_URL = config["voicevox_settings"]["synthesis_url"]
+    ENGINE_URLS = ["http://127.0.0.1:50021", "http://i5-8400:50021"]
+    AUDIO_QUERY_URL = "/audio_query"
+    SYNTHESIS_URL = "/synthesis"
+    SPEAKERS_URL = "/speakers"
