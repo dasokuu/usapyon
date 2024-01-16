@@ -19,19 +19,49 @@ class VoiceSynthService:
 
     async def check_and_update_active_engines(self, interval_seconds):
         while True:
-            await asyncio.sleep(interval_seconds)  # 指定した秒数だけ待つ
-            # 各エンジンの状態をチェックして active_engines リストを更新
-            self.active_engines = []
+            await asyncio.sleep(interval_seconds)
+            # アクティブエンジンの状態をチェックして更新
             for engine_url in VOICEVOXSettings.ENGINE_URLS:
                 try:
-                    async with self.session.get(engine_url + VOICEVOXSettings.SPEAKERS_URL) as response:
-                        if response.status == 200:
-                            self.active_engines.append(engine_url)
+                    is_up = await self.is_engine_up(engine_url)
+                    if is_up and engine_url not in self.active_engines:
+                        self.activate_engine(self.active_engines, engine_url)
+                    elif not is_up and engine_url in self.active_engines:
+                        self.deactivate_engine(self.active_engines, engine_url)
                 except Exception as e:
-                    logging.error(f"Engine {engine_url} is not reachable: {e}")
+                    logging.error(f"Error checking engine status: {e}")
+
+    async def is_engine_up(self, engine_url):
+        try:
+            async with self.session.get(
+                engine_url + VOICEVOXSettings.SPEAKERS_URL
+            ) as response:
+                return response.status == 200
+        except Exception as e:
+            logging.error(f"Engine {engine_url} is not reachable: {e}")
+            return False
+
+    async def activate_engine(self, engines: list, engine):
+        if engine not in engines:
+            engines.append(engine)
+
+    async def deactivate_engine(self, engines: list, engine):
+        if engine in engines:
+            engines.remove(engine)
+
+    async def get_highest_performance_active_engine(self, engines):
+        if not engines:
+            return None
+
+        # 仮にエンジンURL自体を性能指標として使用
+        # 実際には、ここで性能データに基づいてエンジンを選択する
+        sorted_active_engines = sorted(
+            engines, key=lambda url: engine_performance[url], reverse=True
+        )
+        return sorted_active_engines[0] if sorted_active_engines else None
 
     async def synthesis(self, speaker, query_data):
-        engine_url = await self.get_preferred_or_random_active_engine("http://i5-8400:50021")
+        engine_url = await self.get_highest_performance_active_engine(self.active_engines)
         if not engine_url:
             return None
         headers = {"Content-Type": "application/json", "Accept": "audio/wav"}
@@ -54,13 +84,13 @@ class VoiceSynthService:
         except Exception as e:
             logging.error(
                 f"Error during synthesis request to {engine_url}: {e}")
-            self.active_engines.remove(engine_url)
+            self.deactivate_engine(self.active_engines, engine_url)
             return await self.retry_synthesis_on_different_engine(speaker, query_data)
 
     async def retry_synthesis_on_different_engine(self, speaker, query_data):
         retry_engines = self.active_engines.copy()
         while retry_engines:
-            retry_engine = random.choice(retry_engines)
+            retry_engine = await self.get_highest_performance_active_engine(retry_engines)
             headers = {"Content-Type": "application/json",
                        "Accept": "audio/wav"}
             params = {"speaker": speaker}
@@ -83,7 +113,7 @@ class VoiceSynthService:
                     f"Error during retry synthesis request to {retry_engine}: {e}"
                 )
             finally:
-                retry_engines.remove(retry_engine)
+                self.deactivate_engine(retry_engines, retry_engine)
         logging.error("All engines failed to process the request.")
         return None
 
