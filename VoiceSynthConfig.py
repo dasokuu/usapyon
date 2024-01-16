@@ -13,7 +13,7 @@ from settings_loader import (
 
 class VoiceSynthConfig:
     async def async_init(self):
-        self.speakers = await self.fetch_json(VOICEVOXSettings.ENGINE_URLS[0] + VOICEVOXSettings.SPEAKERS_URL)
+        self.speakers = await self.fetch_json(VOICEVOXSettings.LOCAL_ENGINE_URL + VOICEVOXSettings.SPEAKERS_URL)
         self.voice_synthesis_settings = self.load_style_settings()
         self.manually_disconnected = {}  # ギルドごとのフラグ
     # /leave コマンドで使用されるメソッド

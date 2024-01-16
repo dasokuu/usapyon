@@ -6,7 +6,7 @@ import json
 import discord
 import io
 from SpeechTextFormatter import SpeechTextFormatter
-from settings_loader import BotSettings, VOICEVOXSettings
+from settings_loader import BotSettings, VOICEVOXSettings, engine_performance
 
 
 # aiohttp.ClientSession の改善
@@ -25,9 +25,9 @@ class VoiceSynthService:
                 try:
                     is_up = await self.is_engine_up(engine_url)
                     if is_up and engine_url not in self.active_engines:
-                        self.activate_engine(self.active_engines, engine_url)
+                        await self.activate_engine(self.active_engines, engine_url)
                     elif not is_up and engine_url in self.active_engines:
-                        self.deactivate_engine(self.active_engines, engine_url)
+                        await self.deactivate_engine(self.active_engines, engine_url)
                 except Exception as e:
                     logging.error(f"Error checking engine status: {e}")
 
@@ -38,7 +38,7 @@ class VoiceSynthService:
             ) as response:
                 return response.status == 200
         except Exception as e:
-            logging.error(f"Engine {engine_url} is not reachable: {e}")
+            logging.debug(f"Engine {engine_url} is not reachable: {e}")
             return False
 
     async def activate_engine(self, engines: list, engine):
@@ -182,7 +182,7 @@ class VoiceSynthService:
     async def audio_query(self, text, style_id):
         try:
             async with self.session.post(
-                VOICEVOXSettings.ENGINE_URLS[0] +
+                VOICEVOXSettings.LOCAL_ENGINE_URL +
                     VOICEVOXSettings.AUDIO_QUERY_URL,
                 headers=self.headers,
                 params={"text": text, "speaker": style_id},

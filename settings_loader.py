@@ -35,8 +35,15 @@ class BotSettings:
     MAX_MESSAGE_LENGTH = config["bot_settings"]["max_message_length"]
 
 
+engine_performance = {
+    "http://i5-8400:50021": 90,  # このエンジンの性能スコア
+    "http://127.0.0.1:50021": 80,
+}
+
+
 class VOICEVOXSettings:
-    ENGINE_URLS = ["http://127.0.0.1:50021", "http://i5-8400:50021"]
+    ENGINE_URLS = list(engine_performance.keys())
+    LOCAL_ENGINE_URL = "http://127.0.0.1:50021"
     AUDIO_QUERY_URL = "/audio_query"
     SYNTHESIS_URL = "/synthesis"
     SPEAKERS_URL = "/speakers"
