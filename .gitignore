@@ -1,5 +1,6 @@
 .env
 python_files.md
+rust_files.md
 __pycache__
 config.pkl
 
