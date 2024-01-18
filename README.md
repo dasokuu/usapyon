@@ -5,3 +5,4 @@ python
 
 rust
 `sudo apt-get install pkg-config libssl-dev`
+`sudo apt-get install cmake`
