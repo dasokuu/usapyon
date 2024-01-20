@@ -6,4 +6,6 @@ config.pkl
 
 # Added by cargo
 
-/target
+target/
+Cargo.lock
+discord.log
