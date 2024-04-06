@@ -30,12 +30,20 @@ struct Handler;
 impl EventHandler for Handler {
     /// このメソッドは、ボットがDiscordの接続に成功したときに呼び出されます。
     /// 
-    /// # Arguments
-    /// 
+    /// ## Arguments
     /// * `_` - ボットの状態に関する様々なデータのコンテキスト。
     /// * `ready` - readyイベントのコンテキスト。
     async fn ready(&self, _: Context, ready: Ready) {
         println!("{} is connected!", ready.user.name);
+    }
+
+    /// このメソッドは、ボットがメッセージを受信したときに呼び出されます。
+    /// 
+    /// # Arguments
+    /// * `_` - ボットの状態に関する様々なデータのコンテキスト。
+    /// * `msg` - 受信したメッセージ。
+    async fn message(&self, _: Context, msg: Message) {
+        println!("{} said: {}", msg.author.name, msg.content);
     }
 }
 
@@ -89,8 +97,8 @@ async fn main() {
     let token = env::var("DISCORD_TOKEN").expect("DISCORD_TOKEN must be set");
     println!("DISCORD_TOKEN: {}", token);
 
-    // すべてのイベントを受信するためのインテントを作成。
-    let intents = GatewayIntents::all();
+    // "SERVER MEMBERS INTENT"と"MESSAGE CONTENT INTENT"を有効にします。
+    let intents = GatewayIntents::GUILD_MEMBERS | GatewayIntents::GUILD_MESSAGES;
     let mut client = Client::builder(&token, intents)
         .event_handler(Handler)
         .await
