@@ -97,8 +97,10 @@ async fn main() {
     let token = env::var("DISCORD_TOKEN").expect("DISCORD_TOKEN must be set");
     println!("DISCORD_TOKEN: {}", token);
 
-    // "SERVER MEMBERS INTENT"と"MESSAGE CONTENT INTENT"を有効にします。
-    let intents = GatewayIntents::GUILD_MEMBERS | GatewayIntents::GUILD_MESSAGES;
+    // 必要なインテントを有効にします。
+    let intents = GatewayIntents::GUILD_MEMBERS
+                                | GatewayIntents::GUILD_MESSAGES
+                                | GatewayIntents::MESSAGE_CONTENT;
     let mut client = Client::builder(&token, intents)
         .event_handler(Handler)
         .await
