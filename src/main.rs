@@ -21,7 +21,11 @@ use serenity::{
     model::{ gateway::Ready, prelude::*, id::{GuildId, ChannelId}},
     prelude::*,
 };
-use songbird::SerenityInit;
+use songbird::{
+    SerenityInit,
+    SongbirdKey
+};
+use std::error::Error;
 
 struct Handler;
 
@@ -49,29 +53,44 @@ impl EventHandler for Handler {
             println!("{} said in {}: {}", msg.author.name, guild_id, msg.content);
 
             if msg.content == "!join" {
-                if let Some(guild_id) = msg.guild_id {
-                    let channel_id_str = env::var("TEST_VOICE_CHANNEL_ID").expect("TEST_VOICE_CHANNEL_ID must be set");
-                    let channel_id = ChannelId::new(channel_id_str.parse::<u64>().unwrap());
-
-                    let manager = songbird::get(&ctx).await
-                        .expect("Songbird Voice client placed in at initialization.").clone();
-
-                    let join_result = manager.join(guild_id, channel_id).await;
-
-                    match join_result {
-                        Ok(_) => {
-                            println!("Joined voice channel!");
-                        },
-                        Err(error) => {
-                            println!("Error joining voice channel: {:?}", error);
-                        }
-                    }
-                }
+                // if let Some(guild_id) = msg.guild_id {
+                //     join_user_voice_channel(&ctx, &msg).await.unwrap();
+                // }
             }
         } else {
             println!("{} said in DMs: {}", msg.author.name, msg.content);
         }
     }
+}
+
+async fn join_user_voice_channel(ctx: &Context, msg: &Message) -> Result<(), Box<dyn Error + Send + Sync>> {
+    // コンテキストデータからSongbirdクライアントを取得。
+    let data = ctx.data.read().await;
+    // let songbird = data.get::<SongbirdKey>().cloned().expect("Failed to retrieve Songbird client");
+
+    let guild_id = match msg.guild_id {
+        Some(guild_id) => guild_id,
+        None => return Err("Message must be sent in a server".into()),
+    };
+
+    println!("guild_id: {:?}", guild_id);
+    // ユーザー名を表示
+    println!("{} is connected to a voice channel", msg.author.name);
+
+    // let guild = match ctx.cache.guild(guild_id) {
+    //     Some(guild) => guild,
+    //     None => return Err("Guild not found".into()),
+    // };
+
+    // let guild = ctx.cache.guild_field(guild_id, |guild| guild.clone()).await.unwrap();
+
+    // let voice_state = match guild.voice_states.get(&msg.author.id) {
+    //     Some (voice_state) => voice_state.channel_id,
+    //     None => return Err("User is not in a voice channel".into()),
+    // };
+    // println!("voice_state: {:?}", voice_state);
+
+    Ok(())
 }
 
 // #[group]
@@ -149,8 +168,9 @@ async fn main() {
     // 必要なインテントを有効にします。
     let intents = GatewayIntents::GUILD_MEMBERS
                                 | GatewayIntents::GUILD_MESSAGES
-                                | GatewayIntents::MESSAGE_CONTENT
-                                | GatewayIntents::DIRECT_MESSAGES;
+                                | GatewayIntents::MESSAGE_CONTENT // メッセージの内容を取得するため。
+                                | GatewayIntents::DIRECT_MESSAGES
+                                | GatewayIntents::GUILD_VOICE_STATES;
     let mut client = Client::builder(&token, intents)
         .event_handler(Handler)
         .register_songbird()
