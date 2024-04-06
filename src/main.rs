@@ -40,10 +40,15 @@ impl EventHandler for Handler {
     /// このメソッドは、ボットがメッセージを受信したときに呼び出されます。
     /// 
     /// # Arguments
-    /// * `_` - ボットの状態に関する様々なデータのコンテキスト。
+    /// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
     /// * `msg` - 受信したメッセージ。
-    async fn message(&self, _: Context, msg: Message) {
-        println!("{} said: {}", msg.author.name, msg.content);
+    async fn message(&self, ctx: Context, msg: Message) {
+        if let Some(guild_id) = msg.guild_id {
+            let guild_name = guild_id.name(&ctx).unwrap_or_else(|| "Unknown guild".to_string());
+            println!("{} said in {}: {}", msg.author.name, guild_name, msg.content);
+        } else {
+            println!("{} said in DMs: {}", msg.author.name, msg.content);
+        }
     }
 }
 
@@ -100,7 +105,8 @@ async fn main() {
     // 必要なインテントを有効にします。
     let intents = GatewayIntents::GUILD_MEMBERS
                                 | GatewayIntents::GUILD_MESSAGES
-                                | GatewayIntents::MESSAGE_CONTENT;
+                                | GatewayIntents::MESSAGE_CONTENT
+                                | GatewayIntents::DIRECT_MESSAGES;
     let mut client = Client::builder(&token, intents)
         .event_handler(Handler)
         .await
