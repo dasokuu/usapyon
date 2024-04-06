@@ -26,4 +26,14 @@ rust
 DISCORD_TOKEN=[Discordのトークン]
 ```
 
+#### サーバーに追加するときのロール
+
+OAuth2 URL Generator
+
+SCOPES
+- bot
+- applications.commands
+
+下にURLが出てくるので、ブラウザにコピペして招待。
+
 #### serenityを使う

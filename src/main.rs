@@ -18,7 +18,7 @@ use dotenv::dotenv;
 use std::env;
 use serenity::{
     async_trait,
-    model::{ gateway::Ready, prelude::* },
+    model::{ gateway::Ready, prelude::*, id::{GuildId, ChannelId}},
     prelude::*,
 };
 
@@ -44,6 +44,9 @@ impl EventHandler for Handler {
     /// * `msg` - 受信したメッセージ。
     async fn message(&self, ctx: Context, msg: Message) {
         if let Some(guild_id) = msg.guild_id {
+            // ギルドIDを表示
+            println!("Guild ID: {}", guild_id);
+
             let guild_name = guild_id.name(&ctx).unwrap_or_else(|| "Unknown guild".to_string());
             println!("{} said in {}: {}", msg.author.name, guild_name, msg.content);
         } else {
@@ -101,6 +104,28 @@ async fn main() {
 
     let token = env::var("DISCORD_TOKEN").expect("DISCORD_TOKEN must be set");
     println!("DISCORD_TOKEN: {}", token);
+
+    // let test_guild_id_str = env::var("TEST_GUILD_ID").expect("TEST_GUILD_ID must be set");
+    // let test_voice_channel_id_str = env::var("TEST_VOICE_CHANNEL_ID").expect("TEST_VOICE_CHANNEL_ID must be set");
+    // println!("TEST_GUILD_ID: {}", test_guild_id_str);
+    // println!("TEST_VOICE_CHANNEL_ID: {}", test_voice_channel_id_str);
+    
+    // let test_guild_id = GuildId::new(test_guild_id_str.parse::<u64>().unwrap());
+    // let test_voice_channel_id = ChannelId::new(test_voice_channel_id_str.parse::<u64>().unwrap());
+
+    // let manager = songbird::get(ctx).await
+    //     .expect("Songbird Voice client placed in at initialization.").clone();
+
+    // let (_, handler) = manager.join(test_guild_id, test_voice_channel_id).await;
+
+    // match handler {
+    //     Ok(connection_info) => {
+    //         println!("Joined voice channel!");
+    //     },
+    //     Err(error) => {
+    //         println!("Error joining voice channel: {:?}", error);
+    //     }
+    // }
 
     // 必要なインテントを有効にします。
     let intents = GatewayIntents::GUILD_MEMBERS
