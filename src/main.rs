@@ -9,6 +9,11 @@
 // use serenity::model::channel::Message;
 // use serenity::prelude::*;
 
+extern crate dotenv;
+
+use dotenv::dotenv;
+use std::env;
+
 // #[group]
 // #[commands(join)]
 // struct General;
@@ -53,6 +58,12 @@
 #[tokio::main]
 async fn main() {
     println!("Hello, world!");
+
+    dotenv().ok();
+
+    let token = env::var("DISCORD_TOKEN").expect("DISCORD_TOKEN must be set");
+    println!("DISCORD_TOKEN: {}", token);
+
     // let framework = StandardFramework::new().group(&GENERAL_GROUP);
     // framework.configure(Configuration::new().prefix("~")); // set the bot's prefix to "~"
 
