@@ -49,13 +49,15 @@ impl EventHandler for Handler {
     /// * `msg` - 受信したメッセージ。
     async fn message(&self, ctx: Context, msg: Message) {
         if let Some(guild_id) = msg.guild_id {
+            // ギルドの数を表示
+            println!("guilds: {:?}", ctx.cache.guild_count());
             // ギルドIDを表示
             println!("{} said in {}: {}", msg.author.name, guild_id, msg.content);
 
             if msg.content == "!join" {
-                // if let Some(guild_id) = msg.guild_id {
-                //     join_user_voice_channel(&ctx, &msg).await.unwrap();
-                // }
+                if let Some(guild_id) = msg.guild_id {
+                    join_user_voice_channel(&ctx, &msg).await.unwrap();
+                }
             }
         } else {
             println!("{} said in DMs: {}", msg.author.name, msg.content);
@@ -73,22 +75,36 @@ async fn join_user_voice_channel(ctx: &Context, msg: &Message) -> Result<(), Box
         None => return Err("Message must be sent in a server".into()),
     };
 
+    let cache = ctx.cache.clone();
+
     println!("guild_id: {:?}", guild_id);
     // ユーザー名を表示
     println!("{} is connected to a voice channel", msg.author.name);
 
-    // let guild = match ctx.cache.guild(guild_id) {
-    //     Some(guild) => guild,
-    //     None => return Err("Guild not found".into()),
+    // ギルドの数を表示
+    println!("guilds: {:?}", cache.guild_count());
+
+    // let channel_id = {
+    //     let guild = ctx.cache.guild(guild_id).ok_or("Guild not found")?;
+    //     guild.voice_states.get(&msg.author.id)
+    //         .and_then(|voice_state| voice_state.channel_id)
+    //         .ok_or("User not in a voice channel")?
     // };
+
+    // println!("channel_id: {:?}", channel_id);
+
+    let guild = match ctx.cache.guild(guild_id) {
+        Some(guild) => guild,
+        None => return Err("Guild not found".into()),
+    };
 
     // let guild = ctx.cache.guild_field(guild_id, |guild| guild.clone()).await.unwrap();
 
-    // let voice_state = match guild.voice_states.get(&msg.author.id) {
-    //     Some (voice_state) => voice_state.channel_id,
-    //     None => return Err("User is not in a voice channel".into()),
-    // };
-    // println!("voice_state: {:?}", voice_state);
+    let voice_state = match guild.voice_states.get(&msg.author.id) {
+        Some (voice_state) => voice_state.channel_id,
+        None => return Err("User is not in a voice channel".into()),
+    };
+    println!("voice_state: {:?}", voice_state);
 
     Ok(())
 }
@@ -166,11 +182,15 @@ async fn main() {
     // }
 
     // 必要なインテントを有効にします。
+    // GUILDS: サーバーのリストを取得するため。
     let intents = GatewayIntents::GUILD_MEMBERS
                                 | GatewayIntents::GUILD_MESSAGES
                                 | GatewayIntents::MESSAGE_CONTENT // メッセージの内容を取得するため。
                                 | GatewayIntents::DIRECT_MESSAGES
-                                | GatewayIntents::GUILD_VOICE_STATES;
+                                | GatewayIntents::GUILD_VOICE_STATES
+                                | GatewayIntents::GUILDS;
+    // すべてのインテントを有効にします。
+    // let intents = GatewayIntents::all();
     let mut client = Client::builder(&token, intents)
         .event_handler(Handler)
         .register_songbird()
