@@ -1,3 +1,5 @@
+// まずはボットに接続するところから。
+
 // use reqwest;
 // use serde_json::Value;
 // use std::env;
@@ -10,9 +12,32 @@
 // use serenity::prelude::*;
 
 extern crate dotenv;
+extern crate serenity;
 
 use dotenv::dotenv;
 use std::env;
+use serenity::{
+    async_trait,
+    model::{ gateway::Ready, prelude::* },
+    prelude::*,
+};
+
+struct Handler;
+
+/// `Handler`は`EventHandler`の実装です。
+/// Discordからのイベントを処理するメソッドを提供します。
+#[async_trait]
+impl EventHandler for Handler {
+    /// このメソッドは、ボットがDiscordの接続に成功したときに呼び出されます。
+    /// 
+    /// # Arguments
+    /// 
+    /// * `_` - ボットの状態に関する様々なデータのコンテキスト。
+    /// * `ready` - readyイベントのコンテキスト。
+    async fn ready(&self, _: Context, ready: Ready) {
+        println!("{} is connected!", ready.user.name);
+    }
+}
 
 // #[group]
 // #[commands(join)]
@@ -63,6 +88,17 @@ async fn main() {
 
     let token = env::var("DISCORD_TOKEN").expect("DISCORD_TOKEN must be set");
     println!("DISCORD_TOKEN: {}", token);
+
+    // すべてのイベントを受信するためのインテントを作成。
+    let intents = GatewayIntents::all();
+    let mut client = Client::builder(&token, intents)
+        .event_handler(Handler)
+        .await
+        .expect("Error creating client");
+
+    if let Err(why) = client.start().await {
+        println!("Client error: {:?}", why);
+    }
 
     // let framework = StandardFramework::new().group(&GENERAL_GROUP);
     // framework.configure(Configuration::new().prefix("~")); // set the bot's prefix to "~"
