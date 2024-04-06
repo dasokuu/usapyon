@@ -55,7 +55,7 @@ impl EventHandler for Handler {
             println!("{} said in {}: {}", msg.author.name, guild_id, msg.content);
 
             if msg.content == "!join" {
-                if let Some(guild_id) = msg.guild_id {
+                if let Some(_guild_id) = msg.guild_id {
                     join_user_voice_channel(&ctx, &msg).await.unwrap();
                 }
             }
@@ -68,43 +68,45 @@ impl EventHandler for Handler {
 async fn join_user_voice_channel(ctx: &Context, msg: &Message) -> Result<(), Box<dyn Error + Send + Sync>> {
     // コンテキストデータからSongbirdクライアントを取得。
     let data = ctx.data.read().await;
-    // let songbird = data.get::<SongbirdKey>().cloned().expect("Failed to retrieve Songbird client");
+    let songbird = data.get::<SongbirdKey>().cloned().expect("Failed to retrieve Songbird client");
 
     let guild_id = match msg.guild_id {
         Some(guild_id) => guild_id,
         None => return Err("Message must be sent in a server".into()),
     };
 
-    let cache = ctx.cache.clone();
-
     println!("guild_id: {:?}", guild_id);
-    // ユーザー名を表示
-    println!("{} is connected to a voice channel", msg.author.name);
 
-    // ギルドの数を表示
-    println!("guilds: {:?}", cache.guild_count());
-
-    // let channel_id = {
-    //     let guild = ctx.cache.guild(guild_id).ok_or("Guild not found")?;
-    //     guild.voice_states.get(&msg.author.id)
-    //         .and_then(|voice_state| voice_state.channel_id)
-    //         .ok_or("User not in a voice channel")?
+    // let guild = match ctx.cache.guild(guild_id) {
+    //     Some(guild) => guild,
+    //     None => return Err("Guild not found".into()),
     // };
 
-    // println!("channel_id: {:?}", channel_id);
+    // let voice_state = match guild.voice_states.get(&msg.author.id) {
+    //     Some (voice_state) => voice_state.channel_id,
+    //     None => return Err("User is not in a voice channel".into()),
+    // };
 
-    let guild = match ctx.cache.guild(guild_id) {
-        Some(guild) => guild,
-        None => return Err("Guild not found".into()),
+    // // ユーザーがいるボイスチャンネルのIDを取得
+    // let channel_id = match voice_state {
+    //     Some(channel_id) => channel_id,
+    //     None => return Err("User is not in a voice channel".into()),
+    // };
+
+    let channel_id = match ctx.cache.guild(guild_id)
+        .and_then(|guild| guild.voice_states.get(&msg.author.id).cloned())
+        .and_then(|voice_state| voice_state.channel_id) {
+            Some(channel_id) => channel_id,
+            None => return Err("User is not in a voice channel".into()),
     };
+    println!("Channel ID: {:?}", channel_id);
 
-    // let guild = ctx.cache.guild_field(guild_id, |guild| guild.clone()).await.unwrap();
+    // ユーザーがいるチャンネルにボットを参加させます。
+    let result = songbird.join(guild_id, channel_id).await;
 
-    let voice_state = match guild.voice_states.get(&msg.author.id) {
-        Some (voice_state) => voice_state.channel_id,
-        None => return Err("User is not in a voice channel".into()),
-    };
-    println!("voice_state: {:?}", voice_state);
+    // if let Err(why) = result {
+    //     println!("Error joining voice channel: {:?}", why);
+    // }
 
     Ok(())
 }
