@@ -21,6 +21,7 @@ use serenity::{
     model::{ gateway::Ready, prelude::*, id::{GuildId, ChannelId}},
     prelude::*,
 };
+use songbird::SerenityInit;
 
 struct Handler;
 
@@ -45,10 +46,28 @@ impl EventHandler for Handler {
     async fn message(&self, ctx: Context, msg: Message) {
         if let Some(guild_id) = msg.guild_id {
             // ギルドIDを表示
-            println!("Guild ID: {}", guild_id);
+            println!("{} said in {}: {}", msg.author.name, guild_id, msg.content);
 
-            let guild_name = guild_id.name(&ctx).unwrap_or_else(|| "Unknown guild".to_string());
-            println!("{} said in {}: {}", msg.author.name, guild_name, msg.content);
+            if msg.content == "!join" {
+                if let Some(guild_id) = msg.guild_id {
+                    let channel_id_str = env::var("TEST_VOICE_CHANNEL_ID").expect("TEST_VOICE_CHANNEL_ID must be set");
+                    let channel_id = ChannelId::new(channel_id_str.parse::<u64>().unwrap());
+
+                    let manager = songbird::get(&ctx).await
+                        .expect("Songbird Voice client placed in at initialization.").clone();
+
+                    let join_result = manager.join(guild_id, channel_id).await;
+
+                    match join_result {
+                        Ok(_) => {
+                            println!("Joined voice channel!");
+                        },
+                        Err(error) => {
+                            println!("Error joining voice channel: {:?}", error);
+                        }
+                    }
+                }
+            }
         } else {
             println!("{} said in DMs: {}", msg.author.name, msg.content);
         }
@@ -134,6 +153,7 @@ async fn main() {
                                 | GatewayIntents::DIRECT_MESSAGES;
     let mut client = Client::builder(&token, intents)
         .event_handler(Handler)
+        .register_songbird()
         .await
         .expect("Error creating client");
 
