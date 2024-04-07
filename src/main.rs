@@ -54,7 +54,7 @@ impl EventHandler for Handler {
             // ギルドIDを表示
             println!("{} said in {}: {}", msg.author.name, guild_id, msg.content);
 
-            if msg.content == "!join" {
+            if msg.content == "join" {
                 if let Some(_guild_id) = msg.guild_id {
                     join_user_voice_channel(&ctx, &msg).await.unwrap();
                 }
@@ -108,8 +108,20 @@ async fn join_user_voice_channel(ctx: &Context, msg: &Message) -> Result<(), Box
     //     println!("Error joining voice channel: {:?}", why);
     // }
 
+    if let Err(why) = result {
+        println!("Error joining voice channel: {:?}", why);
+        return Err("Error joining voice channel".into());
+    }
+
     Ok(())
 }
+
+// #[poise::command(prefix_command)]
+// async fn join(ctx: poise::Context<'_, (), poise::Error>, msg: &Message) -> poise::Result<()> {
+//     join_user_voice_channel(&ctx, msg).await?;
+//     msg.reply(ctx, "Joined voice channel").await?;
+//     Ok(())
+// }
 
 // #[group]
 // #[commands(join)]
