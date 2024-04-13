@@ -43,10 +43,27 @@ impl EventHandler for Handler {
             // ギルドIDを表示
             println!("{} said in {}: {}", msg.author.name, guild_id, msg.content);
 
-            if msg.content == "!join" {
-                if let Some(_guild_id) = msg.guild_id {
+            // if msg.content == "!join" {
+            //     if let Some(_guild_id) = msg.guild_id {
+            //         join_user_voice_channel(&ctx, &msg).await.unwrap();
+            //     }
+            // }
+
+            // !joinと!leaveコマンドを追加
+            match msg.content.as_str() {
+                "!join" => {
                     join_user_voice_channel(&ctx, &msg).await.unwrap();
-                }
+                },
+                // チャットからボットを退出させます。
+            
+                "!leave" => {
+                    let data = ctx.data.read().await;
+                    let songbird = data.get::<SongbirdKey>().cloned().expect("Failed to retrieve Songbird client");
+                    if let Err(why) = songbird.leave(guild_id).await {
+                        println!("Error leaving voice channel: {:?}", why);
+                    }
+                },
+                _ => {},
             }
         } else {
             println!("{} said in DMs: {}", msg.author.name, msg.content);
