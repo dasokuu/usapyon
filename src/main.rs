@@ -14,7 +14,8 @@ use serenity::{
 use songbird::{
     Songbird,
     SerenityInit,
-    SongbirdKey
+    SongbirdKey,
+    tracks::Track,
 };
 use reqwest::Url;
 
@@ -87,7 +88,14 @@ impl EventHandler for Handler {
                 let response_body = audio_query_res.text().await.unwrap();
 
                 // レスポンスボディをJSONとして解析。
-                let response_json: serde_json::Value = serde_json::from_str(&response_body).unwrap();
+                let mut response_json: serde_json::Value = serde_json::from_str(&response_body).unwrap();
+
+                // JSONの中身を確認。
+                println!("response_json: {:?}", response_json);
+
+                // JSONの中の"outputSamplingRate"を44100に書き換えます。
+                // これはDiscordの仕様に合わせるためです。
+                response_json["outputSamplingRate"] = serde_json::Value::Number(serde_json::Number::from(88200));
 
                 // JSONの中身を確認。
                 println!("response_json: {:?}", response_json);
@@ -116,14 +124,10 @@ impl EventHandler for Handler {
                 // レスポンスの状態を確認。
                 println!("status: {:?}", synthesis_res.status());
 
-                // ボディを確認。
-                // let synthesis_body = synthesis_res.text().await.unwrap();
-                // println!("synthesis_body: {:?}", synthesis_body);
-
                 let synthesis_body_bytes = synthesis_res.bytes().await.unwrap();
 
                 // ボディをファイルに保存。
-                // ボディはwav形式の音声データ。
+                // ボディはwav形式の音声データ。ただの確認用なので、Discordではこのファイルを再生しない。
                 let mut file = File::create("output.wav").unwrap();
                 file.write_all(&synthesis_body_bytes).unwrap();
 
@@ -134,9 +138,13 @@ impl EventHandler for Handler {
                 let handler_lock = songbird.get(guild_id).expect("No songbird handler found");
                 let mut handler = handler_lock.lock().await;
 
-                // let source = songbird::input::Input::from(Box::from(synthesis_body.into_bytes()));
+                // synthesis_body_bytesを再生。
+                // let source = songbird::input::Input::from(Box::from(synthesis_body_bytes.to_vec()));
 
-                // handler.play_input(source);
+                // output.wavを再生。
+                let track = Track::from(synthesis_body_bytes.to_vec());
+
+                handler.play(track);
             }
 
         } else {

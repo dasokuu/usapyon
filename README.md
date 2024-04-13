@@ -69,3 +69,11 @@ $ 7z x voicevox_engine-linux-cpu-0.18.1.7z.001 -o$HOME/voicevox_engine
 $ ~/voicevox_engine/linux-cpu/run
 ```
 
+songbirdでwavの再生ができない。
+以下のライブラリが必要か？
+
+```bash
+sudo apt install libopus-dev
+```
+
+特に変化はない。
