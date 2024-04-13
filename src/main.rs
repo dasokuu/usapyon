@@ -1,4 +1,5 @@
 // まずはボットに接続するところから。
+// joinを実行したチャンネルのテキストだけをボットが読み上げるようにしたい。
 
 extern crate dotenv;
 extern crate serenity;
@@ -91,7 +92,7 @@ impl EventHandler for Handler {
 /// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
 /// 
 /// ## Returns
-/// Songbirdクライアントを返します。
+/// Songbirdクライアント。
 async fn get_songbird_from_ctx(ctx: &Context) -> Arc<Songbird> {
     let data = ctx.data.read().await;
     data.get::<SongbirdKey>().cloned().expect("Failed to retrieve Songbird client")

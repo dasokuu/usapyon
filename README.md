@@ -37,3 +37,29 @@ SCOPES
 下にURLが出てくるので、ブラウザにコピペして招待。
 
 #### serenityを使う
+
+## voicevox_engineのLinux CPU版をインストール
+
+- [voicevox_engine](https://github.com/VOICEVOX/voicevox_engine)にアクセス。
+- リリースページから最新のリリース（エンジン本体）をダウンロード。
+- リンクを右クリック、リンク先を保存してください。
+
+例えば現時点では以下のようなURLになります。適宜その時点の最新のリリースページを参照してください。
+
+```bash
+$ wget https://github.com/VOICEVOX/voicevox_engine/releases/download/0.18.1/voicevox_engine-linux-cpu-0.18.1.7z.001
+```
+
+- 7z形式のファイルを解凍するためにp7zipをインストールします。
+
+```bash
+$ sudo apt install p7zip-full
+```
+
+- 7z形式のファイルを解凍します。解凍後のファイルはホームディレクトリに配置するように指定します。
+ここで、`-o`オプションとパスの間にスペースがないことに注意してください。
+
+```bash
+$ 7z x voicevox_engine-linux-cpu-0.18.1.7z.001 -o$HOME/voicevox_engine
+```
+
