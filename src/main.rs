@@ -67,13 +67,23 @@ impl EventHandler for Handler {
     /// * `_old_state` - 変更前のボイスチャットの状態。
     /// * `new_state` - 変更後のボイスチャットの状態。
     async fn voice_state_update(&self, ctx: Context, _old_state: Option<VoiceState>, new_state: VoiceState) {
-        println!("voice_state_update: {:?}", new_state);
+        // println!("voice_state_update: {:?}", new_state);
+
         // ボット以外のユーザーがボイスチャンネルに存在しなくなった場合、ボットを退出させます。
-        // if newState.user_id != ctx.cache.current_user_id().await {
-        //     if newState.channel_id.is_none() {
-        //         leave_voice_channel(&ctx, &newState).await.unwrap();
-        //     }
-        // }
+        if new_state.user_id != ctx.cache.current_user().id {
+            if new_state.channel_id.is_none() {
+                let guild_id = new_state.guild_id.expect("Guild ID not found");
+
+                let songbird = {
+                    let data = ctx.data.read().await;
+                    data.get::<SongbirdKey>().cloned().expect("SongbirdKey not found")
+                };
+
+                if let Err(why) = songbird.remove(guild_id).await {
+                    println!("Error removing handler: {:?}", why);
+                }
+            }
+        }
     }
 }
 
@@ -159,6 +169,7 @@ async fn main() {
                                 | GatewayIntents::GUILDS;
     // すべてのインテントを有効にします。
     // let intents = GatewayIntents::all();
+
     let mut client = Client::builder(&token, intents)
         .event_handler(Handler)
         .register_songbird()
