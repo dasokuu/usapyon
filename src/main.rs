@@ -88,14 +88,8 @@ impl EventHandler for Handler {
                 let response_body = audio_query_res.text().await.unwrap();
 
                 // レスポンスボディをJSONとして解析。
-                let mut response_json: serde_json::Value = serde_json::from_str(&response_body).unwrap();
-
-                // JSONの中身を確認。
-                println!("response_json: {:?}", response_json);
-
-                // JSONの中の"outputSamplingRate"を44100に書き換えます。
-                // これはDiscordの仕様に合わせるためです。
-                response_json["outputSamplingRate"] = serde_json::Value::Number(serde_json::Number::from(88200));
+                // サンプリングレートの書き換えなどは不要だった。
+                let response_json: serde_json::Value = serde_json::from_str(&response_body).unwrap();
 
                 // JSONの中身を確認。
                 println!("response_json: {:?}", response_json);
@@ -139,12 +133,13 @@ impl EventHandler for Handler {
                 let mut handler = handler_lock.lock().await;
 
                 // synthesis_body_bytesを再生。
-                // let source = songbird::input::Input::from(Box::from(synthesis_body_bytes.to_vec()));
+                let source = songbird::input::Input::from(Box::from(synthesis_body_bytes.to_vec()));
 
                 // output.wavを再生。
-                let track = Track::from(synthesis_body_bytes.to_vec());
+                // let track = Track::from(synthesis_body_bytes.to_vec());
 
-                handler.play(track);
+                // handler.play(track);
+                handler.play_input(source);
             }
 
         } else {

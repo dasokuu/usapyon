@@ -77,3 +77,9 @@ sudo apt install libopus-dev
 ```
 
 特に変化はない。
+以下のライブラリは必須だった。エラーは出ないが再生されない。
+
+```:Cargo.toml
+[dependencies.symphonia]
+version = "0.5.2"
+```
