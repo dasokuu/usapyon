@@ -5,7 +5,7 @@ extern crate dotenv;
 extern crate serenity;
 
 use dotenv::dotenv;
-use std::{env, sync::Arc, error::Error, collections::HashMap};
+use std::{env, sync::Arc, error::Error, collections::HashMap, fs::File, io::Write};
 use serenity::{
     async_trait,
     model::{ gateway::Ready, prelude::*},
@@ -115,6 +115,28 @@ impl EventHandler for Handler {
 
                 // レスポンスの状態を確認。
                 println!("status: {:?}", synthesis_res.status());
+
+                // ボディを確認。
+                // let synthesis_body = synthesis_res.text().await.unwrap();
+                // println!("synthesis_body: {:?}", synthesis_body);
+
+                let synthesis_body_bytes = synthesis_res.bytes().await.unwrap();
+
+                // ボディをファイルに保存。
+                // ボディはwav形式の音声データ。
+                let mut file = File::create("output.wav").unwrap();
+                file.write_all(&synthesis_body_bytes).unwrap();
+
+                // 取得したボディを再生。
+                let songbird = get_songbird_from_ctx(&ctx).await;
+                let guild_id = msg.guild_id.expect("Guild ID not found");
+
+                let handler_lock = songbird.get(guild_id).expect("No songbird handler found");
+                let mut handler = handler_lock.lock().await;
+
+                // let source = songbird::input::Input::from(Box::from(synthesis_body.into_bytes()));
+
+                // handler.play_input(source);
             }
 
         } else {
