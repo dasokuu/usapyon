@@ -65,8 +65,8 @@ impl EventHandler for Handler {
                 // voicevox_engineに投げるリクエストを生成します。
                 let client = reqwest::Client::new();
                 
-                let mut headers = reqwest::header::HeaderMap::new();
-                headers.insert("Accept", "application/json".parse().unwrap());
+                let mut audio_query_headers = reqwest::header::HeaderMap::new();
+                audio_query_headers.insert("Accept", "application/json".parse().unwrap());
 
                 let base = "http://localhost:50021/audio_query";
                 
@@ -75,18 +75,46 @@ impl EventHandler for Handler {
                     ("speaker", "1")
                 ].iter().cloned().collect();
 
-                let url = Url::parse_with_params(base, &params).unwrap();
+                let audio_query_url = Url::parse_with_params(base, &params).unwrap();
 
-                // ポストする内容を確認。
-                // println!("{:?}", params);
-
-                let res = client.post(url)
-                    .headers(headers)
+                let audio_query_res = client.post(audio_query_url)
+                    .headers(audio_query_headers)
                     .send()
                     .await
                     .unwrap();
 
-                println!("{}", res.status());
+                // レスポンスボディを取得。
+                let response_body = audio_query_res.text().await.unwrap();
+
+                // レスポンスボディをJSONとして解析。
+                let response_json: serde_json::Value = serde_json::from_str(&response_body).unwrap();
+
+                // JSONの中身を確認。
+                println!("response_json: {:?}", response_json);
+
+                // 新しいリクエストのURLを作成。
+                let synthesis_url = Url::parse_with_params(
+                    "http://localhost:50021/synthesis",
+                    &[
+                        ("speaker", "1"),
+                        ("enable_interrogative_upspeak", "true")
+                    ]
+                ).unwrap();
+
+                // 新しいリクエストのヘッダーを設定。
+                let mut synthesis_headers = reqwest::header::HeaderMap::new();
+                synthesis_headers.insert("Content-Type", "application/json".parse().unwrap());
+
+                // 新しいリクエストのボディを送信。
+                let synthesis_res = client.post(synthesis_url)
+                    .headers(synthesis_headers)
+                    .json(&response_json)
+                    .send()
+                    .await
+                    .unwrap();
+
+                // レスポンスの状態を確認。
+                println!("status: {:?}", synthesis_res.status());
             }
 
         } else {
