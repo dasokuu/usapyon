@@ -4,13 +4,14 @@ extern crate dotenv;
 extern crate serenity;
 
 use dotenv::dotenv;
-use std::env;
+use std::{env, sync::Arc};
 use serenity::{
     async_trait,
     model::{ gateway::Ready, prelude::*},
     prelude::*,
 };
 use songbird::{
+    Songbird,
     SerenityInit,
     SongbirdKey
 };
@@ -74,10 +75,7 @@ impl EventHandler for Handler {
             if new_state.channel_id.is_none() {
                 let guild_id = new_state.guild_id.expect("Guild ID not found");
 
-                let songbird = {
-                    let data = ctx.data.read().await;
-                    data.get::<SongbirdKey>().cloned().expect("SongbirdKey not found")
-                };
+                let songbird = get_songbird_from_ctx(&ctx).await;
 
                 if let Err(why) = songbird.remove(guild_id).await {
                     println!("Error removing handler: {:?}", why);
@@ -85,6 +83,18 @@ impl EventHandler for Handler {
             }
         }
     }
+}
+
+/// コンテキストデータからSongbirdクライアントを非同期に取得します。
+/// 
+/// ## Arguments
+/// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
+/// 
+/// ## Returns
+/// Songbirdクライアントを返します。
+async fn get_songbird_from_ctx(ctx: &Context) -> Arc<Songbird> {
+    let data = ctx.data.read().await;
+    data.get::<SongbirdKey>().cloned().expect("Failed to retrieve Songbird client")
 }
 
 /// ユーザーがいるボイスチャンネルにボットを非同期に参加させます。
@@ -97,8 +107,7 @@ impl EventHandler for Handler {
 /// 成功した場合は`Ok(())`、エラーが発生した場合は`Err(Box<dyn Error + Send + Sync>)`を返します。
 async fn join_user_voice_channel(ctx: &Context, msg: &Message) -> Result<(), Box<dyn Error + Send + Sync>> {
     // コンテキストデータからSongbirdクライアントを取得。
-    let data = ctx.data.read().await;
-    let songbird = data.get::<SongbirdKey>().cloned().expect("Failed to retrieve Songbird client");
+    let songbird = get_songbird_from_ctx(&ctx).await;
 
     let guild_id = match msg.guild_id {
         Some(guild_id) => guild_id,
@@ -134,9 +143,7 @@ async fn join_user_voice_channel(ctx: &Context, msg: &Message) -> Result<(), Box
 /// ## Returns
 /// 成功した場合は`Ok(())`、エラーが発生した場合は`Err(Box<dyn Error + Send + Sync>)`を返します。
 async fn leave_voice_channel(ctx: &Context, msg: &Message) -> Result<(), Box<dyn Error + Send + Sync>> {
-    let data = ctx.data.read().await;
-    let songbird = data.get::<SongbirdKey>().cloned().expect(
-        "Failed to retrieve Songbird client");
+    let songbird = get_songbird_from_ctx(&ctx).await;
 
     let guild_id = match msg.guild_id {
         Some(guild_id) => guild_id,
