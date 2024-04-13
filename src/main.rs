@@ -43,25 +43,15 @@ impl EventHandler for Handler {
             // ギルドIDを表示
             println!("{} said in {}: {}", msg.author.name, guild_id, msg.content);
 
-            // if msg.content == "!join" {
-            //     if let Some(_guild_id) = msg.guild_id {
-            //         join_user_voice_channel(&ctx, &msg).await.unwrap();
-            //     }
-            // }
-
-            // !joinと!leaveコマンドを追加
+            // !joinと!leaveコマンドを処理。
             match msg.content.as_str() {
+                // ボットをユーザーがいるボイスチャンネルに参加させます。
                 "!join" => {
                     join_user_voice_channel(&ctx, &msg).await.unwrap();
                 },
-                // チャットからボットを退出させます。
-            
+                // ボットをボイスチャンネルから退出させます。
                 "!leave" => {
-                    let data = ctx.data.read().await;
-                    let songbird = data.get::<SongbirdKey>().cloned().expect("Failed to retrieve Songbird client");
-                    if let Err(why) = songbird.leave(guild_id).await {
-                        println!("Error leaving voice channel: {:?}", why);
-                    }
+                    leave_voice_channel(&ctx, &msg).await.unwrap();
                 },
                 _ => {},
             }
@@ -71,6 +61,14 @@ impl EventHandler for Handler {
     }
 }
 
+/// ユーザーがいるボイスチャンネルにボットを非同期に参加させます。
+/// 
+/// ## Arguments
+/// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
+/// * `msg` - メッセージ。
+/// 
+/// ## Returns
+/// 成功した場合は`Ok(())`、エラーが発生した場合は`Err(Box<dyn Error + Send + Sync>)`を返します。
 async fn join_user_voice_channel(ctx: &Context, msg: &Message) -> Result<(), Box<dyn Error + Send + Sync>> {
     // コンテキストデータからSongbirdクライアントを取得。
     let data = ctx.data.read().await;
@@ -96,7 +94,31 @@ async fn join_user_voice_channel(ctx: &Context, msg: &Message) -> Result<(), Box
 
     if let Err(why) = result {
         println!("Error joining voice channel: {:?}", why);
-        return Err("Error joining voice channel".into());
+    }
+
+    Ok(())
+}
+
+/// ボイスチャンネルからボットを非同期に退出させます。
+/// 
+/// ## Arguments
+/// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
+/// * `msg` - メッセージ。
+/// 
+/// ## Returns
+/// 成功した場合は`Ok(())`、エラーが発生した場合は`Err(Box<dyn Error + Send + Sync>)`を返します。
+async fn leave_voice_channel(ctx: &Context, msg: &Message) -> Result<(), Box<dyn Error + Send + Sync>> {
+    let data = ctx.data.read().await;
+    let songbird = data.get::<SongbirdKey>().cloned().expect(
+        "Failed to retrieve Songbird client");
+
+    let guild_id = match msg.guild_id {
+        Some(guild_id) => guild_id,
+        None => return Err("Message must be sent in a server".into()),
+    };
+
+    if let Err(why) = songbird.leave(guild_id).await {
+        println!("Error leaving voice channel: {:?}", why);
     }
 
     Ok(())
