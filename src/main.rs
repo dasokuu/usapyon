@@ -5,7 +5,7 @@ extern crate dotenv;
 extern crate serenity;
 
 use dotenv::dotenv;
-use std::{env, sync::Arc};
+use std::{env, sync::Arc, error::Error, collections::HashMap};
 use serenity::{
     async_trait,
     model::{ gateway::Ready, prelude::*},
@@ -16,7 +16,7 @@ use songbird::{
     SerenityInit,
     SongbirdKey
 };
-use std::error::Error;
+use reqwest::Url;
 
 struct Handler;
 
@@ -45,18 +45,50 @@ impl EventHandler for Handler {
             // ギルドIDを表示
             println!("{} said in {}: {}", msg.author.name, guild_id, msg.content);
 
-            // !joinと!leaveコマンドを処理。
-            match msg.content.as_str() {
-                // ボットをユーザーがいるボイスチャンネルに参加させます。
-                "!join" => {
-                    join_user_voice_channel(&ctx, &msg).await.unwrap();
-                },
-                // ボットをボイスチャンネルから退出させます。
-                "!leave" => {
-                    leave_voice_channel(&ctx, &msg).await.unwrap();
-                },
-                _ => {},
+            // "!"から始まるメッセージとそうでないメッセージで処理を分けます。
+            if msg.content.starts_with("!") {
+                // !joinと!leaveコマンドを処理。
+                match msg.content.as_str() {
+                    // ボットをユーザーがいるボイスチャンネルに参加させます。
+                    "!join" => {
+                        join_user_voice_channel(&ctx, &msg).await.unwrap();
+                    },
+                    // ボットをボイスチャンネルから退出させます。
+                    "!leave" => {
+                        leave_voice_channel(&ctx, &msg).await.unwrap();
+                    },
+                    _ => {},
+                }
+            } else {
+                // ボットがユーザーがいるボイスチャンネルに参加している場合、
+                // ボットが読み上げるようにします。
+                // voicevox_engineに投げるリクエストを生成します。
+                let client = reqwest::Client::new();
+                
+                let mut headers = reqwest::header::HeaderMap::new();
+                headers.insert("Accept", "application/json".parse().unwrap());
+
+                let base = "http://localhost:50021/audio_query";
+                
+                let params: HashMap<&str, &str> = [
+                    ("text", msg.content.as_str()),
+                    ("speaker", "1")
+                ].iter().cloned().collect();
+
+                let url = Url::parse_with_params(base, &params).unwrap();
+
+                // ポストする内容を確認。
+                // println!("{:?}", params);
+
+                let res = client.post(url)
+                    .headers(headers)
+                    .send()
+                    .await
+                    .unwrap();
+
+                println!("{}", res.status());
             }
+
         } else {
             println!("{} said in DMs: {}", msg.author.name, msg.content);
         }
@@ -160,12 +192,10 @@ async fn leave_voice_channel(ctx: &Context, msg: &Message) -> Result<(), Box<dyn
 
 #[tokio::main]
 async fn main() {
-    println!("Hello, world!");
-
     dotenv().ok();
 
     let token = env::var("DISCORD_TOKEN").expect("DISCORD_TOKEN must be set");
-    println!("DISCORD_TOKEN: {}", token);
+    // println!("DISCORD_TOKEN: {}", token);
 
     // 必要なインテントを有効にします。
     // GUILDS: サーバーのリストを取得するため。
@@ -178,13 +208,13 @@ async fn main() {
     // すべてのインテントを有効にします。
     // let intents = GatewayIntents::all();
 
-    let mut client = Client::builder(&token, intents)
+    let mut serenity_client = Client::builder(&token, intents)
         .event_handler(Handler)
         .register_songbird()
         .await
         .expect("Error creating client");
 
-    if let Err(why) = client.start().await {
+    if let Err(why) = serenity_client.start().await {
         println!("Client error: {:?}", why);
     }
 }

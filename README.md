@@ -63,3 +63,9 @@ $ sudo apt install p7zip-full
 $ 7z x voicevox_engine-linux-cpu-0.18.1.7z.001 -o$HOME/voicevox_engine
 ```
 
+- `~/voicevox_engine/linux-cpu`ディレクトリができているので、その中の`run`コマンドを実行します。
+
+```bash
+$ ~/voicevox_engine/linux-cpu/run
+```
+
