@@ -59,6 +59,22 @@ impl EventHandler for Handler {
             println!("{} said in DMs: {}", msg.author.name, msg.content);
         }
     }
+
+    /// ボイスチャットの状態が変更されたときに呼び出されます。
+    /// 
+    /// ## Arguments
+    /// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
+    /// * `_old_state` - 変更前のボイスチャットの状態。
+    /// * `new_state` - 変更後のボイスチャットの状態。
+    async fn voice_state_update(&self, ctx: Context, _old_state: Option<VoiceState>, new_state: VoiceState) {
+        println!("voice_state_update: {:?}", new_state);
+        // ボット以外のユーザーがボイスチャンネルに存在しなくなった場合、ボットを退出させます。
+        // if newState.user_id != ctx.cache.current_user_id().await {
+        //     if newState.channel_id.is_none() {
+        //         leave_voice_channel(&ctx, &newState).await.unwrap();
+        //     }
+        // }
+    }
 }
 
 /// ユーザーがいるボイスチャンネルにボットを非同期に参加させます。
