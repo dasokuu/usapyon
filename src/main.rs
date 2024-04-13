@@ -54,7 +54,7 @@ impl EventHandler for Handler {
             // ギルドIDを表示
             println!("{} said in {}: {}", msg.author.name, guild_id, msg.content);
 
-            if msg.content == "join" {
+            if msg.content == "!join" {
                 if let Some(_guild_id) = msg.guild_id {
                     join_user_voice_channel(&ctx, &msg).await.unwrap();
                 }
