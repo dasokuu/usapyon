@@ -66,30 +66,32 @@ impl EventHandler for Handler {
                 // voicevox_engineに投げるリクエストを生成します。
                 let client = reqwest::Client::new();
                 
-                let mut audio_query_headers = reqwest::header::HeaderMap::new();
-                audio_query_headers.insert("Accept", "application/json".parse().unwrap());
+                // let mut audio_query_headers = reqwest::header::HeaderMap::new();
+                // audio_query_headers.insert("Accept", "application/json".parse().unwrap());
 
-                let base = "http://localhost:50021/audio_query";
+                // let base = "http://localhost:50021/audio_query";
                 
-                let params: HashMap<&str, &str> = [
-                    ("text", msg.content.as_str()),
-                    ("speaker", "1")
-                ].iter().cloned().collect();
+                // let params: HashMap<&str, &str> = [
+                //     ("text", msg.content.as_str()),
+                //     ("speaker", "1")
+                // ].iter().cloned().collect();
 
-                let audio_query_url = Url::parse_with_params(base, &params).unwrap();
+                // let audio_query_url = Url::parse_with_params(base, &params).unwrap();
 
-                let audio_query_res = client.post(audio_query_url)
-                    .headers(audio_query_headers)
-                    .send()
-                    .await
-                    .unwrap();
+                // let audio_query_res = client.post(audio_query_url)
+                //     .headers(audio_query_headers)
+                //     .send()
+                //     .await
+                //     .unwrap();
 
                 // レスポンスボディを取得。
-                let response_body = audio_query_res.text().await.unwrap();
+                // let response_body = audio_query_res.text().await.unwrap();
 
-                // レスポンスボディをJSONとして解析。
-                // サンプリングレートの書き換えなどは不要だった。
-                let response_json: serde_json::Value = serde_json::from_str(&response_body).unwrap();
+                // // レスポンスボディをJSONとして解析。
+                // // サンプリングレートの書き換えなどは不要だった。
+                // let response_json: serde_json::Value = serde_json::from_str(&response_body).unwrap();
+
+                let response_json = request_audio_query(&client, msg.content.as_str(), "1").await.unwrap();
 
                 // JSONの中身を確認。
                 println!("response_json: {:?}", response_json);
@@ -134,12 +136,11 @@ impl EventHandler for Handler {
 
                 // synthesis_body_bytesを再生。
                 let source = songbird::input::Input::from(Box::from(synthesis_body_bytes.to_vec()));
-
-                // output.wavを再生。
-                // let track = Track::from(synthesis_body_bytes.to_vec());
-
-                // handler.play(track);
                 handler.play_input(source);
+
+                // 以下のコードでも再生可能。
+                // let track = Track::from(synthesis_body_bytes.to_vec());
+                // handler.play(track);
             }
 
         } else {
@@ -241,6 +242,36 @@ async fn leave_voice_channel(ctx: &Context, msg: &Message) -> Result<(), Box<dyn
     }
 
     Ok(())
+}
+
+/// テキストとスタイルIDからオーディオクエリを生成し、サーバにリクエストを送信します。
+/// 
+/// ## Arguments
+/// * `client` - reqwestクライアント。
+/// * `text` - 再生するテキスト。
+/// * `speaker` - スタイルID。
+/// 
+/// ## Returns
+/// * `Result<serde_json::Value, Box<dyn Error + Send + Sync>>` - サーバーからのJSON形式のレスポンス、またはエラー。
+async fn request_audio_query(client: &reqwest::Client, text: &str, speaker: &str) -> Result<serde_json::Value, Box<dyn Error + Send + Sync>> {
+    let audio_query_headers = reqwest::header::HeaderMap::new();
+    let base = "http://localhost:50021/audio_query";
+    let params: HashMap<&str, &str> = [
+        ("text", text),
+        ("speaker", speaker)
+    ].iter().cloned().collect();
+
+    let audio_query_url = Url::parse_with_params(base, &params).unwrap();
+
+    let audio_query_res = client.post(audio_query_url)
+        .headers(audio_query_headers)
+        .send()
+        .await?;
+
+    let response_body = audio_query_res.text().await?;
+    let response_json: serde_json::Value = serde_json::from_str(&response_body)?;
+
+    Ok(response_json)
 }
 
 #[tokio::main]

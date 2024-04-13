@@ -70,13 +70,13 @@ $ ~/voicevox_engine/linux-cpu/run
 ```
 
 songbirdでwavの再生ができない。
-以下のライブラリが必要か？
+再生できないと思っていたのはDiscordの出力先を間違えていたから。
+以下のライブラリが必要か？結論、不要だった。
 
 ```bash
 sudo apt install libopus-dev
 ```
 
-特に変化はない。
 以下のライブラリは必須だった。エラーは出ないが再生されない。
 
 ```:Cargo.toml
