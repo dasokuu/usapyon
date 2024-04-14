@@ -4,6 +4,7 @@
 extern crate dotenv;
 extern crate serenity;
 
+use bytes::Bytes;
 use dotenv::dotenv;
 use reqwest::Url;
 use serenity::{
@@ -12,7 +13,7 @@ use serenity::{
     prelude::*,
 };
 use songbird::{SerenityInit, Songbird, SongbirdKey};
-use std::{collections::HashMap, env, error::Error, fs::File, io::Write, sync::Arc};
+use std::{collections::HashMap, env, error::Error, sync::Arc};
 
 struct Handler;
 
@@ -35,86 +36,63 @@ impl EventHandler for Handler {
     /// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
     /// * `msg` - 受信したメッセージ。
     async fn message(&self, ctx: Context, msg: Message) {
-        if let Some(guild_id) = msg.guild_id {
-            // ギルドの数を表示
-            println!("guilds: {:?}", ctx.cache.guild_count());
-            // ギルドIDを表示
-            println!("{} said in {}: {}", msg.author.name, guild_id, msg.content);
+        // DMは無視します。
+        if msg.is_private() {
+            println!("{} said in DMs: {}", msg.author.name, msg.content);
+            return;
+        }
 
-            // "!"から始まるメッセージとそうでないメッセージで処理を分けます。
-            if msg.content.starts_with("!") {
-                // !joinと!leaveコマンドを処理。
-                match msg.content.as_str() {
-                    // ボットをユーザーがいるボイスチャンネルに参加させます。
-                    "!join" => {
-                        join_user_voice_channel(&ctx, &msg).await.unwrap();
-                    }
-                    // ボットをボイスチャンネルから退出させます。
-                    "!leave" => {
-                        leave_voice_channel(&ctx, &msg).await.unwrap();
-                    }
-                    _ => {}
+        // ギルドIDを取得。
+        let guild_id = msg.guild_id.expect("Guild ID not found");
+
+        // ギルドの数を表示
+        // println!("guilds: {:?}", ctx.cache.guild_count());
+        // ギルドIDを表示
+        println!("{} said in {}: {}", msg.author.name, guild_id, msg.content);
+
+        // "!"から始まるメッセージとそうでないメッセージで処理を分けます。
+        if msg.content.starts_with("!") {
+            // !joinと!leaveコマンドを処理。
+            match msg.content.as_str() {
+                // ボットをユーザーがいるボイスチャンネルに参加させます。
+                "!join" => {
+                    join_user_voice_channel(&ctx, &msg).await.unwrap();
                 }
-            } else {
-                // ボットがユーザーがいるボイスチャンネルに参加している場合、
-                // ボットが読み上げるようにします。
-                // voicevox_engineに投げるリクエストを生成します。
-                let client = reqwest::Client::new();
-
-                let audio_query_json = request_audio_query(&client, msg.content.as_str(), "1")
-                    .await
-                    .unwrap();
-
-                // JSONの中身を確認。
-                println!("response_json: {:?}", audio_query_json);
-
-                // 新しいリクエストのURLを作成。
-                let synthesis_url = Url::parse_with_params(
-                    "http://localhost:50021/synthesis",
-                    &[("speaker", "1"), ("enable_interrogative_upspeak", "true")],
-                )
-                .unwrap();
-
-                // 新しいリクエストのヘッダーを設定。
-                let mut synthesis_headers = reqwest::header::HeaderMap::new();
-                synthesis_headers.insert("Content-Type", "application/json".parse().unwrap());
-
-                // 新しいリクエストのボディを送信。
-                let synthesis_res = client
-                    .post(synthesis_url)
-                    .headers(synthesis_headers)
-                    .json(&audio_query_json)
-                    .send()
-                    .await
-                    .unwrap();
-
-                // レスポンスの状態を確認。
-                println!("status: {:?}", synthesis_res.status());
-
-                let synthesis_body_bytes = synthesis_res.bytes().await.unwrap();
-
-                // ボディをファイルに保存。
-                // ボディはwav形式の音声データ。ただの確認用なので、Discordではこのファイルを再生しない。
-                let mut file = File::create("output.wav").unwrap();
-                file.write_all(&synthesis_body_bytes).unwrap();
-
-                // 取得したボディを再生。
-                let songbird = get_songbird_from_ctx(&ctx).await;
-                let guild_id = msg.guild_id.expect("Guild ID not found");
-
-                let handler_lock = songbird.get(guild_id).expect("No songbird handler found");
-                let mut handler = handler_lock.lock().await;
-
-                // synthesis_body_bytesを再生。
-                let source = songbird::input::Input::from(Box::from(synthesis_body_bytes.to_vec()));
-                handler.play_input(source);
-
-                // 以下のコードでも再生可能。
-                // let track = Track::from(synthesis_body_bytes.to_vec());
-                // handler.play(track);
+                // ボットをボイスチャンネルから退出させます。
+                "!leave" => {
+                    leave_voice_channel(&ctx, &msg).await.unwrap();
+                }
+                _ => {}
             }
         } else {
-            println!("{} said in DMs: {}", msg.author.name, msg.content);
+            // ボットがユーザーがいるボイスチャンネルに参加している場合、
+            // ボットが読み上げるようにします。
+            // voicevox_engineに投げるリクエストを生成します。
+            let client = reqwest::Client::new();
+
+            let audio_query_json = request_audio_query(&client, msg.content.as_str(), "1")
+                .await
+                .unwrap();
+
+            // JSONの中身を確認。
+            // println!("response_json: {:?}", audio_query_json);
+
+            let synthesis_body_bytes = request_synthesis(&client, audio_query_json).await.unwrap();
+
+            // 取得したボディを再生。
+            let songbird = get_songbird_from_ctx(&ctx).await;
+            let guild_id = msg.guild_id.expect("Guild ID not found");
+
+            let handler_lock = songbird.get(guild_id).expect("No songbird handler found");
+            let mut handler = handler_lock.lock().await;
+
+            // synthesis_body_bytesを再生。
+            let source = songbird::input::Input::from(Box::from(synthesis_body_bytes.to_vec()));
+            handler.play_input(source);
+
+            // 以下のコードでも再生可能。
+            // let track = Track::from(synthesis_body_bytes.to_vec());
+            // handler.play(track);
         }
     }
 
@@ -130,8 +108,6 @@ impl EventHandler for Handler {
         _old_state: Option<VoiceState>,
         new_state: VoiceState,
     ) {
-        // ボイスチャットから誰かが退出するとボットも退出してしまう！
-        // 本当はユーザーが全員退出したときだけボットを退出させたい。
         let guild_id = new_state.guild_id.expect("Guild ID not found");
         let non_bot_users_count = count_non_bot_users_in_bot_voice_channel(&ctx, guild_id);
 
@@ -257,7 +233,7 @@ async fn join_user_voice_channel(
     let result = songbird.join(guild_id, channel_id).await;
 
     if let Ok(call) = result {
-        // ボットがボイスチャンネルに参加したら、聴覚的に遮断する
+        // ボットをスピーカーミュートにする
         if let Err(why) = call.lock().await.deafen(true).await {
             println!("Failed to deafen: {:?}", why);
         }
@@ -329,6 +305,46 @@ async fn request_audio_query(
     Ok(response_json)
 }
 
+/// オーディオクエリから音声合成をリクエストします。
+///
+/// ## Arguments
+/// * `client` - reqwestクライアント。
+/// * `audio_query_json` - オーディオクエリのJSON。
+///
+/// ## Returns
+/// * `Bytes` - 合成した音声のバイトデータ。
+async fn request_synthesis(
+    client: &reqwest::Client,
+    audio_query_json: serde_json::Value,
+) -> Result<Bytes, Box<dyn Error + Send + Sync>> {
+    // 新しいリクエストのURLを作成。
+    let synthesis_url = Url::parse_with_params(
+        "http://localhost:50021/synthesis",
+        &[("speaker", "1"), ("enable_interrogative_upspeak", "true")],
+    )
+    .unwrap();
+
+    // 新しいリクエストのヘッダーを設定。
+    let mut synthesis_headers = reqwest::header::HeaderMap::new();
+    synthesis_headers.insert("Content-Type", "application/json".parse().unwrap());
+
+    // 新しいリクエストのボディを送信。
+    let synthesis_res = client
+        .post(synthesis_url)
+        .headers(synthesis_headers)
+        .json(&audio_query_json)
+        .send()
+        .await
+        .unwrap();
+
+    // レスポンスの状態を確認。
+    println!("status: {:?}", synthesis_res.status());
+
+    let synthesis_body_bytes = synthesis_res.bytes().await.unwrap();
+
+    Ok(synthesis_body_bytes)
+}
+
 #[tokio::main]
 async fn main() {
     dotenv().ok();
@@ -345,8 +361,9 @@ async fn main() {
                                 | GatewayIntents::GUILD_VOICE_STATES
                                 | GatewayIntents::GUILDS
                                 | GatewayIntents::GUILD_PRESENCES; // ボット起動後にボイスチャンネルに参加したユーザーを取得するため。
-                                                                   // すべてのインテントを有効にします。
-                                                                   // let intents = GatewayIntents::all();
+
+    // すべてのインテントを有効にします。
+    // let intents = GatewayIntents::all();
 
     let mut serenity_client = Client::builder(&token, intents)
         .event_handler(Handler)
