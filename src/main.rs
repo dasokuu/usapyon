@@ -15,31 +15,42 @@ use serenity::{
 use songbird::{SerenityInit, Songbird, SongbirdKey};
 use std::{collections::HashMap, env, error::Error, sync::Arc};
 use tokio::sync::{mpsc, Mutex};
+use tokio::task::JoinHandle;
 
 struct Handler {
     request_queue_sender: Arc<Mutex<mpsc::Sender<Request>>>,
+    active_handles: Arc<Mutex<HashMap<GuildId, JoinHandle<()>>>>,
 }
 
 struct Request {
+    guild_id: GuildId,
     text: String,
     response_channel: mpsc::Sender<Bytes>,
 }
 
-async fn request_processor(mut receiver: mpsc::Receiver<Request>) {
+async fn request_processor(
+    mut receiver: mpsc::Receiver<Request>,
+    handles: Arc<Mutex<HashMap<GuildId, JoinHandle<()>>>>,
+) {
     let client = reqwest::Client::new();
     while let Some(request) = receiver.recv().await {
-        let audio_query_json = request_audio_query(&client, &request.text, "1")
-            .await
-            .unwrap();
-        let cancellable_synthesis_body_bytes =
-            request_cancellable_synthesis(&client, audio_query_json)
-                .await
-                .unwrap();
-        request
-            .response_channel
-            .send(cancellable_synthesis_body_bytes)
-            .await
-            .unwrap();
+        let client_clone = client.clone();
+        let handle = tokio::spawn(async move {
+            match request_audio_query(&client_clone, &request.text, "1").await {
+                Ok(audio_query_json) => {
+                    match request_cancellable_synthesis(&client_clone, audio_query_json).await {
+                        Ok(bytes) => {
+                            let _send_result = request.response_channel.send(bytes).await;
+                            // handle send_result if needed
+                        }
+                        Err(e) => println!("Error during synthesis: {:?}", e),
+                    }
+                }
+                Err(e) => println!("Error querying audio: {:?}", e),
+            }
+        });
+
+        handles.lock().await.insert(request.guild_id, handle);
     }
 }
 
@@ -92,39 +103,59 @@ impl EventHandler for Handler {
                 "!leave" => {
                     leave_voice_channel(&ctx, &msg).await.unwrap();
                 }
+                "!skip" => {
+                    if let Some(guild_id) = msg.guild_id {
+                        // Abort any ongoing synthesis process
+                        if let Some(handle) = self.active_handles.lock().await.remove(&guild_id) {
+                            handle.abort();
+                            println!("Stopped synthesis for guild {}", guild_id);
+                        }
+
+                        // Access the Songbird instance and attempt to skip the current track
+                        let songbird = get_songbird_from_ctx(&ctx).await;
+                        if let Some(call) = songbird.get(guild_id) {
+                            let handler = call.lock().await;
+                            if let Err(e) = handler.queue().skip() {
+                                println!("Failed to skip playback in guild {}: {:?}", guild_id, e);
+                            } else {
+                                println!("Skipped playback in guild {}", guild_id);
+                            }
+                        }
+                    }
+                }
                 _ => {}
             }
         } else {
             // ボットがユーザーがいるボイスチャンネルに参加している場合、
             // ボットが読み上げるようにします。
             // voicevox_engineに投げるリクエストを生成します。
-            let request_queue_sender = self.request_queue_sender.lock().await;
-            let (response_sender, mut response_receiver) = mpsc::channel(1);
-            request_queue_sender
-                .send(Request {
-                    text: msg.content.clone(),
-                    response_channel: response_sender,
-                })
-                .await
-                .unwrap();
+            if let Some(guild_id) = msg.guild_id {
+                let request_queue_sender = self.request_queue_sender.lock().await;
+                let (response_sender, mut response_receiver) = mpsc::channel(1);
+                request_queue_sender
+                    .send(Request {
+                        guild_id,
+                        text: msg.content.clone(),
+                        response_channel: response_sender,
+                    })
+                    .await
+                    .unwrap();
 
-            // Response processing
-            let audio_bytes = response_receiver.recv().await.unwrap();
-
-            // 取得したボディを再生。
-            let songbird = get_songbird_from_ctx(&ctx).await;
-            let guild_id = msg.guild_id.expect("Guild ID not found");
-
-            let handler_lock = songbird.get(guild_id).expect("No songbird handler found");
-            let mut handler = handler_lock.lock().await;
-
-            // cancellable_synthesis_body_bytesを再生キューに追加。
-            let source = songbird::input::Input::from(Box::from(audio_bytes.to_vec()));
-            handler.enqueue_input(source).await;
-
-            // 以下のコードでも再生可能。
-            // let track = Track::from(cancellable_synthesis_body_bytes.to_vec());
-            // handler.enqueue(track);
+                // Response processing
+                match response_receiver.recv().await {
+                    Some(audio_bytes) => {
+                        let songbird = get_songbird_from_ctx(&ctx).await;
+                        let handler_lock =
+                            songbird.get(guild_id).expect("No songbird handler found");
+                        let mut handler = handler_lock.lock().await;
+                        let source = songbird::input::Input::from(Box::from(audio_bytes.to_vec()));
+                        handler.enqueue_input(source).await;
+                    }
+                    None => {
+                        println!("No audio data received or synthesis was stopped prematurely.");
+                    }
+                }
+            }
         }
     }
 
@@ -381,27 +412,29 @@ async fn request_cancellable_synthesis(
 async fn main() {
     dotenv().ok();
     let (tx, rx) = mpsc::channel(32);
+    let active_handles = Arc::new(Mutex::new(HashMap::new()));
+
+    // Clone the Arc before passing it to the spawned task
+    let active_handles_clone = Arc::clone(&active_handles);
+
     tokio::spawn(async move {
-        request_processor(rx).await;
+        request_processor(rx, active_handles_clone).await;
     });
+
     let handler = Handler {
         request_queue_sender: Arc::new(Mutex::new(tx)),
+        active_handles, // Use the original Arc here
     };
+
     let token = env::var("DISCORD_TOKEN").expect("DISCORD_TOKEN must be set");
-    // println!("DISCORD_TOKEN: {}", token);
 
-    // 必要なインテントを有効にします。
-    // GUILDS: サーバーのリストを取得するため。
     let intents = GatewayIntents::GUILD_MEMBERS
-                                | GatewayIntents::GUILD_MESSAGES
-                                | GatewayIntents::MESSAGE_CONTENT // メッセージの内容を取得するため。
-                                | GatewayIntents::DIRECT_MESSAGES
-                                | GatewayIntents::GUILD_VOICE_STATES
-                                | GatewayIntents::GUILDS
-                                | GatewayIntents::GUILD_PRESENCES; // ボット起動後にボイスチャンネルに参加したユーザーを取得するため。
-
-    // すべてのインテントを有効にします。
-    // let intents = GatewayIntents::all();
+        | GatewayIntents::GUILD_MESSAGES
+        | GatewayIntents::MESSAGE_CONTENT
+        | GatewayIntents::DIRECT_MESSAGES
+        | GatewayIntents::GUILD_VOICE_STATES
+        | GatewayIntents::GUILDS
+        | GatewayIntents::GUILD_PRESENCES;
 
     let mut serenity_client = Client::builder(&token, intents)
         .event_handler(handler)
