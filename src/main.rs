@@ -81,7 +81,7 @@ impl EventHandler for Handler {
             // JSONの中身を確認。
             // println!("response_json: {:?}", audio_query_json);
 
-            let synthesis_body_bytes = request_synthesis(&client, audio_query_json).await.unwrap();
+            let cancellable_synthesis_body_bytes = request_cancellable_synthesis(&client, audio_query_json).await.unwrap();
 
             // 取得したボディを再生。
             let songbird = get_songbird_from_ctx(&ctx).await;
@@ -90,12 +90,12 @@ impl EventHandler for Handler {
             let handler_lock = songbird.get(guild_id).expect("No songbird handler found");
             let mut handler = handler_lock.lock().await;
 
-            // synthesis_body_bytesを再生キューに追加。
-            let source = songbird::input::Input::from(Box::from(synthesis_body_bytes.to_vec()));
+            // cancellable_synthesis_body_bytesを再生キューに追加。
+            let source = songbird::input::Input::from(Box::from(cancellable_synthesis_body_bytes.to_vec()));
             handler.enqueue_input(source).await;
 
             // 以下のコードでも再生可能。
-            // let track = Track::from(synthesis_body_bytes.to_vec());
+            // let track = Track::from(cancellable_synthesis_body_bytes.to_vec());
             // handler.enqueue(track);
         }
     }
@@ -317,36 +317,36 @@ async fn request_audio_query(
 ///
 /// ## Returns
 /// * `Bytes` - 合成した音声のバイトデータ。
-async fn request_synthesis(
+async fn request_cancellable_synthesis(
     client: &reqwest::Client,
     audio_query_json: serde_json::Value,
 ) -> Result<Bytes, Box<dyn Error + Send + Sync>> {
     // 新しいリクエストのURLを作成。
-    let synthesis_url = Url::parse_with_params(
-        "http://localhost:50021/synthesis",
+    let cancellable_synthesis_url = Url::parse_with_params(
+        "http://localhost:50021/cancellable_synthesis",
         &[("speaker", "1"), ("enable_interrogative_upspeak", "true")],
     )
     .unwrap();
 
     // 新しいリクエストのヘッダーを設定。
-    let mut synthesis_headers = reqwest::header::HeaderMap::new();
-    synthesis_headers.insert("Content-Type", "application/json".parse().unwrap());
+    let mut cancellable_synthesis_headers = reqwest::header::HeaderMap::new();
+    cancellable_synthesis_headers.insert("Content-Type", "application/json".parse().unwrap());
 
     // 新しいリクエストのボディを送信。
-    let synthesis_res = client
-        .post(synthesis_url)
-        .headers(synthesis_headers)
+    let cancellable_synthesis_res = client
+        .post(cancellable_synthesis_url)
+        .headers(cancellable_synthesis_headers)
         .json(&audio_query_json)
         .send()
         .await
         .unwrap();
 
     // レスポンスの状態を確認。
-    println!("status: {:?}", synthesis_res.status());
+    println!("status: {:?}", cancellable_synthesis_res.status());
 
-    let synthesis_body_bytes = synthesis_res.bytes().await.unwrap();
+    let cancellable_synthesis_body_bytes = cancellable_synthesis_res.bytes().await.unwrap();
 
-    Ok(synthesis_body_bytes)
+    Ok(cancellable_synthesis_body_bytes)
 }
 
 #[tokio::main]
