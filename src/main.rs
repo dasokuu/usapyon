@@ -137,19 +137,40 @@ impl EventHandler for Handler {
         let guild_id = new_state.guild_id.expect("Guild ID not found");
         let bot_voice_channel_id = ctx.cache.guild(guild_id)
             .and_then(|guild| guild.voice_states.get(&ctx.cache.current_user().id).cloned())
-            .and_then(|voice_state| voice_state.channel_id);
+            .and_then(|voice_state| voice_state.channel_id).expect("Bot voice channel ID not found");
+        let guild = ctx.cache.guild(guild_id).expect("Guild not found");
+
+        // ボットが参加しているボイスチャンネルにいるユーザーを取得。
+        let users_in_bot_voice_channel = guild.voice_states.iter()
+            .filter_map(|(user_id, voice_state)| {
+                if voice_state.channel_id == Some(bot_voice_channel_id) {
+                    Some(user_id)
+                } else {
+                    None
+                }
+            }).collect::<Vec<_>>();
+
+        println!("users_in_bot_voice_channel: {:?}", users_in_bot_voice_channel);
+    
+        // ボットが参加しているボイスチャンネルにいるユーザーの数（ボットを除く）を取得。
+        // let user_count = ctx.cache.guild(guild_id)
+        //     .map(|guild| guild.voice_states.iter()
+        //         .filter_map(|(user_id, voice_state)| {
+        //             if voice_state.channel_id == Some(bot_voice_channel_id) {
+        //                 Some(user_id)
+        //             } else {
+        //                 None
+        //             }
+        //         })
+        //         .filter(|user_id| {
+        //             match user_id.to_user_cached(&ctx.cache) {
+        //                 Some(user) => !user.bot,
+        //                 None => false
+        //             }
+        //         })
+        //         .count());
         
-        if let Some(bot_channel_id) = bot_voice_channel_id {
-            let user_count = ctx.cache.guild(guild_id)
-                .map(|guild| guild.voice_states.iter()
-                    .filter(|(_user_id, voice_state)| voice_state.channel_id == Some(bot_channel_id))
-                    .count());
-            
-            println!("user_count: {:?}", user_count);
-        }
-        else {
-            println!("Bot is not in a voice channel");
-        }
+        // println!("user_count: {:?}", user_count);
 
         // ボットが参加しているボイスチャンネルに関係するイベントでなければ何もしません。
         // if new_state.user_id != ctx.cache.current_user().id {
