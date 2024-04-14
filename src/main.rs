@@ -88,7 +88,7 @@ impl EventHandler for Handler {
 
             // synthesis_body_bytesを再生。
             let source = songbird::input::Input::from(Box::from(synthesis_body_bytes.to_vec()));
-            handler.play_input(source);
+            handler.enqueue_input(source).await;
 
             // 以下のコードでも再生可能。
             // let track = Track::from(synthesis_body_bytes.to_vec());
