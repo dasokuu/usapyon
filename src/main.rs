@@ -139,31 +139,32 @@ impl EventHandler for Handler {
             // ボットがユーザーがいるボイスチャンネルに参加している場合、
             // ボットが読み上げるようにします。
             // voicevox_engineに投げるリクエストを生成します。
+            let text_to_read = if msg.content.chars().count() > 400 {
+                msg.content.chars().take(400).collect::<String>() + "...以下略"
+            } else {
+                msg.content.clone()
+            };
+
             if let Some(guild_id) = msg.guild_id {
                 let request_queue_sender = self.request_queue_sender.lock().await;
                 let (response_sender, mut response_receiver) = mpsc::channel(1);
                 request_queue_sender
                     .send(Request {
                         guild_id,
-                        text: msg.content.clone(),
+                        text: text_to_read,
                         response_channel: response_sender,
                     })
                     .await
                     .unwrap();
 
-                // Response processing
-                match response_receiver.recv().await {
-                    Some(audio_bytes) => {
-                        let songbird = get_songbird_from_ctx(&ctx).await;
-                        let handler_lock =
-                            songbird.get(guild_id).expect("No songbird handler found");
-                        let mut handler = handler_lock.lock().await;
-                        let source = songbird::input::Input::from(Box::from(audio_bytes.to_vec()));
-                        handler.enqueue_input(source).await;
-                    }
-                    None => {
-                        println!("No audio data received or synthesis was stopped prematurely.");
-                    }
+                if let Some(audio_bytes) = response_receiver.recv().await {
+                    let songbird = get_songbird_from_ctx(&ctx).await;
+                    let handler_lock = songbird.get(guild_id).expect("No songbird handler found");
+                    let mut handler = handler_lock.lock().await;
+                    let source = songbird::input::Input::from(Box::from(audio_bytes.to_vec()));
+                    handler.enqueue_input(source).await;
+                } else {
+                    println!("No audio data received or synthesis was stopped prematurely.");
                 }
             }
         }
