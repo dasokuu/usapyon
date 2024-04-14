@@ -14,6 +14,7 @@ rust
 
 - [Discord Developer Portal](https://discord.com/developers/applications)にアクセス
 - トークン取得
+- "PRESENCE INTENT"を有効にする
 - "SERVER MEMBERS INTENT"を有効にする
 - "MESSAGE CONTENT INTENT"を有効にする
 
