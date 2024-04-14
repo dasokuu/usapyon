@@ -77,8 +77,7 @@ impl EventHandler for Handler {
             // JSONの中身を確認。
             // println!("response_json: {:?}", audio_query_json);
 
-            let synthesis_body_bytes =
-                request_synthesis(&client, audio_query_json).await.unwrap();
+            let synthesis_body_bytes = request_synthesis(&client, audio_query_json).await.unwrap();
 
             // 取得したボディを再生。
             let songbird = get_songbird_from_ctx(&ctx).await;
