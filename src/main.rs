@@ -65,6 +65,11 @@ impl EventHandler for Handler {
                 // ボットをボイスチャンネルから退出させます。
                 "!leave" => {
                     leave_voice_channel(&ctx, &msg).await.unwrap();
+                },
+                "!skip" => {
+                    if let Some(guild_id) = msg.guild_id {
+                        skip_queue(&ctx, guild_id).await;
+                    }
                 }
                 _ => {}
             }
@@ -272,6 +277,18 @@ async fn leave_voice_channel(
     }
 
     Ok(())
+}
+async fn skip_queue(ctx: &Context, guild_id: GuildId) {
+    let songbird = get_songbird_from_ctx(&ctx).await;
+    if let Some(handler_lock) = songbird.get(guild_id) {
+        let handler = handler_lock.lock().await;
+        match handler.queue().skip() {
+            Ok(_) => println!("Successfully skipped the queue."),
+            Err(e) => eprintln!("Failed to skip the queue: {:?}", e),
+        }
+    } else {
+        eprintln!("No songbird handler found for the given guild ID.");
+    }
 }
 
 /// テキストとスタイルIDからオーディオクエリを生成し、サーバにリクエストを送信します。
