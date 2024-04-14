@@ -65,36 +65,11 @@ impl EventHandler for Handler {
                 // ボットが読み上げるようにします。
                 // voicevox_engineに投げるリクエストを生成します。
                 let client = reqwest::Client::new();
-                
-                // let mut audio_query_headers = reqwest::header::HeaderMap::new();
-                // audio_query_headers.insert("Accept", "application/json".parse().unwrap());
 
-                // let base = "http://localhost:50021/audio_query";
-                
-                // let params: HashMap<&str, &str> = [
-                //     ("text", msg.content.as_str()),
-                //     ("speaker", "1")
-                // ].iter().cloned().collect();
-
-                // let audio_query_url = Url::parse_with_params(base, &params).unwrap();
-
-                // let audio_query_res = client.post(audio_query_url)
-                //     .headers(audio_query_headers)
-                //     .send()
-                //     .await
-                //     .unwrap();
-
-                // レスポンスボディを取得。
-                // let response_body = audio_query_res.text().await.unwrap();
-
-                // // レスポンスボディをJSONとして解析。
-                // // サンプリングレートの書き換えなどは不要だった。
-                // let response_json: serde_json::Value = serde_json::from_str(&response_body).unwrap();
-
-                let response_json = request_audio_query(&client, msg.content.as_str(), "1").await.unwrap();
+                let audio_query_json = request_audio_query(&client, msg.content.as_str(), "1").await.unwrap();
 
                 // JSONの中身を確認。
-                println!("response_json: {:?}", response_json);
+                println!("response_json: {:?}", audio_query_json);
 
                 // 新しいリクエストのURLを作成。
                 let synthesis_url = Url::parse_with_params(
@@ -112,7 +87,7 @@ impl EventHandler for Handler {
                 // 新しいリクエストのボディを送信。
                 let synthesis_res = client.post(synthesis_url)
                     .headers(synthesis_headers)
-                    .json(&response_json)
+                    .json(&audio_query_json)
                     .send()
                     .await
                     .unwrap();
@@ -155,20 +130,47 @@ impl EventHandler for Handler {
     /// * `_old_state` - 変更前のボイスチャットの状態。
     /// * `new_state` - 変更後のボイスチャットの状態。
     async fn voice_state_update(&self, ctx: Context, _old_state: Option<VoiceState>, new_state: VoiceState) {
+        // ボイスチャットから誰かが退出するとボットも退出してしまう！
+        // 本当はユーザーが全員退出したときだけボットを退出させたい。
         // println!("voice_state_update: {:?}", new_state);
 
-        // ボット以外のユーザーがボイスチャンネルに存在しなくなった場合、ボットを退出させます。
-        if new_state.user_id != ctx.cache.current_user().id {
-            if new_state.channel_id.is_none() {
-                let guild_id = new_state.guild_id.expect("Guild ID not found");
-
-                let songbird = get_songbird_from_ctx(&ctx).await;
-
-                if let Err(why) = songbird.remove(guild_id).await {
-                    println!("Error removing handler: {:?}", why);
-                }
-            }
+        let guild_id = new_state.guild_id.expect("Guild ID not found");
+        let bot_voice_channel_id = ctx.cache.guild(guild_id)
+            .and_then(|guild| guild.voice_states.get(&ctx.cache.current_user().id).cloned())
+            .and_then(|voice_state| voice_state.channel_id);
+        
+        if let Some(bot_channel_id) = bot_voice_channel_id {
+            let user_count = ctx.cache.guild(guild_id)
+                .map(|guild| guild.voice_states.iter()
+                    .filter(|(_user_id, voice_state)| voice_state.channel_id == Some(bot_channel_id))
+                    .count());
+            
+            println!("user_count: {:?}", user_count);
         }
+        else {
+            println!("Bot is not in a voice channel");
+        }
+
+        // ボットが参加しているボイスチャンネルに関係するイベントでなければ何もしません。
+        // if new_state.user_id != ctx.cache.current_user().id {
+        //     println!("new_state.user_id: {:?}", new_state.user_id);
+        //     return;
+        // }
+
+        // ボット以外のユーザーがボイスチャンネルに存在しなくなった場合、ボットを退出させます。
+        // if new_state.user_id != ctx.cache.current_user().id {
+        //     println!("new_state.user_id: {:?}", new_state.user_id);
+        //     println!("current_user: {:?}", ctx.cache.current_user().id);
+        //     if new_state.channel_id.is_none() {
+        //         let guild_id = new_state.guild_id.expect("Guild ID not found");
+
+        //         let songbird = get_songbird_from_ctx(&ctx).await;
+
+        //         if let Err(why) = songbird.remove(guild_id).await {
+        //             println!("Error removing handler: {:?}", why);
+        //         }
+        //     }
+        // }
     }
 }
 
