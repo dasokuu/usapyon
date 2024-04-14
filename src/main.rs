@@ -14,8 +14,34 @@ use serenity::{
 };
 use songbird::{SerenityInit, Songbird, SongbirdKey};
 use std::{collections::HashMap, env, error::Error, sync::Arc};
+use tokio::sync::{mpsc, Mutex};
 
-struct Handler;
+struct Handler {
+    request_queue_sender: Arc<Mutex<mpsc::Sender<Request>>>,
+}
+
+struct Request {
+    text: String,
+    response_channel: mpsc::Sender<Bytes>,
+}
+
+async fn request_processor(mut receiver: mpsc::Receiver<Request>) {
+    let client = reqwest::Client::new();
+    while let Some(request) = receiver.recv().await {
+        let audio_query_json = request_audio_query(&client, &request.text, "1")
+            .await
+            .unwrap();
+        let cancellable_synthesis_body_bytes =
+            request_cancellable_synthesis(&client, audio_query_json)
+                .await
+                .unwrap();
+        request
+            .response_channel
+            .send(cancellable_synthesis_body_bytes)
+            .await
+            .unwrap();
+    }
+}
 
 /// `Handler`は`EventHandler`の実装です。
 /// Discordからのイベントを処理するメソッドを提供します。
@@ -72,16 +98,18 @@ impl EventHandler for Handler {
             // ボットがユーザーがいるボイスチャンネルに参加している場合、
             // ボットが読み上げるようにします。
             // voicevox_engineに投げるリクエストを生成します。
-            let client = reqwest::Client::new();
-
-            let audio_query_json = request_audio_query(&client, msg.content.as_str(), "1")
+            let request_queue_sender = self.request_queue_sender.lock().await;
+            let (response_sender, mut response_receiver) = mpsc::channel(1);
+            request_queue_sender
+                .send(Request {
+                    text: msg.content.clone(),
+                    response_channel: response_sender,
+                })
                 .await
                 .unwrap();
 
-            // JSONの中身を確認。
-            // println!("response_json: {:?}", audio_query_json);
-
-            let cancellable_synthesis_body_bytes = request_cancellable_synthesis(&client, audio_query_json).await.unwrap();
+            // Response processing
+            let audio_bytes = response_receiver.recv().await.unwrap();
 
             // 取得したボディを再生。
             let songbird = get_songbird_from_ctx(&ctx).await;
@@ -91,7 +119,7 @@ impl EventHandler for Handler {
             let mut handler = handler_lock.lock().await;
 
             // cancellable_synthesis_body_bytesを再生キューに追加。
-            let source = songbird::input::Input::from(Box::from(cancellable_synthesis_body_bytes.to_vec()));
+            let source = songbird::input::Input::from(Box::from(audio_bytes.to_vec()));
             handler.enqueue_input(source).await;
 
             // 以下のコードでも再生可能。
@@ -352,7 +380,13 @@ async fn request_cancellable_synthesis(
 #[tokio::main]
 async fn main() {
     dotenv().ok();
-
+    let (tx, rx) = mpsc::channel(32);
+    tokio::spawn(async move {
+        request_processor(rx).await;
+    });
+    let handler = Handler {
+        request_queue_sender: Arc::new(Mutex::new(tx)),
+    };
     let token = env::var("DISCORD_TOKEN").expect("DISCORD_TOKEN must be set");
     // println!("DISCORD_TOKEN: {}", token);
 
@@ -370,7 +404,7 @@ async fn main() {
     // let intents = GatewayIntents::all();
 
     let mut serenity_client = Client::builder(&token, intents)
-        .event_handler(Handler)
+        .event_handler(handler)
         .register_songbird()
         .await
         .expect("Error creating client");
