@@ -13,7 +13,7 @@ use serenity::{
     prelude::*,
 };
 use songbird::{SerenityInit, Songbird, SongbirdKey};
-use std::{collections::HashMap, env, error::Error, sync::Arc};
+use std::{collections::HashMap, env, error::Error, option::Option, sync::Arc};
 use tokio::sync::{mpsc, Mutex};
 use tokio::task::JoinHandle;
 
@@ -105,21 +105,31 @@ impl EventHandler for Handler {
                 }
                 "!skip" => {
                     if let Some(guild_id) = msg.guild_id {
-                        // Abort any ongoing synthesis process
-                        if let Some(handle) = self.active_handles.lock().await.remove(&guild_id) {
-                            handle.abort();
-                            println!("Stopped synthesis for guild {}", guild_id);
-                        }
-
-                        // Access the Songbird instance and attempt to skip the current track
+                        //Access the Songbird instance
                         let songbird = get_songbird_from_ctx(&ctx).await;
+
+                        // Get the call for the specified guild ID
                         if let Some(call) = songbird.get(guild_id) {
                             let handler = call.lock().await;
+
+                            // Access the current track
+                            if handler.queue().current().is_none() {
+                                println!("No track is currently playing.");
+                                // Abort any ongoing synthesis process
+                                if let Some(handle) =
+                                    self.active_handles.lock().await.remove(&guild_id)
+                                {
+                                    handle.abort();
+                                    println!("Stopped synthesis for guild {}", guild_id);
+                                }
+                            }
                             if let Err(e) = handler.queue().skip() {
                                 println!("Failed to skip playback in guild {}: {:?}", guild_id, e);
                             } else {
                                 println!("Skipped playback in guild {}", guild_id);
                             }
+                        } else {
+                            println!("Not connected to a voice channel in this guild.");
                         }
                     }
                 }
