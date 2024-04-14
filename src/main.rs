@@ -4,6 +4,7 @@
 extern crate dotenv;
 extern crate serenity;
 
+use bytes::Bytes;
 use dotenv::dotenv;
 use reqwest::Url;
 use serenity::{
@@ -68,30 +69,8 @@ impl EventHandler for Handler {
                 // JSONの中身を確認。
                 println!("response_json: {:?}", audio_query_json);
 
-                // 新しいリクエストのURLを作成。
-                let synthesis_url = Url::parse_with_params(
-                    "http://localhost:50021/synthesis",
-                    &[("speaker", "1"), ("enable_interrogative_upspeak", "true")],
-                )
-                .unwrap();
-
-                // 新しいリクエストのヘッダーを設定。
-                let mut synthesis_headers = reqwest::header::HeaderMap::new();
-                synthesis_headers.insert("Content-Type", "application/json".parse().unwrap());
-
-                // 新しいリクエストのボディを送信。
-                let synthesis_res = client
-                    .post(synthesis_url)
-                    .headers(synthesis_headers)
-                    .json(&audio_query_json)
-                    .send()
-                    .await
-                    .unwrap();
-
-                // レスポンスの状態を確認。
-                println!("status: {:?}", synthesis_res.status());
-
-                let synthesis_body_bytes = synthesis_res.bytes().await.unwrap();
+                let synthesis_body_bytes =
+                    request_synthesis(&client, audio_query_json).await.unwrap();
 
                 // ボディをファイルに保存。
                 // ボディはwav形式の音声データ。ただの確認用なので、Discordではこのファイルを再生しない。
@@ -130,8 +109,6 @@ impl EventHandler for Handler {
         _old_state: Option<VoiceState>,
         new_state: VoiceState,
     ) {
-        // ボイスチャットから誰かが退出するとボットも退出してしまう！
-        // 本当はユーザーが全員退出したときだけボットを退出させたい。
         let guild_id = new_state.guild_id.expect("Guild ID not found");
         let non_bot_users_count = count_non_bot_users_in_bot_voice_channel(&ctx, guild_id);
 
@@ -322,6 +299,46 @@ async fn request_audio_query(
     let response_json: serde_json::Value = serde_json::from_str(&response_body)?;
 
     Ok(response_json)
+}
+
+/// オーディオクエリから音声合成をリクエストします。
+///
+/// ## Arguments
+/// * `client` - reqwestクライアント。
+/// * `audio_query_json` - オーディオクエリのJSON。
+///
+/// ## Returns
+/// * `Bytes` - 合成した音声のバイトデータ。
+async fn request_synthesis(
+    client: &reqwest::Client,
+    audio_query_json: serde_json::Value,
+) -> Result<Bytes, Box<dyn Error + Send + Sync>> {
+    // 新しいリクエストのURLを作成。
+    let synthesis_url = Url::parse_with_params(
+        "http://localhost:50021/synthesis",
+        &[("speaker", "1"), ("enable_interrogative_upspeak", "true")],
+    )
+    .unwrap();
+
+    // 新しいリクエストのヘッダーを設定。
+    let mut synthesis_headers = reqwest::header::HeaderMap::new();
+    synthesis_headers.insert("Content-Type", "application/json".parse().unwrap());
+
+    // 新しいリクエストのボディを送信。
+    let synthesis_res = client
+        .post(synthesis_url)
+        .headers(synthesis_headers)
+        .json(&audio_query_json)
+        .send()
+        .await
+        .unwrap();
+
+    // レスポンスの状態を確認。
+    println!("status: {:?}", synthesis_res.status());
+
+    let synthesis_body_bytes = synthesis_res.bytes().await.unwrap();
+
+    Ok(synthesis_body_bytes)
 }
 
 #[tokio::main]
