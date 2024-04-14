@@ -36,6 +36,10 @@ impl EventHandler for Handler {
     /// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
     /// * `msg` - 受信したメッセージ。
     async fn message(&self, ctx: Context, msg: Message) {
+        // メッセージがボットから送信されたものであれば無視します。
+        if msg.author.bot {
+            return;
+        }
         // DMは無視します。
         if msg.is_private() {
             println!("{} said in DMs: {}", msg.author.name, msg.content);
@@ -86,13 +90,13 @@ impl EventHandler for Handler {
             let handler_lock = songbird.get(guild_id).expect("No songbird handler found");
             let mut handler = handler_lock.lock().await;
 
-            // synthesis_body_bytesを再生。
+            // synthesis_body_bytesを再生キューに追加。
             let source = songbird::input::Input::from(Box::from(synthesis_body_bytes.to_vec()));
             handler.enqueue_input(source).await;
 
             // 以下のコードでも再生可能。
             // let track = Track::from(synthesis_body_bytes.to_vec());
-            // handler.play(track);
+            // handler.enqueue(track);
         }
     }
 
