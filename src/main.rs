@@ -11,7 +11,7 @@ use serenity::{
     model::{gateway::Ready, prelude::*},
     prelude::*,
 };
-use songbird::{tracks::Track, SerenityInit, Songbird, SongbirdKey};
+use songbird::{SerenityInit, Songbird, SongbirdKey};
 use std::{collections::HashMap, env, error::Error, fs::File, io::Write, sync::Arc};
 
 struct Handler;
@@ -61,37 +61,12 @@ impl EventHandler for Handler {
                 // voicevox_engineに投げるリクエストを生成します。
                 let client = reqwest::Client::new();
 
-                // let mut audio_query_headers = reqwest::header::HeaderMap::new();
-                // audio_query_headers.insert("Accept", "application/json".parse().unwrap());
-
-                // let base = "http://localhost:50021/audio_query";
-
-                // let params: HashMap<&str, &str> = [
-                //     ("text", msg.content.as_str()),
-                //     ("speaker", "1")
-                // ].iter().cloned().collect();
-
-                // let audio_query_url = Url::parse_with_params(base, &params).unwrap();
-
-                // let audio_query_res = client.post(audio_query_url)
-                //     .headers(audio_query_headers)
-                //     .send()
-                //     .await
-                //     .unwrap();
-
-                // レスポンスボディを取得。
-                // let response_body = audio_query_res.text().await.unwrap();
-
-                // // レスポンスボディをJSONとして解析。
-                // // サンプリングレートの書き換えなどは不要だった。
-                // let response_json: serde_json::Value = serde_json::from_str(&response_body).unwrap();
-
-                let response_json = request_audio_query(&client, msg.content.as_str(), "1")
+                let audio_query_json = request_audio_query(&client, msg.content.as_str(), "1")
                     .await
                     .unwrap();
 
                 // JSONの中身を確認。
-                println!("response_json: {:?}", response_json);
+                println!("response_json: {:?}", audio_query_json);
 
                 // 新しいリクエストのURLを作成。
                 let synthesis_url = Url::parse_with_params(
@@ -108,7 +83,7 @@ impl EventHandler for Handler {
                 let synthesis_res = client
                     .post(synthesis_url)
                     .headers(synthesis_headers)
-                    .json(&response_json)
+                    .json(&audio_query_json)
                     .send()
                     .await
                     .unwrap();
@@ -155,21 +130,80 @@ impl EventHandler for Handler {
         _old_state: Option<VoiceState>,
         new_state: VoiceState,
     ) {
-        // println!("voice_state_update: {:?}", new_state);
+        // ボイスチャットから誰かが退出するとボットも退出してしまう！
+        // 本当はユーザーが全員退出したときだけボットを退出させたい。
+        let guild_id = new_state.guild_id.expect("Guild ID not found");
+        let non_bot_users_count = count_non_bot_users_in_bot_voice_channel(&ctx, guild_id);
+
+        println!("non_bot_users_count: {:?}", non_bot_users_count);
 
         // ボット以外のユーザーがボイスチャンネルに存在しなくなった場合、ボットを退出させます。
-        if new_state.user_id != ctx.cache.current_user().id {
-            if new_state.channel_id.is_none() {
-                let guild_id = new_state.guild_id.expect("Guild ID not found");
+        if non_bot_users_count == 0 {
+            let songbird = get_songbird_from_ctx(&ctx).await;
 
-                let songbird = get_songbird_from_ctx(&ctx).await;
-
-                if let Err(why) = songbird.remove(guild_id).await {
-                    println!("Error removing handler: {:?}", why);
-                }
+            if let Err(why) = songbird.leave(guild_id).await {
+                println!("Error leaving voice channel: {:?}", why);
             }
         }
     }
+}
+
+/// ボットが参加しているボイスチャンネルにいるボット以外のユーザーの数を取得します。
+///
+/// ## Arguments
+/// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
+/// * `guild_id` - ギルドID。
+///
+/// ## Returns
+/// `usize` - ボットが参加しているボイスチャンネルにいるボット以外のユーザーの数。
+fn count_non_bot_users_in_bot_voice_channel(ctx: &Context, guild_id: GuildId) -> usize {
+    let guild = ctx.cache.guild(guild_id).expect("Guild not found");
+    let bot_voice_channel_id = guild
+        .voice_states
+        .get(&ctx.cache.current_user().id)
+        .and_then(|voice_state| voice_state.channel_id)
+        .expect("Bot voice channel ID not found");
+
+    // ボットが参加しているボイスチャンネルにいるユーザーIDを取得。
+    let users_in_bot_voice_channel = guild
+        .voice_states
+        .iter()
+        .filter_map(|(user_id, voice_state)| {
+            if voice_state.channel_id == Some(bot_voice_channel_id) {
+                Some(user_id)
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>();
+
+    println!(
+        "users_in_bot_voice_channel: {:?}",
+        users_in_bot_voice_channel
+    );
+
+    // ボットが参加しているボイスチャンネルにいるユーザーの数（ボットを除く）を取得。
+    // デバッグ用にユーザーがキャッシュに含まれているか、ボットかどうかを表示。
+    let non_bot_users_count = users_in_bot_voice_channel
+        .iter()
+        .filter(|user_id| match user_id.to_user_cached(&ctx) {
+            Some(user) => {
+                if user.bot {
+                    println!("{} is a bot user", user_id);
+                    false
+                } else {
+                    println!("{} is not a bot user", user_id);
+                    true
+                }
+            }
+            None => {
+                println!("{} is not cached", user_id);
+                false
+            }
+        })
+        .count();
+
+    non_bot_users_count
 }
 
 /// コンテキストデータからSongbirdクライアントを非同期に取得します。
@@ -309,9 +343,10 @@ async fn main() {
                                 | GatewayIntents::MESSAGE_CONTENT // メッセージの内容を取得するため。
                                 | GatewayIntents::DIRECT_MESSAGES
                                 | GatewayIntents::GUILD_VOICE_STATES
-                                | GatewayIntents::GUILDS;
-    // すべてのインテントを有効にします。
-    // let intents = GatewayIntents::all();
+                                | GatewayIntents::GUILDS
+                                | GatewayIntents::GUILD_PRESENCES; // ボット起動後にボイスチャンネルに参加したユーザーを取得するため。
+                                                                   // すべてのインテントを有効にします。
+                                                                   // let intents = GatewayIntents::all();
 
     let mut serenity_client = Client::builder(&token, intents)
         .event_handler(Handler)

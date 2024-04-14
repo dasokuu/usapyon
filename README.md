@@ -26,6 +26,8 @@ rust
 DISCORD_TOKEN=[Discordのトークン]
 ```
 
+### ボットをサーバーに追加する
+
 #### サーバーに追加するときのロール
 
 OAuth2 URL Generator
@@ -35,6 +37,7 @@ SCOPES
 - applications.commands
 
 下にURLが出てくるので、ブラウザにコピペして招待。
+自分が管理者になっているサーバーに招待可能。
 
 #### serenityを使う
 
