@@ -132,69 +132,69 @@ impl EventHandler for Handler {
     async fn voice_state_update(&self, ctx: Context, _old_state: Option<VoiceState>, new_state: VoiceState) {
         // ボイスチャットから誰かが退出するとボットも退出してしまう！
         // 本当はユーザーが全員退出したときだけボットを退出させたい。
-        // println!("voice_state_update: {:?}", new_state);
-
         let guild_id = new_state.guild_id.expect("Guild ID not found");
-        let guild = ctx.cache.guild(guild_id).expect("Guild not found");
-        let bot_voice_channel_id = guild.voice_states.get(&ctx.cache.current_user().id)
-            .and_then(|voice_state| voice_state.channel_id).expect("Bot voice channel ID not found");
+        let non_bot_users_count = count_non_bot_users_in_bot_voice_channel(&ctx, guild_id);
 
-        // ボットが参加しているボイスチャンネルにいるユーザーを取得。
-        let users_in_bot_voice_channel = guild.voice_states.iter()
-            .filter_map(|(user_id, voice_state)| {
-                if voice_state.channel_id == Some(bot_voice_channel_id) {
-                    Some(user_id)
-                } else {
-                    None
-                }
-            }).collect::<Vec<_>>();
-
-        println!("users_in_bot_voice_channel: {:?}", users_in_bot_voice_channel);
+        println!("non_bot_users_count: {:?}", non_bot_users_count);
     
-        // ボットが参加しているボイスチャンネルにいるユーザーの数（ボットを除く）を取得。
-        // ボットかどうかの判定を行う。
-        let no_bot_users_count = users_in_bot_voice_channel.iter()
-            .filter(|user_id| {
-                match user_id.to_user_cached(&ctx) {
-                    Some(user) => {
-                        if user.bot {
-                            println!("{} is a bot user", user_id);
-                            false
-                        } else {
-                            println!("{} is not a bot user", user_id);
-                            true
-                        }
-                    }
-                    None => {
-                        println!("{} is not cached", user_id);
+        // ボット以外のユーザーがボイスチャンネルに存在しなくなった場合、ボットを退出させます。
+        if non_bot_users_count == 0 {
+            let songbird = get_songbird_from_ctx(&ctx).await;
+            
+            if let Err(why) = songbird.leave(guild_id).await {
+                println!("Error leaving voice channel: {:?}", why);
+            }
+        }
+    }
+}
+
+/// ボットが参加しているボイスチャンネルにいるボット以外のユーザーの数を取得します。
+/// 
+/// ## Arguments
+/// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
+/// * `guild_id` - ギルドID。
+/// 
+/// ## Returns
+/// `usize` - ボットが参加しているボイスチャンネルにいるボット以外のユーザーの数。
+fn count_non_bot_users_in_bot_voice_channel(ctx: &Context, guild_id: GuildId) -> usize {
+    let guild = ctx.cache.guild(guild_id).expect("Guild not found");
+    let bot_voice_channel_id = guild.voice_states.get(&ctx.cache.current_user().id)
+        .and_then(|voice_state| voice_state.channel_id).expect("Bot voice channel ID not found");
+    
+    // ボットが参加しているボイスチャンネルにいるユーザーIDを取得。
+    let users_in_bot_voice_channel = guild.voice_states.iter()
+        .filter_map(|(user_id, voice_state)| {
+            if voice_state.channel_id == Some(bot_voice_channel_id) {
+                Some(user_id)
+            } else {
+                None
+            }
+        }).collect::<Vec<_>>();
+
+    println!("users_in_bot_voice_channel: {:?}", users_in_bot_voice_channel);
+
+    // ボットが参加しているボイスチャンネルにいるユーザーの数（ボットを除く）を取得。
+    // デバッグ用にユーザーがキャッシュに含まれているか、ボットかどうかを表示。
+    let non_bot_users_count = users_in_bot_voice_channel.iter()
+        .filter(|user_id| {
+            match user_id.to_user_cached(&ctx) {
+                Some(user) => {
+                    if user.bot {
+                        println!("{} is a bot user", user_id);
                         false
+                    } else {
+                        println!("{} is not a bot user", user_id);
+                        true
                     }
                 }
-            }).count();
-        
-        println!("no_bot_users_count: {:?}", no_bot_users_count);
+                None => {
+                    println!("{} is not cached", user_id);
+                    false
+                }
+            }
+        }).count();
 
-        // ボットが参加しているボイスチャンネルに関係するイベントでなければ何もしません。
-        // if new_state.user_id != ctx.cache.current_user().id {
-        //     println!("new_state.user_id: {:?}", new_state.user_id);
-        //     return;
-        // }
-
-        // ボット以外のユーザーがボイスチャンネルに存在しなくなった場合、ボットを退出させます。
-        // if new_state.user_id != ctx.cache.current_user().id {
-        //     println!("new_state.user_id: {:?}", new_state.user_id);
-        //     println!("current_user: {:?}", ctx.cache.current_user().id);
-        //     if new_state.channel_id.is_none() {
-        //         let guild_id = new_state.guild_id.expect("Guild ID not found");
-
-        //         let songbird = get_songbird_from_ctx(&ctx).await;
-
-        //         if let Err(why) = songbird.remove(guild_id).await {
-        //             println!("Error removing handler: {:?}", why);
-        //         }
-        //     }
-        // }
-    }
+    non_bot_users_count
 }
 
 /// コンテキストデータからSongbirdクライアントを非同期に取得します。
