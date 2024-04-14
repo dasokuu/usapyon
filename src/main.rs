@@ -313,7 +313,8 @@ async fn main() {
                                 | GatewayIntents::MESSAGE_CONTENT // メッセージの内容を取得するため。
                                 | GatewayIntents::DIRECT_MESSAGES
                                 | GatewayIntents::GUILD_VOICE_STATES
-                                | GatewayIntents::GUILDS;
+                                | GatewayIntents::GUILDS
+                                | GatewayIntents::GUILD_PRESENCES; // ボット起動後にボイスチャンネルに参加したユーザーを取得するため。
     // すべてのインテントを有効にします。
     // let intents = GatewayIntents::all();
 
