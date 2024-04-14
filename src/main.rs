@@ -36,7 +36,7 @@ impl EventHandler for Handler {
     /// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
     /// * `msg` - 受信したメッセージ。
     async fn message(&self, ctx: Context, msg: Message) {
-        // メッセージがボットから送信されたものであれば無視します。
+        // メッセージが任意のボットから送信されたものであれば無視します。
         if msg.author.bot {
             return;
         }
