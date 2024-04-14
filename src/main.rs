@@ -12,8 +12,8 @@ use serenity::{
     model::{gateway::Ready, prelude::*},
     prelude::*,
 };
-use songbird::{tracks::Track, SerenityInit, Songbird, SongbirdKey};
-use std::{collections::HashMap, env, error::Error, fs::File, io::Write, sync::Arc};
+use songbird::{SerenityInit, Songbird, SongbirdKey};
+use std::{collections::HashMap, env, error::Error, sync::Arc};
 
 struct Handler;
 
@@ -36,64 +36,64 @@ impl EventHandler for Handler {
     /// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
     /// * `msg` - 受信したメッセージ。
     async fn message(&self, ctx: Context, msg: Message) {
-        if let Some(guild_id) = msg.guild_id {
-            // ギルドの数を表示
-            println!("guilds: {:?}", ctx.cache.guild_count());
-            // ギルドIDを表示
-            println!("{} said in {}: {}", msg.author.name, guild_id, msg.content);
+        // DMは無視します。
+        if msg.is_private() {
+            println!("{} said in DMs: {}", msg.author.name, msg.content);
+            return;
+        }
 
-            // "!"から始まるメッセージとそうでないメッセージで処理を分けます。
-            if msg.content.starts_with("!") {
-                // !joinと!leaveコマンドを処理。
-                match msg.content.as_str() {
-                    // ボットをユーザーがいるボイスチャンネルに参加させます。
-                    "!join" => {
-                        join_user_voice_channel(&ctx, &msg).await.unwrap();
-                    }
-                    // ボットをボイスチャンネルから退出させます。
-                    "!leave" => {
-                        leave_voice_channel(&ctx, &msg).await.unwrap();
-                    }
-                    _ => {}
+        // ギルドIDを取得。
+        let guild_id = msg.guild_id.expect("Guild ID not found");
+
+        // ギルドの数を表示
+        // println!("guilds: {:?}", ctx.cache.guild_count());
+        // ギルドIDを表示
+        println!("{} said in {}: {}", msg.author.name, guild_id, msg.content);
+
+        // "!"から始まるメッセージとそうでないメッセージで処理を分けます。
+        if msg.content.starts_with("!") {
+            // !joinと!leaveコマンドを処理。
+            match msg.content.as_str() {
+                // ボットをユーザーがいるボイスチャンネルに参加させます。
+                "!join" => {
+                    join_user_voice_channel(&ctx, &msg).await.unwrap();
                 }
-            } else {
-                // ボットがユーザーがいるボイスチャンネルに参加している場合、
-                // ボットが読み上げるようにします。
-                // voicevox_engineに投げるリクエストを生成します。
-                let client = reqwest::Client::new();
-
-                let audio_query_json = request_audio_query(&client, msg.content.as_str(), "1")
-                    .await
-                    .unwrap();
-
-                // JSONの中身を確認。
-                println!("response_json: {:?}", audio_query_json);
-
-                let synthesis_body_bytes =
-                    request_synthesis(&client, audio_query_json).await.unwrap();
-
-                // ボディをファイルに保存。
-                // ボディはwav形式の音声データ。ただの確認用なので、Discordではこのファイルを再生しない。
-                let mut file = File::create("output.wav").unwrap();
-                file.write_all(&synthesis_body_bytes).unwrap();
-
-                // 取得したボディを再生。
-                let songbird = get_songbird_from_ctx(&ctx).await;
-                let guild_id = msg.guild_id.expect("Guild ID not found");
-
-                let handler_lock = songbird.get(guild_id).expect("No songbird handler found");
-                let mut handler = handler_lock.lock().await;
-
-                // synthesis_body_bytesを再生。
-                let source = songbird::input::Input::from(Box::from(synthesis_body_bytes.to_vec()));
-                handler.play_input(source);
-
-                // 以下のコードでも再生可能。
-                // let track = Track::from(synthesis_body_bytes.to_vec());
-                // handler.play(track);
+                // ボットをボイスチャンネルから退出させます。
+                "!leave" => {
+                    leave_voice_channel(&ctx, &msg).await.unwrap();
+                }
+                _ => {}
             }
         } else {
-            println!("{} said in DMs: {}", msg.author.name, msg.content);
+            // ボットがユーザーがいるボイスチャンネルに参加している場合、
+            // ボットが読み上げるようにします。
+            // voicevox_engineに投げるリクエストを生成します。
+            let client = reqwest::Client::new();
+
+            let audio_query_json = request_audio_query(&client, msg.content.as_str(), "1")
+                .await
+                .unwrap();
+
+            // JSONの中身を確認。
+            // println!("response_json: {:?}", audio_query_json);
+
+            let synthesis_body_bytes =
+                request_synthesis(&client, audio_query_json).await.unwrap();
+
+            // 取得したボディを再生。
+            let songbird = get_songbird_from_ctx(&ctx).await;
+            let guild_id = msg.guild_id.expect("Guild ID not found");
+
+            let handler_lock = songbird.get(guild_id).expect("No songbird handler found");
+            let mut handler = handler_lock.lock().await;
+
+            // synthesis_body_bytesを再生。
+            let source = songbird::input::Input::from(Box::from(synthesis_body_bytes.to_vec()));
+            handler.play_input(source);
+
+            // 以下のコードでも再生可能。
+            // let track = Track::from(synthesis_body_bytes.to_vec());
+            // handler.play(track);
         }
     }
 
