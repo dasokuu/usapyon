@@ -13,10 +13,51 @@ use serenity::{
     prelude::*,
 };
 use songbird::{SerenityInit, Songbird, SongbirdKey};
-use std::{collections::HashMap, env, error::Error, sync::Arc};
+use std::{
+    collections::{HashMap, VecDeque},
+    env,
+    error::Error,
+    sync::Arc,
+};
+struct SynthesisQueueKey;
 
+impl TypeMapKey for SynthesisQueueKey {
+    type Value = Arc<SynthesisQueue>;
+}
+// ギルドごとにリクエストのキューを管理するための構造体
+struct SynthesisQueue {
+    queues: Mutex<HashMap<GuildId, VecDeque<SynthesisRequest>>>,
+}
+
+impl SynthesisQueue {
+    pub fn new() -> Self {
+        SynthesisQueue {
+            queues: Mutex::new(HashMap::new()),
+        }
+    }
+
+    // リクエストをキューに追加する
+    pub async fn enqueue(&self, guild_id: GuildId, request: SynthesisRequest) {
+        let mut queues = self.queues.lock().await;
+        queues.entry(guild_id).or_default().push_back(request);
+    }
+
+    // 次のリクエストを取得する
+    pub async fn dequeue(&self, guild_id: GuildId) -> Option<SynthesisRequest> {
+        let mut queues = self.queues.lock().await;
+        if let Some(queue) = queues.get_mut(&guild_id) {
+            queue.pop_front()
+        } else {
+            None
+        }
+    }
+}
 struct Handler;
-
+// 合成リクエストを表す構造体
+struct SynthesisRequest {
+    text: String,
+    speaker_id: String,
+}
 /// `Handler`は`EventHandler`の実装です。
 /// Discordからのイベントを処理するメソッドを提供します。
 #[async_trait]
@@ -69,34 +110,24 @@ impl EventHandler for Handler {
                 _ => {}
             }
         } else {
-            // ボットがユーザーがいるボイスチャンネルに参加している場合、
-            // ボットが読み上げるようにします。
-            // voicevox_engineに投げるリクエストを生成します。
-            let client = reqwest::Client::new();
-
-            let audio_query_json = request_audio_query(&client, msg.content.as_str(), "1")
-                .await
-                .unwrap();
-
-            // JSONの中身を確認。
-            // println!("response_json: {:?}", audio_query_json);
-
-            let synthesis_body_bytes = request_synthesis(&client, audio_query_json).await.unwrap();
-
-            // 取得したボディを再生。
-            let songbird = get_songbird_from_ctx(&ctx).await;
             let guild_id = msg.guild_id.expect("Guild ID not found");
+            // Context から SynthesisQueue を取得
+            let data_read = ctx.data.read().await;
+            let synthesis_queue = data_read
+                .get::<SynthesisQueueKey>()
+                .expect("SynthesisQueue not found in TypeMap")
+                .clone();
+            let request = SynthesisRequest {
+                text: msg.content.to_string(),
+                speaker_id: "1".to_string(),
+            };
+            synthesis_queue.enqueue(guild_id, request).await;
+            let ctx_clone = ctx.clone(); // Clone ctx for async block
 
-            let handler_lock = songbird.get(guild_id).expect("No songbird handler found");
-            let mut handler = handler_lock.lock().await;
-
-            // synthesis_body_bytesを再生キューに追加。
-            let source = songbird::input::Input::from(Box::from(synthesis_body_bytes.to_vec()));
-            handler.enqueue_input(source).await;
-
-            // 以下のコードでも再生可能。
-            // let track = Track::from(synthesis_body_bytes.to_vec());
-            // handler.enqueue(track);
+            // キューからリクエストを処理するタスクを起動
+            tokio::spawn(async move {
+                process_queue(&ctx_clone, guild_id, synthesis_queue).await;
+            });
         }
     }
 
@@ -127,6 +158,33 @@ impl EventHandler for Handler {
         }
     }
 }
+async fn process_queue(
+    ctx: &Context,
+    guild_id: GuildId,
+    synthesis_queue: Arc<SynthesisQueue>,
+) {
+    loop {
+        // Check if there is a request in the queue
+        if let Some(request) = synthesis_queue.dequeue(guild_id).await {
+            let client = reqwest::Client::new();
+            // Use request.text and request.speaker_id in the audio synthesis server request
+            let audio_query_json = request_audio_query(&client, &request.text, &request.speaker_id).await.unwrap();
+
+            let synthesis_body_bytes = request_synthesis(&client, audio_query_json).await.unwrap();
+
+            // Play the synthesis bytes
+            let songbird = get_songbird_from_ctx(&ctx).await;
+            let handler_lock = songbird.get(guild_id).expect("No Songbird handler found");
+            let mut handler = handler_lock.lock().await;
+            let source = songbird::input::Input::from(Box::from(synthesis_body_bytes.to_vec()));
+            handler.enqueue_input(source).await;
+        } else {
+            // No more requests in the queue, break the loop
+            break;
+        }
+    }
+}
+
 
 /// ボットが参加しているボイスチャンネルにいるボット以外のユーザーの数を取得します。
 ///
@@ -374,7 +432,11 @@ async fn main() {
         .register_songbird()
         .await
         .expect("Error creating client");
-
+    let synthesis_queue = Arc::new(SynthesisQueue::new());
+    {
+        let mut data = serenity_client.data.write().await;
+        data.insert::<SynthesisQueueKey>(synthesis_queue.clone());
+    }
     if let Err(why) = serenity_client.start().await {
         println!("Client error: {:?}", why);
     }
