@@ -1,4 +1,3 @@
-// まずはボットに接続するところから。
 // joinを実行したチャンネルのテキストだけをボットが読み上げるようにしたい。
 
 extern crate dotenv;
@@ -21,17 +20,18 @@ use std::{
     sync::Arc,
 };
 
-struct SynthesisQueueKey;
-
-impl TypeMapKey for SynthesisQueueKey {
-    type Value = Arc<SynthesisQueue>;
+// 音声合成リクエストを表す構造体
+#[derive(Clone)]
+struct SynthesisRequest {
+    text: String,
+    speaker_id: String,
 }
+
 // ギルドごとにリクエストのキューを管理するための構造体
 struct SynthesisQueue {
     queues: Mutex<HashMap<GuildId, VecDeque<SynthesisRequest>>>,
     active_requests: Mutex<HashMap<GuildId, AbortHandle>>,
 }
-
 impl SynthesisQueue {
     pub fn new() -> Self {
         SynthesisQueue {
@@ -39,13 +39,11 @@ impl SynthesisQueue {
             active_requests: Mutex::new(HashMap::new()),
         }
     }
-
     // リクエストをキューに追加する
     pub async fn enqueue(&self, guild_id: GuildId, request: SynthesisRequest) {
         let mut queues = self.queues.lock().await;
         queues.entry(guild_id).or_default().push_back(request);
     }
-
     // 現在進行中のリクエストをキャンセルする
     pub async fn cancel_current_request(&self, guild_id: GuildId) {
         let mut active_requests = self.active_requests.lock().await;
@@ -54,13 +52,13 @@ impl SynthesisQueue {
         }
     }
 }
-struct Handler;
-// 合成リクエストを表す構造体
-#[derive(Clone)]
-struct SynthesisRequest {
-    text: String,
-    speaker_id: String,
+
+struct SynthesisQueueKey;
+impl TypeMapKey for SynthesisQueueKey {
+    type Value = Arc<SynthesisQueue>;
 }
+
+struct Handler;
 /// `Handler`は`EventHandler`の実装です。
 /// Discordからのイベントを処理するメソッドを提供します。
 #[async_trait]
@@ -115,13 +113,15 @@ impl EventHandler for Handler {
                     let songbird = get_songbird_from_ctx(&ctx).await;
                     let handler_lock = songbird.get(guild_id).expect("No Songbird handler found");
                     let handler = handler_lock.lock().await;
-                
+
                     // Check if there is a current track and attempt to skip it
                     if handler.queue().current().is_some() {
                         // Attempt to skip the current track and handle the result
                         match handler.queue().skip() {
                             Ok(_) => println!("Track skipped successfully for guild {}", guild_id),
-                            Err(e) => println!("Failed to skip track for guild {}: {:?}", guild_id, e),
+                            Err(e) => {
+                                println!("Failed to skip track for guild {}: {:?}", guild_id, e)
+                            }
                         }
                     } else {
                         let data_read = ctx.data.read().await;
@@ -129,12 +129,12 @@ impl EventHandler for Handler {
                             .get::<SynthesisQueueKey>()
                             .expect("SynthesisQueue not found in TypeMap")
                             .clone();
-                
+
                         // Cancel the current synthesis request
                         synthesis_queue.cancel_current_request(guild_id).await;
                         println!("No track was playing. Current synthesis request cancelled for guild {}", guild_id);
                     }
-                }                
+                }
                 _ => {}
             }
         } else {
@@ -190,6 +190,13 @@ impl EventHandler for Handler {
         }
     }
 }
+
+/// 音声合成キューを処理します。
+///
+/// ## Arguments
+/// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
+/// * `guild_id` - ギルドID。
+/// * `synthesis_queue` - 音声合成キュー。
 async fn process_queue(ctx: &Context, guild_id: GuildId, synthesis_queue: Arc<SynthesisQueue>) {
     loop {
         let request = {
@@ -483,9 +490,7 @@ async fn request_synthesis(
 #[tokio::main]
 async fn main() {
     dotenv().ok();
-
     let token = env::var("DISCORD_TOKEN").expect("DISCORD_TOKEN must be set");
-    // println!("DISCORD_TOKEN: {}", token);
 
     // 必要なインテントを有効にします。
     // GUILDS: サーバーのリストを取得するため。
