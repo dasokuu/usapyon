@@ -6,7 +6,7 @@ extern crate serenity;
 
 use bytes::Bytes;
 use dotenv::dotenv;
-use futures::future::{AbortHandle, AbortRegistration, Abortable};
+use futures::future::{AbortHandle, Abortable};
 use reqwest::Url;
 use serenity::{
     async_trait,
@@ -46,15 +46,6 @@ impl SynthesisQueue {
         queues.entry(guild_id).or_default().push_back(request);
     }
 
-    // 次のリクエストを取得する
-    pub async fn dequeue(&self, guild_id: GuildId) -> Option<SynthesisRequest> {
-        let mut queues = self.queues.lock().await;
-        if let Some(queue) = queues.get_mut(&guild_id) {
-            queue.pop_front()
-        } else {
-            None
-        }
-    }
     // 現在進行中のリクエストをキャンセルする
     pub async fn cancel_current_request(&self, guild_id: GuildId) {
         let mut active_requests = self.active_requests.lock().await;
@@ -120,15 +111,25 @@ impl EventHandler for Handler {
                     leave_voice_channel(&ctx, &msg).await.unwrap();
                 }
                 "!skip" => {
-                    let data_read = ctx.data.read().await;
-                    let synthesis_queue = data_read
-                        .get::<SynthesisQueueKey>()
-                        .expect("SynthesisQueue not found in TypeMap")
-                        .clone();
+                    // Retrieve the Songbird instance and attempt to skip the current track
+                    let songbird = get_songbird_from_ctx(&ctx).await;
+                    let handler_lock = songbird.get(guild_id).expect("No Songbird handler found");
+                    let handler = handler_lock.lock().await;
+                    if handler.queue().current().is_some() {
+                        handler.queue().skip();
+                    } else {
+                        let data_read = ctx.data.read().await;
+                        let synthesis_queue = data_read
+                            .get::<SynthesisQueueKey>()
+                            .expect("SynthesisQueue not found in TypeMap")
+                            .clone();
+                        // Cancel the current synthesis request
+                        synthesis_queue.cancel_current_request(guild_id).await;
+                    }
 
-                    synthesis_queue.cancel_current_request(guild_id).await;
-                    println!("Current request cancelled for guild {}", guild_id);
+                    println!("Current request and track cancelled for guild {}", guild_id);
                 }
+
                 _ => {}
             }
         } else {
@@ -184,7 +185,13 @@ async fn process_queue(ctx: &Context, guild_id: GuildId, synthesis_queue: Arc<Sy
         let request = {
             let mut queues = synthesis_queue.queues.lock().await;
             if let Some(queue) = queues.get_mut(&guild_id) {
-                if queue.is_empty() || synthesis_queue.active_requests.lock().await.contains_key(&guild_id) {
+                if queue.is_empty()
+                    || synthesis_queue
+                        .active_requests
+                        .lock()
+                        .await
+                        .contains_key(&guild_id)
+                {
                     // 既に処理中、またはキューが空の場合は終了
                     return;
                 } else {
@@ -199,34 +206,48 @@ async fn process_queue(ctx: &Context, guild_id: GuildId, synthesis_queue: Arc<Sy
 
         if let Some(request) = request {
             let client = reqwest::Client::new();
-            let audio_query_json = request_audio_query(&client, &request.text, &request.speaker_id).await.unwrap();
+            let audio_query_json = request_audio_query(&client, &request.text, &request.speaker_id)
+                .await
+                .unwrap();
             let (abort_handle, abort_registration) = AbortHandle::new_pair();
             let future = Abortable::new(
                 request_synthesis(&client, audio_query_json),
                 abort_registration,
             );
-            synthesis_queue.active_requests.lock().await.insert(guild_id, abort_handle);
+            synthesis_queue
+                .active_requests
+                .lock()
+                .await
+                .insert(guild_id, abort_handle);
 
             match future.await {
                 Ok(Ok(synthesis_body_bytes)) => {
                     let songbird = get_songbird_from_ctx(&ctx).await;
                     let handler_lock = songbird.get(guild_id).expect("No Songbird handler found");
                     let mut handler = handler_lock.lock().await;
-                    let source = songbird::input::Input::from(Box::from(synthesis_body_bytes.to_vec()));
+                    let source =
+                        songbird::input::Input::from(Box::from(synthesis_body_bytes.to_vec()));
                     handler.enqueue_input(source).await;
 
                     // 処理が成功したら、アクティブなリクエストを削除
-                    synthesis_queue.active_requests.lock().await.remove(&guild_id);
+                    synthesis_queue
+                        .active_requests
+                        .lock()
+                        .await
+                        .remove(&guild_id);
                 }
                 Ok(Err(_)) | Err(_) => {
                     println!("Synthesis was aborted or failed for guild {}", guild_id);
-                    synthesis_queue.active_requests.lock().await.remove(&guild_id);
+                    synthesis_queue
+                        .active_requests
+                        .lock()
+                        .await
+                        .remove(&guild_id);
                 }
             }
         }
     }
 }
-
 
 /// ボットが参加しているボイスチャンネルにいるボット以外のユーザーの数を取得します。
 ///
