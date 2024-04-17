@@ -40,7 +40,7 @@ impl SynthesisQueue {
         }
     }
     // リクエストをキューに追加する
-    pub async fn enqueue(&self, guild_id: GuildId, request: SynthesisRequest) {
+    pub async fn enqueue_synthesis_request(&self, guild_id: GuildId, request: SynthesisRequest) {
         let mut queues = self.queues.lock().await;
         queues.entry(guild_id).or_default().push_back(request);
     }
@@ -102,7 +102,7 @@ impl EventHandler for Handler {
             match msg.content.as_str() {
                 // ボットをユーザーがいるボイスチャンネルに参加させます。
                 "!join" => {
-                    join_user_voice_channel(&ctx, &msg).await.unwrap();
+                    join_voice_channel(&ctx, &msg).await.unwrap();
                 }
                 // ボットをボイスチャンネルから退出させます。
                 "!leave" => {
@@ -153,7 +153,7 @@ impl EventHandler for Handler {
                 text: text_to_read.to_string(),
                 speaker_id: "1".to_string(),
             };
-            synthesis_queue.enqueue(guild_id, request).await;
+            synthesis_queue.enqueue_synthesis_request(guild_id, request).await;
             let ctx_clone = ctx.clone(); // Clone ctx for async block
 
             // キューからリクエストを処理するタスクを起動
@@ -338,53 +338,45 @@ async fn get_songbird_from_ctx(ctx: &Context) -> Arc<Songbird> {
         .expect("Failed to retrieve Songbird client")
 }
 
-/// ユーザーがいるボイスチャンネルにボットを非同期に参加させます。
+/// ボイスチャンネルにボットを参加させます。
+/// # 引数
+/// * `ctx` - コンテキスト、ボットの状態や設定情報へのアクセスを提供します。
+/// * `msg` - 参加コマンドを送信したメッセージ情報。
 ///
-/// ## Arguments
-/// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
-/// * `msg` - メッセージ。
-///
-/// ## Returns
-/// 成功した場合は`Ok(())`、エラーが発生した場合は`Err(Box<dyn Error + Send + Sync>)`を返します。
-async fn join_user_voice_channel(
-    ctx: &Context,
-    msg: &Message,
-) -> Result<(), Box<dyn Error + Send + Sync>> {
-    // コンテキストデータからSongbirdクライアントを取得。
-    let songbird = get_songbird_from_ctx(&ctx).await;
-
+/// # 戻り値
+/// ボイスチャンネルへの参加操作が成功した場合は Ok(()) を、失敗した場合は Err を返します。
+async fn join_voice_channel(ctx: &Context, msg: &Message) -> Result<(), Box<dyn Error + Send + Sync>> {
     let guild_id = match msg.guild_id {
         Some(guild_id) => guild_id,
         None => return Err("Message must be sent in a server".into()),
     };
-
-    println!("guild_id: {:?}", guild_id);
-
-    let channel_id = match ctx
-        .cache
-        .guild(guild_id)
-        .and_then(|guild| guild.voice_states.get(&msg.author.id).cloned())
-        .and_then(|voice_state| voice_state.channel_id)
-    {
+    // ユーザーがボイスチャンネルにいるか確認します。
+    let channel_id = match ctx.cache.guild(guild_id).and_then(|guild| guild.voice_states.get(&msg.author.id).cloned()).and_then(|voice_state| voice_state.channel_id) {
         Some(channel_id) => channel_id,
-        None => return Err("User is not in a voice channel".into()),
+        None => return Err("ユーザーがボイスチャンネルにいません。".into()),
     };
-    println!("Channel ID: {:?}", channel_id);
+    println!("チャンネル ID: {:?}", channel_id);
 
-    // ユーザーがいるチャンネルにボットを参加させます。
-    let result = songbird.join(guild_id, channel_id).await;
+    // ボットをチャンネルに参加させます。
+    let songbird = get_songbird_from_ctx(&ctx).await;
+    let join_result = songbird.join(guild_id, channel_id).await;
+    if let Err(why) = join_result {
+        println!("ボイスチャンネルへの参加に失敗しました: {:?}", why);
+        return Err("ボイスチャンネルへの参加に失敗しました。".into());
+    }
 
-    if let Ok(call) = result {
+    if let Ok(call) = join_result {
         // ボットをスピーカーミュートにする
         if let Err(why) = call.lock().await.deafen(true).await {
             println!("Failed to deafen: {:?}", why);
         }
-    } else if let Err(why) = result {
+    } else if let Err(why) = join_result {
         println!("Error joining voice channel: {:?}", why);
     }
 
     Ok(())
 }
+
 
 /// ボイスチャンネルからボットを非同期に退出させます。
 ///
