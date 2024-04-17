@@ -58,6 +58,46 @@ impl TypeMapKey for SynthesisQueueKey {
     type Value = Arc<SynthesisQueue>;
 }
 
+struct VoiceChannelTracker {
+    active_channels: Mutex<HashMap<GuildId, (ChannelId, ChannelId)>>, // (VoiceChannelId, TextChannelId)
+}
+impl VoiceChannelTracker {
+    pub fn new() -> Self {
+        VoiceChannelTracker {
+            active_channels: Mutex::new(HashMap::new()),
+        }
+    }
+
+    pub async fn remove_active_channel(&self, guild_id: GuildId) {
+        let mut channels = self.active_channels.lock().await;
+        channels.remove(&guild_id);
+    }
+
+    pub async fn set_active_channel(
+        &self,
+        guild_id: GuildId,
+        voice_channel_id: ChannelId,
+        text_channel_id: ChannelId,
+    ) {
+        let mut channels = self.active_channels.lock().await;
+        channels.insert(guild_id, (voice_channel_id, text_channel_id));
+    }
+
+    pub async fn is_active_text_channel(
+        &self,
+        guild_id: GuildId,
+        text_channel_id: ChannelId,
+    ) -> bool {
+        let channels = self.active_channels.lock().await;
+        matches!(channels.get(&guild_id), Some((_, id)) if *id == text_channel_id)
+    }
+}
+
+struct VoiceChannelTrackerKey;
+impl TypeMapKey for VoiceChannelTrackerKey {
+    type Value = Arc<VoiceChannelTracker>;
+}
+
 struct Handler;
 /// `Handler`は`EventHandler`の実装です。
 /// Discordからのイベントを処理するメソッドを提供します。
@@ -78,35 +118,36 @@ impl EventHandler for Handler {
     /// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
     /// * `msg` - 受信したメッセージ。
     async fn message(&self, ctx: Context, msg: Message) {
-        // メッセージが任意のボットから送信されたものであれば無視します。
-        if msg.author.bot {
-            return;
-        }
-        // DMは無視します。
-        if msg.is_private() {
-            println!("{} said in DMs: {}", msg.author.name, msg.content);
+        if msg.author.bot || msg.is_private() {
             return;
         }
 
-        // ギルドIDを取得。
         let guild_id = msg.guild_id.expect("Guild ID not found");
 
-        // ギルドの数を表示
-        // println!("guilds: {:?}", ctx.cache.guild_count());
-        // ギルドIDを表示
-        println!("{} said in {}: {}", msg.author.name, guild_id, msg.content);
+        if msg.content == "!join" {
+            if let Err(e) = join_voice_channel(&ctx, &msg).await {
+                println!("Error processing !join command: {}", e);
+            }
+        }
 
-        // "!"から始まるメッセージとそうでないメッセージで処理を分けます。
+        let is_active_channel = {
+            let data_read = ctx.data.read().await;
+            data_read
+                .get::<VoiceChannelTrackerKey>()
+                .expect("VoiceChannelTracker not found")
+                .is_active_text_channel(guild_id, msg.channel_id)
+                .await
+        };
+
+        if !is_active_channel {
+            return; // アクティブなチャンネルでなければ何もしない
+        }
         if msg.content.starts_with("!") {
-            // !joinと!leaveコマンドを処理。
             match msg.content.as_str() {
-                // ボットをユーザーがいるボイスチャンネルに参加させます。
-                "!join" => {
-                    join_voice_channel(&ctx, &msg).await.unwrap();
-                }
-                // ボットをボイスチャンネルから退出させます。
                 "!leave" => {
-                    leave_voice_channel(&ctx, &msg).await.unwrap();
+                    if let Err(e) = leave_voice_channel(&ctx, &msg).await {
+                        println!("Error processing !leave command: {}", e);
+                    }
                 }
                 "!skip" => {
                     // Retrieve the Songbird instance and attempt to skip the current track
@@ -132,37 +173,43 @@ impl EventHandler for Handler {
 
                         // Cancel the current synthesis request
                         synthesis_queue.cancel_current_request(guild_id).await;
-                        println!("No track was playing. Current synthesis request cancelled for guild {}", guild_id);
+                        println!(
+                        "No track was playing. Current synthesis request cancelled for guild {}",
+                        guild_id
+                    );
                     }
                 }
                 _ => {}
             }
-        } else {
-            // Context から SynthesisQueue を取得
-            let data_read = ctx.data.read().await;
-            let synthesis_queue = data_read
-                .get::<SynthesisQueueKey>()
-                .expect("SynthesisQueue not found in TypeMap")
-                .clone();
-            let text_to_read = if msg.content.chars().count() > 200 {
-                msg.content.chars().take(200).collect::<String>() + "...以下略"
-            } else {
-                msg.content.clone()
-            };
-            let request = SynthesisRequest {
-                text: text_to_read.to_string(),
-                speaker_id: "1".to_string(),
-            };
-            synthesis_queue
-                .enqueue_synthesis_request(guild_id, request)
-                .await;
-            let ctx_clone = ctx.clone(); // Clone ctx for async block
-
-            // キューからリクエストを処理するタスクを起動
-            tokio::spawn(async move {
-                process_queue(&ctx_clone, guild_id, synthesis_queue).await;
-            });
+            return;
         }
+
+        // メッセージを読み上げる処理
+        println!("Reading message from {}: {}", msg.author.name, msg.content);
+        // Context から SynthesisQueue を取得
+        let data_read = ctx.data.read().await;
+        let synthesis_queue = data_read
+            .get::<SynthesisQueueKey>()
+            .expect("SynthesisQueue not found in TypeMap")
+            .clone();
+        let text_to_read = if msg.content.chars().count() > 200 {
+            msg.content.chars().take(200).collect::<String>() + "...以下略"
+        } else {
+            msg.content.clone()
+        };
+        let request = SynthesisRequest {
+            text: text_to_read.to_string(),
+            speaker_id: "1".to_string(),
+        };
+        synthesis_queue
+            .enqueue_synthesis_request(guild_id, request)
+            .await;
+        let ctx_clone = ctx.clone(); // Clone ctx for async block
+
+        // キューからリクエストを処理するタスクを起動
+        tokio::spawn(async move {
+            process_queue(&ctx_clone, guild_id, synthesis_queue).await;
+        });
     }
 
     /// ボイスチャットの状態が変更されたときに呼び出されます。
@@ -189,6 +236,14 @@ impl EventHandler for Handler {
             if let Err(why) = songbird.leave(guild_id).await {
                 println!("Error leaving voice channel: {:?}", why);
             }
+
+            ctx.data
+                .read()
+                .await
+                .get::<VoiceChannelTrackerKey>()
+                .expect("VoiceChannelTracker not found")
+                .remove_active_channel(guild_id)
+                .await;
         }
     }
 }
@@ -351,40 +406,34 @@ async fn join_voice_channel(
     ctx: &Context,
     msg: &Message,
 ) -> Result<(), Box<dyn Error + Send + Sync>> {
-    let guild_id = match msg.guild_id {
-        Some(guild_id) => guild_id,
-        None => return Err("Message must be sent in a server".into()),
-    };
-    // ユーザーがボイスチャンネルにいるか確認します。
-    let channel_id = match ctx
+    let guild_id = msg.guild_id.ok_or("Message must be sent in a server")?;
+    let text_channel_id = msg.channel_id;
+
+    let voice_channel_id = ctx
         .cache
         .guild(guild_id)
         .and_then(|guild| guild.voice_states.get(&msg.author.id).cloned())
         .and_then(|voice_state| voice_state.channel_id)
-    {
-        Some(channel_id) => channel_id,
-        None => return Err("ユーザーがボイスチャンネルにいません。".into()),
-    };
-    println!("チャンネル ID: {:?}", channel_id);
+        .ok_or("User is not in a voice channel.")?;
 
-    // ボットをチャンネルに参加させます。
     let songbird = get_songbird_from_ctx(&ctx).await;
-    let join_result = songbird.join(guild_id, channel_id).await;
-    if let Err(why) = join_result {
-        println!("ボイスチャンネルへの参加に失敗しました: {:?}", why);
-        return Err("ボイスチャンネルへの参加に失敗しました。".into());
-    }
-
-    if let Ok(call) = join_result {
-        // ボットをスピーカーミュートにする
-        if let Err(why) = call.lock().await.deafen(true).await {
-            println!("Failed to deafen: {:?}", why);
+    match songbird.join(guild_id, voice_channel_id).await {
+        Ok(call) => {
+            call.lock().await.deafen(true).await?;
+            ctx.data
+                .read()
+                .await
+                .get::<VoiceChannelTrackerKey>()
+                .ok_or("VoiceChannelTracker not found")?
+                .set_active_channel(guild_id, voice_channel_id, text_channel_id)
+                .await;
+            Ok(())
         }
-    } else if let Err(why) = join_result {
-        println!("Error joining voice channel: {:?}", why);
+        Err(why) => {
+            println!("Failed to join voice channel: {:?}", why);
+            Err("Failed to join voice channel.".into())
+        }
     }
-
-    Ok(())
 }
 
 /// ボイスチャンネルからボットを非同期に退出させます。
@@ -409,7 +458,13 @@ async fn leave_voice_channel(
     if let Err(why) = songbird.leave(guild_id).await {
         println!("Error leaving voice channel: {:?}", why);
     }
-
+    ctx.data
+        .read()
+        .await
+        .get::<VoiceChannelTrackerKey>()
+        .expect("VoiceChannelTracker not found")
+        .remove_active_channel(guild_id)
+        .await;
     Ok(())
 }
 
@@ -493,28 +548,28 @@ async fn main() {
     dotenv().ok();
     let token = env::var("DISCORD_TOKEN").expect("DISCORD_TOKEN must be set");
 
-    // 必要なインテントを有効にします。
-    // GUILDS: サーバーのリストを取得するため。
     let intents = GatewayIntents::GUILD_MEMBERS
                                 | GatewayIntents::GUILD_MESSAGES
                                 | GatewayIntents::MESSAGE_CONTENT // メッセージの内容を取得するため。
                                 | GatewayIntents::DIRECT_MESSAGES
                                 | GatewayIntents::GUILD_VOICE_STATES
-                                | GatewayIntents::GUILDS
+                                | GatewayIntents::GUILDS  // サーバーのリストを取得するため。
                                 | GatewayIntents::GUILD_PRESENCES; // ボット起動後にボイスチャンネルに参加したユーザーを取得するため。
-
-    // すべてのインテントを有効にします。
-    // let intents = GatewayIntents::all();
+                                                                   // let intents = GatewayIntents::all();
 
     let mut serenity_client = Client::builder(&token, intents)
         .event_handler(Handler)
         .register_songbird()
         .await
         .expect("Error creating client");
+
+    // SynthesisQueueとVoiceChannelTrackerのインスタンスを作成し、TypeMapに挿入
     let synthesis_queue = Arc::new(SynthesisQueue::new());
+    let voice_channel_tracker = Arc::new(VoiceChannelTracker::new());
     {
         let mut data = serenity_client.data.write().await;
         data.insert::<SynthesisQueueKey>(synthesis_queue.clone());
+        data.insert::<VoiceChannelTrackerKey>(voice_channel_tracker.clone());
     }
     if let Err(why) = serenity_client.start().await {
         println!("Client error: {:?}", why);
