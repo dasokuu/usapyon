@@ -224,26 +224,38 @@ impl EventHandler for Handler {
         _old_state: Option<VoiceState>,
         new_state: VoiceState,
     ) {
-        let guild_id = new_state.guild_id.expect("Guild ID not found");
-        let non_bot_users_count = count_non_bot_users_in_bot_voice_channel(&ctx, guild_id);
-
-        println!("non_bot_users_count: {:?}", non_bot_users_count);
-
-        // ボット以外のユーザーがボイスチャンネルに存在しなくなった場合、ボットを退出させます。
-        if non_bot_users_count == 0 {
-            let songbird = get_songbird_from_ctx(&ctx).await;
-
-            if let Err(why) = songbird.leave(guild_id).await {
-                println!("Error leaving voice channel: {:?}", why);
+        let guild_id = match new_state.guild_id {
+            Some(guild_id) => guild_id,
+            None => {
+                eprintln!("Voice state update without guild ID.");
+                return;
             }
+        };
 
-            ctx.data
-                .read()
-                .await
-                .get::<VoiceChannelTrackerKey>()
-                .expect("VoiceChannelTracker not found")
-                .remove_active_channel(guild_id)
-                .await;
+        match count_non_bot_users_in_bot_voice_channel(&ctx, guild_id) {
+            Some(non_bot_users_count) => {
+                println!("non_bot_users_count: {:?}", non_bot_users_count);
+
+                // ボット以外のユーザーがボイスチャンネルに存在しなくなった場合、ボットを退出させます。
+                if non_bot_users_count == 0 {
+                    let songbird = get_songbird_from_ctx(&ctx).await;
+
+                    if let Err(why) = songbird.leave(guild_id).await {
+                        println!("Error leaving voice channel: {:?}", why);
+                    }
+
+                    ctx.data
+                        .read()
+                        .await
+                        .get::<VoiceChannelTrackerKey>()
+                        .expect("VoiceChannelTracker not found")
+                        .remove_active_channel(guild_id)
+                        .await;
+                }
+            }
+            None => {
+                println!("Failed to determine the count of non-bot users in the voice channel.");
+            }
         }
     }
 }
@@ -324,20 +336,21 @@ async fn process_queue(ctx: &Context, guild_id: GuildId, synthesis_queue: Arc<Sy
 }
 
 /// ボットが参加しているボイスチャンネルにいるボット以外のユーザーの数を取得します。
+/// エラーが発生した場合はNoneを返します。
 ///
 /// ## Arguments
 /// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
 /// * `guild_id` - ギルドID。
 ///
 /// ## Returns
-/// `usize` - ボットが参加しているボイスチャンネルにいるボット以外のユーザーの数。
-fn count_non_bot_users_in_bot_voice_channel(ctx: &Context, guild_id: GuildId) -> usize {
-    let guild = ctx.cache.guild(guild_id).expect("Guild not found");
+/// `Option<usize>` - ボット以外のユーザーの数、またはNone。
+fn count_non_bot_users_in_bot_voice_channel(ctx: &Context, guild_id: GuildId) -> Option<usize> {
+    let guild = ctx.cache.guild(guild_id)?;
+
     let bot_voice_channel_id = guild
         .voice_states
-        .get(&ctx.cache.current_user().id)
-        .and_then(|voice_state| voice_state.channel_id)
-        .expect("Bot voice channel ID not found");
+        .get(&ctx.cache.current_user().id)?
+        .channel_id?;
 
     // ボットが参加しているボイスチャンネルにいるユーザーIDを取得。
     let users_in_bot_voice_channel = guild
@@ -352,33 +365,13 @@ fn count_non_bot_users_in_bot_voice_channel(ctx: &Context, guild_id: GuildId) ->
         })
         .collect::<Vec<_>>();
 
-    println!(
-        "users_in_bot_voice_channel: {:?}",
-        users_in_bot_voice_channel
-    );
-
-    // ボットが参加しているボイスチャンネルにいるユーザーの数（ボットを除く）を取得。
-    // デバッグ用にユーザーがキャッシュに含まれているか、ボットかどうかを表示。
+    // ボットを除くユーザーの数を計算。
     let non_bot_users_count = users_in_bot_voice_channel
         .iter()
-        .filter(|user_id| match user_id.to_user_cached(&ctx) {
-            Some(user) => {
-                if user.bot {
-                    println!("{} is a bot user", user_id);
-                    false
-                } else {
-                    println!("{} is not a bot user", user_id);
-                    true
-                }
-            }
-            None => {
-                println!("{} is not cached", user_id);
-                false
-            }
-        })
+        .filter(|user_id| !ctx.cache.user(**user_id).map_or(false, |user| user.bot))
         .count();
 
-    non_bot_users_count
+    Some(non_bot_users_count)
 }
 
 /// コンテキストデータからSongbirdクライアントを非同期に取得します。
@@ -395,17 +388,14 @@ async fn get_songbird_from_ctx(ctx: &Context) -> Arc<Songbird> {
         .expect("Failed to retrieve Songbird client")
 }
 
-/// ボイスチャンネルにボットを参加させます。
+/// ボイスチャンネルへの参加と同時にアクティブなチャンネルの設定を行います。
 /// # 引数
 /// * `ctx` - コンテキスト、ボットの状態や設定情報へのアクセスを提供します。
 /// * `msg` - 参加コマンドを送信したメッセージ情報。
 ///
 /// # 戻り値
 /// ボイスチャンネルへの参加操作が成功した場合は Ok(()) を、失敗した場合は Err を返します。
-async fn join_voice_channel(
-    ctx: &Context,
-    msg: &Message,
-) -> Result<(), Box<dyn Error + Send + Sync>> {
+async fn join_voice_channel(ctx: &Context, msg: &Message) -> Result<(), String> {
     let guild_id = msg.guild_id.ok_or("Message must be sent in a server")?;
     let text_channel_id = msg.channel_id;
 
@@ -419,7 +409,12 @@ async fn join_voice_channel(
     let songbird = get_songbird_from_ctx(&ctx).await;
     match songbird.join(guild_id, voice_channel_id).await {
         Ok(call) => {
-            call.lock().await.deafen(true).await?;
+            // ここでエラーを String に変換
+            call.lock()
+                .await
+                .deafen(true)
+                .await
+                .map_err(|e| format!("Failed to deafen: {:?}", e))?;
             ctx.data
                 .read()
                 .await
@@ -436,7 +431,7 @@ async fn join_voice_channel(
     }
 }
 
-/// ボイスチャンネルからボットを非同期に退出させます。
+/// ボイスチャンネルからの退出処理を行います。
 ///
 /// ## Arguments
 /// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
@@ -444,25 +439,20 @@ async fn join_voice_channel(
 ///
 /// ## Returns
 /// 成功した場合は`Ok(())`、エラーが発生した場合は`Err(Box<dyn Error + Send + Sync>)`を返します。
-async fn leave_voice_channel(
-    ctx: &Context,
-    msg: &Message,
-) -> Result<(), Box<dyn Error + Send + Sync>> {
+async fn leave_voice_channel(ctx: &Context, msg: &Message) -> Result<(), String> {
     let songbird = get_songbird_from_ctx(&ctx).await;
 
-    let guild_id = match msg.guild_id {
-        Some(guild_id) => guild_id,
-        None => return Err("Message must be sent in a server".into()),
-    };
+    let guild_id = msg.guild_id.ok_or("Message must be sent in a server")?;
 
     if let Err(why) = songbird.leave(guild_id).await {
         println!("Error leaving voice channel: {:?}", why);
+        return Err("Failed to leave voice channel.".into());
     }
     ctx.data
         .read()
         .await
         .get::<VoiceChannelTrackerKey>()
-        .expect("VoiceChannelTracker not found")
+        .ok_or("VoiceChannelTracker not found")?
         .remove_active_channel(guild_id)
         .await;
     Ok(())
