@@ -115,21 +115,26 @@ impl EventHandler for Handler {
                     let songbird = get_songbird_from_ctx(&ctx).await;
                     let handler_lock = songbird.get(guild_id).expect("No Songbird handler found");
                     let handler = handler_lock.lock().await;
+                
+                    // Check if there is a current track and attempt to skip it
                     if handler.queue().current().is_some() {
-                        handler.queue().skip();
+                        // Attempt to skip the current track and handle the result
+                        match handler.queue().skip() {
+                            Ok(_) => println!("Track skipped successfully for guild {}", guild_id),
+                            Err(e) => println!("Failed to skip track for guild {}: {:?}", guild_id, e),
+                        }
                     } else {
                         let data_read = ctx.data.read().await;
                         let synthesis_queue = data_read
                             .get::<SynthesisQueueKey>()
                             .expect("SynthesisQueue not found in TypeMap")
                             .clone();
+                
                         // Cancel the current synthesis request
                         synthesis_queue.cancel_current_request(guild_id).await;
+                        println!("No track was playing. Current synthesis request cancelled for guild {}", guild_id);
                     }
-
-                    println!("Current request and track cancelled for guild {}", guild_id);
-                }
-
+                }                
                 _ => {}
             }
         } else {
