@@ -144,8 +144,13 @@ impl EventHandler for Handler {
                 .get::<SynthesisQueueKey>()
                 .expect("SynthesisQueue not found in TypeMap")
                 .clone();
+            let text_to_read = if msg.content.chars().count() > 200 {
+                msg.content.chars().take(200).collect::<String>() + "...以下略"
+            } else {
+                msg.content.clone()
+            };
             let request = SynthesisRequest {
-                text: msg.content.to_string(),
+                text: text_to_read.to_string(),
                 speaker_id: "1".to_string(),
             };
             synthesis_queue.enqueue(guild_id, request).await;
