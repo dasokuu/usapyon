@@ -6,7 +6,10 @@ extern crate serenity;
 use bytes::Bytes;
 use dotenv::dotenv;
 use futures::future::{AbortHandle, Abortable};
+use regex::Regex;
 use reqwest::Url;
+use serenity::model::channel::Channel;
+use serenity::model::id::{ChannelId, RoleId, UserId};
 use serenity::{
     async_trait,
     model::{gateway::Ready, prelude::*},
@@ -184,18 +187,22 @@ impl EventHandler for Handler {
             return;
         }
 
+        println!("msg.content: {}", msg.content);
+
+        let sanitized_content: String = sanitize_message(&ctx, &msg.content, guild_id).await;
+        println!("Sanitized message: {}", sanitized_content);
+
         // メッセージを読み上げる処理
-        println!("Reading message from {}: {}", msg.author.name, msg.content);
         // Context から SynthesisQueue を取得
         let data_read = ctx.data.read().await;
         let synthesis_queue = data_read
             .get::<SynthesisQueueKey>()
             .expect("SynthesisQueue not found in TypeMap")
             .clone();
-        let text_to_read = if msg.content.chars().count() > 200 {
-            msg.content.chars().take(200).collect::<String>() + "...以下略"
+        let text_to_read = if sanitized_content.chars().count() > 200 {
+            sanitized_content.chars().take(200).collect::<String>() + "...以下略"
         } else {
-            msg.content.clone()
+            sanitized_content.clone()
         };
         let request = SynthesisRequest {
             text: text_to_read.to_string(),
@@ -532,8 +539,57 @@ async fn request_synthesis(
 
     Ok(synthesis_body_bytes)
 }
+async fn sanitize_message(ctx: &Context, msg: &str, guild_id: GuildId) -> String {
+    let re_user = Regex::new(r"<@!?(\d+)>").unwrap();
+    let re_channel = Regex::new(r"<#(\d+)>").unwrap();
+    let re_role = Regex::new(r"<@&(\d+)>").unwrap();
+    let re_emoji = Regex::new(r"<:([^:]+):\d+>").unwrap();
 
-#[tokio::main]
+    let mut sanitized = msg.to_string();
+
+    // Replace user mentions with their nicknames or usernames
+    for cap in re_user.captures_iter(msg) {
+        if let Ok(id) = cap[1].parse::<u64>() {
+            if let Some(guild) = ctx.cache.guild(guild_id) {
+                if let Some(member) = guild.members.get(&UserId::new(id)) {
+                    let display_name = member.nick.as_ref().unwrap_or(&member.user.name);
+                    sanitized = sanitized.replace(&cap[0], display_name);
+                } else if let Ok(user) = UserId::new(id).to_user(&ctx.http).await {
+                    sanitized = sanitized.replace(&cap[0], &user.name);
+                }
+            }
+        }
+    }
+
+    // Replace channel mentions
+    for cap in re_channel.captures_iter(msg) {
+        if let Ok(id) = cap[1].parse::<u64>() {
+            if let Ok(channel) = ChannelId::new(id).to_channel(&ctx.http).await {
+                if let Channel::Guild(channel) = channel {
+                    sanitized = sanitized.replace(&cap[0], &channel.name);
+                }
+            }
+        }
+    }
+
+    // Replace role mentions
+    for cap in re_role.captures_iter(msg) {
+        if let Ok(id) = cap[1].parse::<u64>() {
+            if let Some(guild) = ctx.cache.guild(guild_id) {
+                if let Some(role) = guild.roles.get(&RoleId::new(id)) {
+                    sanitized = sanitized.replace(&cap[0], &role.name);
+                }
+            }
+        }
+    }
+
+    // Replace custom emojis
+    sanitized = re_emoji.replace_all(&sanitized, |caps: &regex::Captures| format!("{}", &caps[1])).to_string();
+
+    sanitized
+}
+
+#[tokio::main(flavor = "current_thread")]
 async fn main() {
     dotenv().ok();
     let token = env::var("DISCORD_TOKEN").expect("DISCORD_TOKEN must be set");
