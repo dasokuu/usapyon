@@ -7,9 +7,8 @@ use std::{
     collections::{HashMap, VecDeque},
     sync::Arc,
 };
-use tokio::sync::MutexGuard;
 
-// 音声合成リクエストを表す構造体
+/// 音声合成リクエストを表す構造体
 #[derive(Clone)]
 pub struct SynthesisRequest {
     text: String,
@@ -23,7 +22,7 @@ impl SynthesisRequest {
 
     /// 読み上げるテキストを取得します。
     /// 
-    /// # Returns
+    /// ## Returns
     /// * `&str`: 読み上げるテキスト。
     pub fn text(&self) -> &str {
         &self.text
@@ -31,7 +30,7 @@ impl SynthesisRequest {
 
     /// スタイルIDを取得します。
     /// 
-    /// # Returns
+    /// ## Returns
     /// * `&str`: スタイルID。
     pub fn speaker_id(&self) -> &str {
         &self.speaker_id
@@ -59,6 +58,9 @@ impl SynthesisQueue {
     }
 
     /// 現在進行中のリクエストをキャンセルします。
+    /// 
+    /// ## Arguments
+    /// * `guild_id` - キャンセルするリクエストのギルドID。
     pub async fn cancel_current_request(&self, guild_id: GuildId) {
         let mut active_requests = self.active_requests.lock().await;
         if let Some(abort_handle) = active_requests.remove(&guild_id) {
@@ -67,6 +69,9 @@ impl SynthesisQueue {
     }
 
     /// 現在進行中のリクエストをキャンセルし、キューを空にします。
+    /// 
+    /// ## Arguments
+    /// * `guild_id` - キャンセルするリクエストのギルドID。
     pub async fn cancel_current_request_and_clear_queue(&self, guild_id: GuildId) {
         self.cancel_current_request(guild_id).await;
         let mut queues = self.queues.lock().await;
@@ -76,13 +81,13 @@ impl SynthesisQueue {
 
     /// 指定したギルドIDのキューから次のリクエストを取得し、キューから削除します。
     /// 
-    /// # Arguments
+    /// ## Arguments
     /// * `guild_id` - 検索するギルドID。
     /// 
-    /// # Returns
+    /// ## Returns
     /// * `Option<SynthesisRequest>` - 次のリクエスト。キューが空の場合は `None`。
     pub async fn dequeue_request(&self, guild_id: GuildId) -> Option<SynthesisRequest> {
-        let mut queues = self.get_queues_lock().await;
+        let mut queues = self.queues.lock().await;
         if let Some(queue) = queues.get_mut(&guild_id) {
             queue.pop_front()
         } else {
@@ -92,38 +97,30 @@ impl SynthesisQueue {
 
     /// ギルドIDと `AbortHandle` を指定し、アクティブなリクエストを追加します。
     /// 
-    /// # Arguments
+    /// ## Arguments
     /// * `guild_id` - 音声合成要求があったギルドID。
     /// * `abort_handle` - リクエストをキャンセルするための `AbortHandle`。
     pub async fn add_active_request(&self, guild_id: GuildId, abort_handle: AbortHandle) {
-        self.get_active_requests_lock().await.insert(guild_id, abort_handle);
+        self.active_requests.lock().await.insert(guild_id, abort_handle);
     }
 
     /// ギルドIDを指定し、アクティブなリクエストを削除します。
     /// 
-    /// # Arguments
+    /// ## Arguments
     /// * `guild_id` - 削除するリクエストのギルドID。
     pub async fn remove_active_request(&self, guild_id: GuildId) {
-        self.get_active_requests_lock().await.remove(&guild_id);
+        self.active_requests.lock().await.remove(&guild_id);
     }
 
     /// アクティブなリクエストの中に、指定したギルドIDが含まれているかどうかを返します。
     /// 
-    /// # Arguments
+    /// ## Arguments
     /// * `guild_id` - 検索するギルドID。
     ///
-    /// # Returns
+    /// ## Returns
     /// * `bool` - 指定したギルドIDが含まれているかどうか。
     pub async fn contains_active_request(&self, guild_id: GuildId) -> bool {
-        self.get_active_requests_lock().await.contains_key(&guild_id)
-    }
-
-    pub async fn get_queues_lock(&self) -> MutexGuard<'_, HashMap<GuildId, VecDeque<SynthesisRequest>>> {
-        self.queues.lock().await
-    }
-
-    async fn get_active_requests_lock(&self) -> MutexGuard<'_, HashMap<GuildId, AbortHandle>> {
-        self.active_requests.lock().await
+        self.active_requests.lock().await.contains_key(&guild_id)
     }
 }
 

@@ -1,7 +1,7 @@
-
 extern crate dotenv;
 extern crate serenity;
 
+use crate::{SynthesisQueue, SynthesisQueueKey, SynthesisRequest, VoiceChannelTrackerKey};
 use bytes::Bytes;
 use futures::future::{AbortHandle, Abortable};
 use regex::Regex;
@@ -13,13 +13,9 @@ use serenity::{
     model::{gateway::Ready, prelude::*},
     prelude::*,
 };
-use songbird::{Songbird, SongbirdKey};
-use std::{
-    collections::HashMap,
-    error::Error,
-    sync::Arc,
-};
-use crate::{SynthesisQueue, SynthesisQueueKey, SynthesisRequest, VoiceChannelTrackerKey};
+use songbird::{Call, Songbird, SongbirdKey};
+use std::{collections::HashMap, error::Error, sync::Arc};
+use tokio::sync::MutexGuard;
 
 pub struct UsapyonEventHandler;
 
@@ -156,7 +152,7 @@ impl EventHandler for UsapyonEventHandler {
 
 impl UsapyonEventHandler {
     /// "!"から始まるコマンドを処理します。
-    /// 
+    ///
     /// ## Arguments
     /// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
     /// * `msg` - メッセージ。
@@ -193,19 +189,25 @@ impl UsapyonEventHandler {
                     // Cancel the current synthesis request
                     synthesis_queue.cancel_current_request(guild_id).await;
                     println!(
-                    "No track was playing. Current synthesis request cancelled for guild {}",
-                    guild_id
-                );
+                        "No track was playing. Current synthesis request cancelled for guild {}",
+                        guild_id
+                    );
                 }
             }
             "!clear" => {
-                let songbird = get_songbird_from_ctx(&ctx).await;
-                let handler_lock = songbird.get(guild_id).expect("No Songbird handler found");
-                let handler = handler_lock.lock().await;
+                // let songbird = get_songbird_from_ctx(&ctx).await;
+                // let handler_lock = songbird.get(guild_id).expect("No Songbird handler found");
+                // let handler = handler_lock.lock().await;
+                let result = with_songbird_handler(&ctx, guild_id, |handler| {
+                    // 再生を停止してキューをクリア。
+                    handler.queue().stop();
+                    format!("Queue cleared successfully for guild {}", guild_id)
+                }).await;
 
-                // 再生を停止してキューをクリア。
-                handler.queue().stop();
-                println!("Queue cleared successfully for guild {}", guild_id);
+                match result {
+                    Ok(msg) => println!("{}", msg),
+                    Err(e) => println!("Failed to clear queue for guild {}: {:?}", guild_id, e),
+                }
 
                 // 音声合成キューをクリア。
                 let data_read = ctx.data.read().await;
@@ -214,8 +216,13 @@ impl UsapyonEventHandler {
                     .expect("SynthesisQueue not found in TypeMap")
                     .clone();
 
-                synthesis_queue.cancel_current_request_and_clear_queue(guild_id).await;
-                println!("Synthesis queue cleared successfully for guild {}", guild_id);
+                synthesis_queue
+                    .cancel_current_request_and_clear_queue(guild_id)
+                    .await;
+                println!(
+                    "Synthesis queue cleared successfully for guild {}",
+                    guild_id
+                );
             }
             _ => {}
         }
@@ -253,16 +260,17 @@ async fn process_queue(ctx: &Context, guild_id: GuildId, synthesis_queue: Arc<Sy
             request_synthesis(&client, audio_query_json, true),
             abort_registration,
         );
-        
-        synthesis_queue.add_active_request(guild_id, abort_handle).await;
+
+        synthesis_queue
+            .add_active_request(guild_id, abort_handle)
+            .await;
 
         match future.await {
             Ok(Ok(synthesis_body_bytes)) => {
                 let songbird = get_songbird_from_ctx(&ctx).await;
                 let handler_lock = songbird.get(guild_id).expect("No Songbird handler found");
                 let mut handler = handler_lock.lock().await;
-                let source =
-                    songbird::input::Input::from(Box::from(synthesis_body_bytes.to_vec()));
+                let source = songbird::input::Input::from(Box::from(synthesis_body_bytes.to_vec()));
                 handler.enqueue_input(source).await;
 
                 // 処理が成功したら、アクティブなリクエストを削除
@@ -536,4 +544,16 @@ async fn join_voice_channel(ctx: &Context, msg: &Message) -> Result<(), String> 
             Err("Failed to join voice channel.".into())
         }
     }
+}
+
+async fn with_songbird_handler<F, R>(ctx: &Context, guild_id: GuildId, f: F) -> Result<R, String>
+where
+    F: FnOnce(MutexGuard<'_, Call>) -> R + Send,
+    R: Send,
+{
+    let songbird = get_songbird_from_ctx(&ctx). await;
+    let handler_lock = songbird.get(guild_id).ok_or_else(|| "No Songbird handler found".to_string())?;
+    let handler = handler_lock.lock().await;
+
+    Ok(f(handler))
 }
