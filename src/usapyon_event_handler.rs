@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use regex::Regex;
 use serenity::model::channel::Channel;
 use serenity::model::id::{ChannelId, RoleId, UserId};
@@ -6,16 +8,10 @@ use serenity::{
     model::{gateway::Ready, prelude::*},
     prelude::*,
 };
-use songbird::Call;
-use std::sync::Arc;
-use tokio::sync::MutexGuard;
 
-use crate::serenity_utils::get_songbird_from_ctx;
+use crate::serenity_utils::{get_songbird_from_ctx, with_songbird_handler};
 use crate::synthesis_queue_manager::SynthesisQueueManager;
-use crate::{
-    SynthesisQueueManagerKey, SynthesisRequest,
-    VoiceChannelTrackerKey,
-};
+use crate::{SynthesisQueueManagerKey, SynthesisRequest, VoiceChannelTrackerKey};
 
 pub struct UsapyonEventHandler;
 
@@ -80,7 +76,7 @@ impl EventHandler for UsapyonEventHandler {
         // 音声合成キューマネージャーを取得し、リクエストを追加して処理を開始します。
         let synthesis_queue_manager = get_synthesis_queue_manager(&ctx).await;
         synthesis_queue_manager
-            .enqueue_synthesis_request(guild_id, request)
+            .add_request_to_synthesis_queue(guild_id, request)
             .await;
         synthesis_queue_manager
             .start_processing(&ctx, guild_id)
@@ -370,33 +366,6 @@ async fn join_voice_channel(ctx: &Context, msg: &Message) -> Result<(), String> 
             Err("Failed to join voice channel.".into())
         }
     }
-}
-
-/// songbird の音声ハンドラを取得し、指定された関数を実行します。
-///
-/// ## Arguments
-/// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
-/// * `guild_id` - ギルドID。
-/// * `f` - 音声ハンドラを操作する関数。
-///
-/// ## Returns
-/// `Result<R, String>` - 指定された関数の実行結果、またはエラー。
-///
-/// ## Type Parameters
-/// * `F` - 音声ハンドラを操作する関数の型。
-/// * `R` - 関数の戻り値の型。
-async fn with_songbird_handler<F, R>(ctx: &Context, guild_id: GuildId, f: F) -> Result<R, String>
-where
-    F: FnOnce(MutexGuard<'_, Call>) -> R + Send,
-    R: Send,
-{
-    let songbird = get_songbird_from_ctx(&ctx).await;
-    let handler_lock = songbird
-        .get(guild_id)
-        .ok_or_else(|| "No Songbird handler found".to_string())?;
-    let handler = handler_lock.lock().await;
-
-    Ok(f(handler))
 }
 
 /// データコンテキストから音声合成キューのマネージャーを取得します。

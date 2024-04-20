@@ -45,9 +45,9 @@ async fn main() {
     let synthesis_queue_manager = Arc::new(synthesis_queue_manager::SynthesisQueueManager::new());
 
     {
-        let mut data = serenity_client.data.write().await;
-        data.insert::<VoiceChannelTrackerKey>(voice_channel_tracker.clone());
-        data.insert::<SynthesisQueueManagerKey>(synthesis_queue_manager.clone());
+        let mut client_data = serenity_client.data.write().await;
+        client_data.insert::<VoiceChannelTrackerKey>(voice_channel_tracker.clone());
+        client_data.insert::<SynthesisQueueManagerKey>(synthesis_queue_manager.clone());
     }
 
     if let Err(why) = serenity_client.start().await {

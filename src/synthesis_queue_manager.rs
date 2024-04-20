@@ -93,6 +93,7 @@ impl SynthesisQueueManager {
 
                     match future.await {
                         Ok(Ok(synthesis_body_bytes)) => {
+                            // TODO: with_songbird_handlerにしたい
                             let songbird = get_songbird_from_ctx(&ctx_clone).await;
                             let handler_lock =
                                 songbird.get(guild_id).expect("No Songbird handler found");
@@ -123,9 +124,9 @@ impl SynthesisQueueManager {
     /// ## Arguments
     /// * `guild_id` - リクエストを追加するギルドID。
     /// * `request` - 追加するリクエスト。
-    pub async fn enqueue_synthesis_request(&self, guild_id: GuildId, request: SynthesisRequest) {
+    pub async fn add_request_to_synthesis_queue(&self, guild_id: GuildId, request: SynthesisRequest) {
         self.synthesis_queue
-            .enqueue_synthesis_request(guild_id, request)
+            .add_request_to_synthesis_queue(guild_id, request)
             .await;
     }
 
