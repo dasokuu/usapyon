@@ -52,18 +52,26 @@ impl SynthesisQueue {
         }
     }
 
-    // リクエストをキューに追加する
+    /// リクエストをキューに追加します。
     pub async fn enqueue_synthesis_request(&self, guild_id: GuildId, request: SynthesisRequest) {
         let mut queues = self.queues.lock().await;
         queues.entry(guild_id).or_default().push_back(request);
     }
 
-    // 現在進行中のリクエストをキャンセルする
+    /// 現在進行中のリクエストをキャンセルします。
     pub async fn cancel_current_request(&self, guild_id: GuildId) {
         let mut active_requests = self.active_requests.lock().await;
         if let Some(abort_handle) = active_requests.remove(&guild_id) {
             abort_handle.abort();
         }
+    }
+
+    /// 現在進行中のリクエストをキャンセルし、キューを空にします。
+    pub async fn cancel_current_request_and_clear_queue(&self, guild_id: GuildId) {
+        self.cancel_current_request(guild_id).await;
+        let mut queues = self.queues.lock().await;
+        // ハッシュマップから対応するギルドIDのキューを削除。
+        queues.remove(&guild_id);
     }
 
     pub async fn get_queues_lock(&self) -> MutexGuard<'_, HashMap<GuildId, VecDeque<SynthesisRequest>>> {

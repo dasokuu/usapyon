@@ -19,48 +19,7 @@ use std::{
     error::Error,
     sync::Arc,
 };
-use crate::{SynthesisQueue, SynthesisQueueKey, SynthesisRequest};
-
-pub struct VoiceChannelTracker {
-    active_channels: Mutex<HashMap<GuildId, (ChannelId, ChannelId)>>, // (VoiceChannelId, TextChannelId)
-}
-
-impl VoiceChannelTracker {
-    pub fn new() -> Self {
-        VoiceChannelTracker {
-            active_channels: Mutex::new(HashMap::new()),
-        }
-    }
-
-    pub async fn remove_active_channel(&self, guild_id: GuildId) {
-        let mut channels = self.active_channels.lock().await;
-        channels.remove(&guild_id);
-    }
-
-    pub async fn set_active_channel(
-        &self,
-        guild_id: GuildId,
-        voice_channel_id: ChannelId,
-        text_channel_id: ChannelId,
-    ) {
-        let mut channels = self.active_channels.lock().await;
-        channels.insert(guild_id, (voice_channel_id, text_channel_id));
-    }
-
-    pub async fn is_active_text_channel(
-        &self,
-        guild_id: GuildId,
-        text_channel_id: ChannelId,
-    ) -> bool {
-        let channels = self.active_channels.lock().await;
-        matches!(channels.get(&guild_id), Some((_, id)) if *id == text_channel_id)
-    }
-}
-
-pub struct VoiceChannelTrackerKey;
-impl TypeMapKey for VoiceChannelTrackerKey {
-    type Value = Arc<VoiceChannelTracker>;
-}
+use crate::{SynthesisQueue, SynthesisQueueKey, SynthesisRequest, VoiceChannelTrackerKey};
 
 pub struct UsapyonEventHandler;
 
@@ -247,6 +206,16 @@ impl UsapyonEventHandler {
                 // 再生を停止してキューをクリア。
                 handler.queue().stop();
                 println!("Queue cleared successfully for guild {}", guild_id);
+
+                // 音声合成キューをクリア。
+                let data_read = ctx.data.read().await;
+                let synthesis_queue = data_read
+                    .get::<SynthesisQueueKey>()
+                    .expect("SynthesisQueue not found in TypeMap")
+                    .clone();
+
+                synthesis_queue.cancel_current_request_and_clear_queue(guild_id).await;
+                println!("Synthesis queue cleared successfully for guild {}", guild_id);
             }
             _ => {}
         }

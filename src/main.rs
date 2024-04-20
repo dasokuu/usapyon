@@ -2,29 +2,24 @@
 
 mod synthesis_queue;
 mod usapyon_event_handler;
+mod voice_channel_tracker;
 
 extern crate dotenv;
 extern crate serenity;
 
 use dotenv::dotenv;
-use regex::Regex;
-use reqwest::Url;
-use serenity::model::channel::Channel;
-use serenity::model::id::{ChannelId, RoleId, UserId};
 use serenity::{
-    async_trait,
-    model::{gateway::Ready, prelude::*},
+    model::prelude::*,
     prelude::*,
 };
-use songbird::{SerenityInit, Songbird, SongbirdKey};
+use songbird::SerenityInit;
 use std::{
-    collections::HashMap,
     env,
-    error::Error,
     sync::Arc,
 };
 use synthesis_queue::{SynthesisQueue, SynthesisQueueKey, SynthesisRequest};
-use usapyon_event_handler::{UsapyonEventHandler, VoiceChannelTracker, VoiceChannelTrackerKey};
+use usapyon_event_handler::UsapyonEventHandler;
+use voice_channel_tracker::{VoiceChannelTracker, VoiceChannelTrackerKey};
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
