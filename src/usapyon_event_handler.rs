@@ -86,10 +86,7 @@ impl EventHandler for UsapyonEventHandler {
         } else {
             sanitized_content.clone()
         };
-        // let request = SynthesisRequest {
-        //     text: text_to_read.to_string(),
-        //     speaker_id: "1".to_string(),
-        // };
+
         let request = SynthesisRequest::new(text_to_read.to_string(), "1".to_string());
         synthesis_queue
             .enqueue_synthesis_request(guild_id, request)
@@ -166,43 +163,64 @@ impl UsapyonEventHandler {
             }
             "!skip" => {
                 // Retrieve the Songbird instance and attempt to skip the current track
-                let songbird = get_songbird_from_ctx(&ctx).await;
-                let handler_lock = songbird.get(guild_id).expect("No Songbird handler found");
-                let handler = handler_lock.lock().await;
-
-                // Check if there is a current track and attempt to skip it
-                if handler.queue().current().is_some() {
-                    // Attempt to skip the current track and handle the result
-                    match handler.queue().skip() {
-                        Ok(_) => println!("Track skipped successfully for guild {}", guild_id),
-                        Err(e) => {
-                            println!("Failed to skip track for guild {}: {:?}", guild_id, e)
-                        }
-                    }
-                } else {
-                    let data_read = ctx.data.read().await;
-                    let synthesis_queue = data_read
-                        .get::<SynthesisQueueKey>()
-                        .expect("SynthesisQueue not found in TypeMap")
-                        .clone();
-
-                    // Cancel the current synthesis request
-                    synthesis_queue.cancel_current_request(guild_id).await;
-                    println!(
-                        "No track was playing. Current synthesis request cancelled for guild {}",
-                        guild_id
-                    );
-                }
-            }
-            "!clear" => {
                 // let songbird = get_songbird_from_ctx(&ctx).await;
                 // let handler_lock = songbird.get(guild_id).expect("No Songbird handler found");
                 // let handler = handler_lock.lock().await;
+
+                // Check if there is a current track and attempt to skip it
+                // if handler.queue().current().is_some() {
+                //     // Attempt to skip the current track and handle the result
+                //     match handler.queue().skip() {
+                //         Ok(_) => println!("Track skipped successfully for guild {}", guild_id),
+                //         Err(e) => {
+                //             println!("Failed to skip track for guild {}: {:?}", guild_id, e)
+                //         }
+                //     }
+                // } else {
+                //     let data_read = ctx.data.read().await;
+                //     let synthesis_queue = data_read
+                //         .get::<SynthesisQueueKey>()
+                //         .expect("SynthesisQueue not found in TypeMap")
+                //         .clone();
+
+                //     // Cancel the current synthesis request
+                //     synthesis_queue.cancel_current_request(guild_id).await;
+                //     println!(
+                //         "No track was playing. Current synthesis request cancelled for guild {}",
+                //         guild_id
+                //     );
+                // }
+
+                // songbird の音声ハンドラでスキップを試みます。
+                let result = with_songbird_handler(&ctx, guild_id, |handler| {
+                    handler
+                        .queue()
+                        .current()
+                        .map(|_| handler.queue().skip().is_ok())
+                })
+                .await;
+
+                match result {
+                    Ok(Some(true)) => {
+                        println!("Track skipped successfully for guild {}", guild_id);
+                    }
+                    // トラックが存在しない、またはスキップに失敗した場合、音声合成リクエストをキャンセル。
+                    Ok(Some(false)) | Ok(None) => {
+                        cancel_synthesis_request(&ctx, guild_id).await;
+                        println!("No track was playing, or skip failed. Synthesis request cancelled for guild {}", guild_id);
+                    }
+                    Err(e) => {
+                        println!("Failed to handle track for guild {}: {:?}", guild_id, e);
+                    }
+                }
+            }
+            "!clear" => {
                 let result = with_songbird_handler(&ctx, guild_id, |handler| {
                     // 再生を停止してキューをクリア。
                     handler.queue().stop();
                     format!("Queue cleared successfully for guild {}", guild_id)
-                }).await;
+                })
+                .await;
 
                 match result {
                     Ok(msg) => println!("{}", msg),
@@ -504,12 +522,12 @@ fn count_non_bot_users_in_bot_voice_channel(ctx: &Context, guild_id: GuildId) ->
 }
 
 /// ボイスチャンネルへの参加と同時にアクティブなチャンネルの設定を行います。
-/// # 引数
+/// ## Arguments
 /// * `ctx` - コンテキスト、ボットの状態や設定情報へのアクセスを提供します。
 /// * `msg` - 参加コマンドを送信したメッセージ情報。
 ///
-/// # 戻り値
-/// ボイスチャンネルへの参加操作が成功した場合は Ok(()) を、失敗した場合は Err を返します。
+/// ## Returns
+/// * `Result<(), String>` - ボイスチャンネルへの参加操作が成功した場合は Ok(()) を、失敗した場合は Err を返します。
 async fn join_voice_channel(ctx: &Context, msg: &Message) -> Result<(), String> {
     let guild_id = msg.guild_id.ok_or("Message must be sent in a server")?;
     let text_channel_id = msg.channel_id;
@@ -551,9 +569,22 @@ where
     F: FnOnce(MutexGuard<'_, Call>) -> R + Send,
     R: Send,
 {
-    let songbird = get_songbird_from_ctx(&ctx). await;
-    let handler_lock = songbird.get(guild_id).ok_or_else(|| "No Songbird handler found".to_string())?;
+    let songbird = get_songbird_from_ctx(&ctx).await;
+    let handler_lock = songbird
+        .get(guild_id)
+        .ok_or_else(|| "No Songbird handler found".to_string())?;
     let handler = handler_lock.lock().await;
 
     Ok(f(handler))
+}
+
+async fn cancel_synthesis_request(ctx: &Context, guild_id: GuildId) {
+    let data_read = ctx.data.read().await;
+    let synthesis_queue = data_read
+        .get::<SynthesisQueueKey>()
+        .expect("SynthesisQueue not found in TypeMap")
+        .clone();
+
+    // Cancel the current synthesis request
+    synthesis_queue.cancel_current_request(guild_id).await;
 }
