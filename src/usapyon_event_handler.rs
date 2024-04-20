@@ -1,7 +1,7 @@
 extern crate dotenv;
 extern crate serenity;
 
-use crate::{SynthesisQueue, SynthesisQueueKey, SynthesisRequest, VoiceChannelTrackerKey};
+use crate::{SynthesisQueue, SynthesisQueueKey, SynthesisRequest, VoiceChannelTrackerKey, SynthesisQueueManagerKey};
 use bytes::Bytes;
 use futures::future::{AbortHandle, Abortable};
 use regex::Regex;
@@ -51,17 +51,8 @@ impl EventHandler for UsapyonEventHandler {
             }
         }
 
-        let is_active_channel = {
-            let data_read = ctx.data.read().await;
-            data_read
-                .get::<VoiceChannelTrackerKey>()
-                .expect("VoiceChannelTracker not found")
-                .is_active_text_channel(guild_id, msg.channel_id)
-                .await
-        };
-
-        if !is_active_channel {
-            return; // アクティブなチャンネルでなければ何もしない
+        if !is_active_text_channel(&ctx, guild_id, msg.channel_id).await {
+            return; // アクティブなチャンネルでなければ何もしません。
         }
 
         if msg.content.starts_with("!") {
@@ -76,11 +67,6 @@ impl EventHandler for UsapyonEventHandler {
 
         // メッセージを読み上げる処理
         // Context から SynthesisQueue を取得
-        // let data_read = ctx.data.read().await;
-        // let synthesis_queue = data_read
-        //     .get::<SynthesisQueueKey>()
-        //     .expect("SynthesisQueue not found in TypeMap")
-        //     .clone();
         let synthesis_queue = get_synthesis_queue(&ctx).await;
 
         let text_to_read = if sanitized_content.chars().count() > 200 {
@@ -96,9 +82,13 @@ impl EventHandler for UsapyonEventHandler {
         let ctx_clone = ctx.clone(); // Clone ctx for async block
 
         // キューからリクエストを処理するタスクを起動
-        tokio::spawn(async move {
-            process_queue(&ctx_clone, guild_id, synthesis_queue).await;
-        });
+        // tokio::spawn(async move {
+        //     process_queue(&ctx_clone, guild_id, synthesis_queue).await;
+        // });
+
+        // 音声合成キューマネージャを起動
+        let synthesis_queue_manager = ctx.data.read().await.get::<SynthesisQueueManagerKey>().expect("SynthesisQueueManager not found").clone();
+        synthesis_queue_manager.start_processing(&ctx, guild_id, synthesis_queue).await;
     }
 
     /// ボイスチャットの状態が変更されたときに呼び出されます。
@@ -180,7 +170,7 @@ impl UsapyonEventHandler {
                     }
                     // トラックが存在しない、またはスキップに失敗した場合、音声合成リクエストをキャンセル。
                     Ok(Some(false)) | Ok(None) => {
-                        cancel_synthesis_request(&ctx, guild_id).await;
+                        cancel_current_synthesis_request(&ctx, guild_id).await;
                         println!("No track was playing, or skip failed. Synthesis request cancelled for guild {}", guild_id);
                     }
                     Err(e) => {
@@ -202,11 +192,6 @@ impl UsapyonEventHandler {
                 }
 
                 // 音声合成キューをクリア。
-                // let data_read = ctx.data.read().await;
-                // let synthesis_queue = data_read
-                //     .get::<SynthesisQueueKey>()
-                //     .expect("SynthesisQueue not found in TypeMap")
-                //     .clone();
                 let synthesis_queue = get_synthesis_queue(&ctx).await;
 
                 synthesis_queue
@@ -235,7 +220,7 @@ async fn process_queue(ctx: &Context, guild_id: GuildId, synthesis_queue: Arc<Sy
             println!("Already processing a request for guild {}", guild_id);
             return;
         }
-
+    
         let request = match synthesis_queue.dequeue_request(guild_id).await {
             Some(request) => request,
             None => {
@@ -243,7 +228,7 @@ async fn process_queue(ctx: &Context, guild_id: GuildId, synthesis_queue: Arc<Sy
                 return;
             }
         };
-
+    
         let client = reqwest::Client::new();
         let audio_query_json = request_audio_query(&client, &request.text(), &request.speaker_id())
             .await
@@ -253,11 +238,11 @@ async fn process_queue(ctx: &Context, guild_id: GuildId, synthesis_queue: Arc<Sy
             request_synthesis(&client, audio_query_json, true),
             abort_registration,
         );
-
+    
         synthesis_queue
             .add_active_request(guild_id, abort_handle)
             .await;
-
+    
         match future.await {
             Ok(Ok(synthesis_body_bytes)) => {
                 let songbird = get_songbird_from_ctx(&ctx).await;
@@ -265,7 +250,7 @@ async fn process_queue(ctx: &Context, guild_id: GuildId, synthesis_queue: Arc<Sy
                 let mut handler = handler_lock.lock().await;
                 let source = songbird::input::Input::from(Box::from(synthesis_body_bytes.to_vec()));
                 handler.enqueue_input(source).await;
-
+    
                 // 処理が成功したら、アクティブなリクエストを削除
                 synthesis_queue.remove_active_request(guild_id).await;
             }
@@ -566,15 +551,16 @@ where
     Ok(f(handler))
 }
 
-async fn cancel_synthesis_request(ctx: &Context, guild_id: GuildId) {
-    // let data_read = ctx.data.read().await;
-    // let synthesis_queue = data_read
-    //     .get::<SynthesisQueueKey>()
-    //     .expect("SynthesisQueue not found in TypeMap")
-    //     .clone();
+/// 現在の音声合成リクエストをキャンセルします。
+/// 
+/// ## Arguments
+/// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
+/// * `guild_id` - キャンセルするリクエストのギルドID。
+/// 
+/// ## Returns
+/// `Result<(), Box<dyn Error + Send + Sync>>` - キャンセル操作が成功した場合は Ok(()) を、エラーが発生した場合は Err を返します。
+async fn cancel_current_synthesis_request(ctx: &Context, guild_id: GuildId) {
     let synthesis_queue = get_synthesis_queue(&ctx).await;
-
-    // Cancel the current synthesis request
     synthesis_queue.cancel_current_request(guild_id).await;
 }
 
@@ -591,4 +577,23 @@ async fn get_synthesis_queue(ctx: &Context) -> Arc<SynthesisQueue> {
         .get::<SynthesisQueueKey>()
         .expect("SynthesisQueue not found in TypeMap")
         .clone()
+}
+
+/// 指定したテキストチャンネルがアクティブなチャンネルであるかどうかを返します。
+/// アクティブなチャンネルとは、最後にjoinコマンドが実行されたテキストチャンネルです。
+/// 
+/// ## Arguments
+/// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
+/// * `guild_id` - ギルドID。
+/// * `text_channel_id` - テキストチャンネルID。
+/// 
+/// ## Returns
+/// `bool` - 指定したテキストチャンネルがアクティブなチャンネルであるかどうか。
+async fn is_active_text_channel(ctx: &Context, guild_id: GuildId, text_channel_id: ChannelId) -> bool {
+    let data_read = ctx.data.read().await;
+    data_read
+        .get::<VoiceChannelTrackerKey>()
+        .expect("VoiceChannelTracker not found")
+        .is_active_text_channel(guild_id, text_channel_id)
+        .await
 }
