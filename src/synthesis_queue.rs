@@ -38,7 +38,7 @@ impl SynthesisRequest {
     }
 }
 
-// ギルドごとにリクエストのキューを管理するための構造体
+/// ギルドごとにリクエストのキューを管理するための構造体。
 pub struct SynthesisQueue {
     queues: Mutex<HashMap<GuildId, VecDeque<SynthesisRequest>>>,
     active_requests: Mutex<HashMap<GuildId, AbortHandle>>,

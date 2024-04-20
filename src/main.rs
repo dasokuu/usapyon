@@ -583,7 +583,7 @@ async fn main() {
                                 | GatewayIntents::GUILD_PRESENCES; // ボット起動後にボイスチャンネルに参加したユーザーを取得するため。
 
     // すべてのインテントを有効にする（開発中のみ）
-    let intents = GatewayIntents::all();
+    // let intents = GatewayIntents::all();
 
     let mut serenity_client = Client::builder(&token, intents)
         .event_handler(Handler)
