@@ -20,8 +20,11 @@ use voice_channel_tracker::{VoiceChannelTracker, VoiceChannelTrackerKey};
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    dotenv().ok();
-    let token = env::var("DISCORD_TOKEN")?;
+    if dotenv().is_err() {
+        println!("Warning: Failed to read .env file");
+    }
+
+    let token = env::var("DISCORD_TOKEN").expect("Expected DISCORD_TOKEN in the environment");
 
     let intents = GatewayIntents::GUILD_MEMBERS
         | GatewayIntents::GUILD_MESSAGES
@@ -41,9 +44,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     {
         let mut data = client.data.write().await;
-        data.insert::<VoiceChannelTrackerKey>(voice_tracker.clone());
-        data.insert::<SynthesisQueueManagerKey>(queue_manager.clone());
+        data.insert::<VoiceChannelTrackerKey>(voice_tracker);
+        data.insert::<SynthesisQueueManagerKey>(queue_manager);
     }
 
-    client.start().await.map_err(|e| e.into())
+    client.start().await.map_err(Into::into)
 }

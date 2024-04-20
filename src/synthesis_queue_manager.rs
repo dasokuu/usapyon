@@ -87,18 +87,22 @@ impl SynthesisQueueManager {
 
                     match future.await {
                         Ok(Ok(synthesis_body_bytes)) => {
-                            // TODO: with_songbird_handlerにしたい
-                            let songbird = get_songbird_from_ctx(&ctx_clone).await;
-                            let handler_lock =
-                                songbird.get(guild_id).expect("No Songbird handler found");
-                            let mut handler = handler_lock.lock().await;
-                            let source = songbird::input::Input::from(Box::from(
-                                synthesis_body_bytes.to_vec(),
-                            ));
-                            handler.enqueue_input(source).await;
+                            // 正しくSongbirdクライアントを取得し、ハンドラーを使用します。
+                            match get_songbird_from_ctx(&ctx_clone).await {
+                                Ok(songbird) => {
+                                    let handler_lock =
+                                        songbird.get(guild_id).expect("No Songbird handler found");
+                                    let mut handler = handler_lock.lock().await;
+                                    let source = songbird::input::Input::from(Box::from(
+                                        synthesis_body_bytes.to_vec(),
+                                    ));
+                                    handler.enqueue_input(source).await;
 
-                            // 処理が成功したら、アクティブなリクエストを削除
-                            synthesis_queue.remove_active_request(guild_id).await;
+                                    // 処理が成功したら、アクティブなリクエストを削除
+                                    synthesis_queue.remove_active_request(guild_id).await;
+                                }
+                                Err(e) => println!("Failed to get Songbird client: {}", e),
+                            }
                         }
                         Ok(Err(_)) | Err(_) => {
                             println!("Synthesis was aborted or failed for guild {}", guild_id);

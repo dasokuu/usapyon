@@ -48,12 +48,19 @@ impl SynthesisQueue {
         }
     }
 
-    /// 音声合成リクエストをキューに追加します。キューが存在しない場合は新たに作成します。
+    /// 指定したギルドのキューにリクエストを追加します。
     ///
     /// ## Arguments
-    /// * `guild_id` - リクエストを追加するギルドID。
-    /// * `request` - 追加するリクエスト。
-    pub async fn add_request_to_synthesis_queue(&self, guild_id: GuildId, request: SynthesisRequest) {
+    /// * `guild_id` - リクエストを追加するギルドのID。
+    /// * `request` - 追加する音声合成リクエスト。
+    ///
+    /// ## Errors
+    /// この関数は、内部のロック操作が中断された場合にパニックを発生させる可能性があります。
+    pub async fn add_request_to_synthesis_queue(
+        &self,
+        guild_id: GuildId,
+        request: SynthesisRequest,
+    ) {
         let mut queues = self.queues.lock().await;
         queues.entry(guild_id).or_default().push_back(request);
     }

@@ -1,10 +1,9 @@
+use serenity::model::id::GuildId;
 use serenity::prelude::Context;
+use songbird::Call;
 use songbird::{Songbird, SongbirdKey};
 use std::sync::Arc;
 use tokio::sync::MutexGuard;
-use songbird::Call;
-use serenity::model::id::GuildId;
-
 
 /// コンテキストデータからSongbirdクライアントを非同期に取得します。
 ///
@@ -13,11 +12,11 @@ use serenity::model::id::GuildId;
 ///
 /// ## Returns
 /// Songbirdクライアント。
-pub async fn get_songbird_from_ctx(ctx: &Context) -> Arc<Songbird> {
+pub async fn get_songbird_from_ctx(ctx: &Context) -> Result<Arc<Songbird>, String> {
     let data = ctx.data.read().await;
     data.get::<SongbirdKey>()
         .cloned()
-        .expect("Failed to retrieve Songbird client")
+        .ok_or_else(|| "Failed to retrieve Songbird client".to_string())
 }
 
 /// songbird の音声ハンドラを取得し、指定された関数を実行します。
@@ -33,16 +32,17 @@ pub async fn get_songbird_from_ctx(ctx: &Context) -> Arc<Songbird> {
 /// ## Type Parameters
 /// * `F` - 音声ハンドラを操作する関数の型。
 /// * `R` - 関数の戻り値の型。
-pub async fn with_songbird_handler<F, R>(ctx: &Context, guild_id: GuildId, f: F) -> Result<R, String>
+pub async fn with_songbird_handler<F, R>(
+    ctx: &Context,
+    guild_id: GuildId,
+    func: F,
+) -> Result<R, String>
 where
     F: FnOnce(MutexGuard<'_, Call>) -> R + Send,
     R: Send,
 {
-    let songbird = get_songbird_from_ctx(&ctx).await;
-    let handler_lock = songbird
-        .get(guild_id)
-        .ok_or_else(|| "No Songbird handler found".to_string())?;
+    let songbird = get_songbird_from_ctx(ctx).await?;
+    let handler_lock = songbird.get(guild_id).ok_or_else(|| "No Songbird handler found for the guild".to_string())?;
     let handler = handler_lock.lock().await;
-
-    Ok(f(handler))
+    Ok(func(handler))
 }
