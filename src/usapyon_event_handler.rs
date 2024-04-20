@@ -1,7 +1,6 @@
 extern crate dotenv;
 extern crate serenity;
 
-use crate::{SynthesisQueue, SynthesisQueueKey, SynthesisRequest, VoiceChannelTrackerKey, SynthesisQueueManagerKey};
 use bytes::Bytes;
 use futures::future::{AbortHandle, Abortable};
 use regex::Regex;
@@ -16,6 +15,9 @@ use serenity::{
 use songbird::{Call, Songbird, SongbirdKey};
 use std::{collections::HashMap, error::Error, sync::Arc};
 use tokio::sync::MutexGuard;
+
+use crate::{SynthesisQueue, SynthesisQueueKey, SynthesisRequest, VoiceChannelTrackerKey, SynthesisQueueManagerKey};
+use crate::serenity_utils::get_songbird_from_ctx;
 
 pub struct UsapyonEventHandler;
 
@@ -213,149 +215,54 @@ impl UsapyonEventHandler {
 /// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
 /// * `guild_id` - ギルドID。
 /// * `synthesis_queue` - 音声合成キュー。
-async fn process_queue(ctx: &Context, guild_id: GuildId, synthesis_queue: Arc<SynthesisQueue>) {
-    loop {
-        // 既に処理中の場合。
-        if synthesis_queue.contains_active_request(guild_id).await {
-            println!("Already processing a request for guild {}", guild_id);
-            return;
-        }
+// async fn process_queue(ctx: &Context, guild_id: GuildId, synthesis_queue: Arc<SynthesisQueue>) {
+//     loop {
+//         // 既に処理中の場合。
+//         if synthesis_queue.contains_active_request(guild_id).await {
+//             println!("Already processing a request for guild {}", guild_id);
+//             return;
+//         }
     
-        let request = match synthesis_queue.dequeue_request(guild_id).await {
-            Some(request) => request,
-            None => {
-                println!("No requests in queue for guild {}", guild_id);
-                return;
-            }
-        };
+//         let request = match synthesis_queue.dequeue_request(guild_id).await {
+//             Some(request) => request,
+//             None => {
+//                 println!("No requests in queue for guild {}", guild_id);
+//                 return;
+//             }
+//         };
     
-        let client = reqwest::Client::new();
-        let audio_query_json = request_audio_query(&client, &request.text(), &request.speaker_id())
-            .await
-            .unwrap();
-        let (abort_handle, abort_registration) = AbortHandle::new_pair();
-        let future = Abortable::new(
-            request_synthesis(&client, audio_query_json, true),
-            abort_registration,
-        );
+//         let client = reqwest::Client::new();
+//         let audio_query_json = request_audio_query(&client, &request.text(), &request.speaker_id())
+//             .await
+//             .unwrap();
+//         let (abort_handle, abort_registration) = AbortHandle::new_pair();
+//         let future = Abortable::new(
+//             request_synthesis(&client, audio_query_json, true),
+//             abort_registration,
+//         );
     
-        synthesis_queue
-            .add_active_request(guild_id, abort_handle)
-            .await;
+//         synthesis_queue
+//             .add_active_request(guild_id, abort_handle)
+//             .await;
     
-        match future.await {
-            Ok(Ok(synthesis_body_bytes)) => {
-                let songbird = get_songbird_from_ctx(&ctx).await;
-                let handler_lock = songbird.get(guild_id).expect("No Songbird handler found");
-                let mut handler = handler_lock.lock().await;
-                let source = songbird::input::Input::from(Box::from(synthesis_body_bytes.to_vec()));
-                handler.enqueue_input(source).await;
+//         match future.await {
+//             Ok(Ok(synthesis_body_bytes)) => {
+//                 let songbird = get_songbird_from_ctx(&ctx).await;
+//                 let handler_lock = songbird.get(guild_id).expect("No Songbird handler found");
+//                 let mut handler = handler_lock.lock().await;
+//                 let source = songbird::input::Input::from(Box::from(synthesis_body_bytes.to_vec()));
+//                 handler.enqueue_input(source).await;
     
-                // 処理が成功したら、アクティブなリクエストを削除
-                synthesis_queue.remove_active_request(guild_id).await;
-            }
-            Ok(Err(_)) | Err(_) => {
-                println!("Synthesis was aborted or failed for guild {}", guild_id);
-                synthesis_queue.remove_active_request(guild_id).await;
-            }
-        }
-    }
-}
-
-/// テキストとスタイルIDからオーディオクエリを生成し、サーバにリクエストを送信します。
-///
-/// ## Arguments
-/// * `client` - reqwestクライアント。
-/// * `text` - 再生するテキスト。
-/// * `speaker` - スタイルID。
-///
-/// ## Returns
-/// * `Result<serde_json::Value, Box<dyn Error + Send + Sync>>` - サーバーからのJSON形式のレスポンス、またはエラー。
-async fn request_audio_query(
-    client: &reqwest::Client,
-    text: &str,
-    speaker: &str,
-) -> Result<serde_json::Value, Box<dyn Error + Send + Sync>> {
-    let audio_query_headers = reqwest::header::HeaderMap::new();
-    let base = "http://localhost:50021/audio_query";
-    let params: HashMap<&str, &str> = [("text", text), ("speaker", speaker)]
-        .iter()
-        .cloned()
-        .collect();
-
-    let audio_query_url = Url::parse_with_params(base, &params).unwrap();
-
-    let audio_query_res = client
-        .post(audio_query_url)
-        .headers(audio_query_headers)
-        .send()
-        .await?;
-
-    let response_body = audio_query_res.text().await?;
-    let response_json: serde_json::Value = serde_json::from_str(&response_body)?;
-
-    Ok(response_json)
-}
-
-/// オーディオクエリから音声合成をリクエストします。
-///
-/// ## Arguments
-/// * `client` - reqwestクライアント。
-/// * `audio_query_json` - オーディオクエリのJSON。
-/// * `is_cancellable` - キャンセル可能かどうか。
-///
-/// ## Returns
-/// * `Bytes` - 合成した音声のバイトデータ。
-async fn request_synthesis(
-    client: &reqwest::Client,
-    audio_query_json: serde_json::Value,
-    is_cancellable: bool,
-) -> Result<Bytes, Box<dyn Error + Send + Sync>> {
-    let url = match is_cancellable {
-        true => "http://localhost:50021/cancellable_synthesis",
-        false => "http://localhost:50021/synthesis",
-    };
-    // 新しいリクエストのURLを作成。
-    let synthesis_url = Url::parse_with_params(
-        url,
-        &[("speaker", "1"), ("enable_interrogative_upspeak", "true")],
-    )
-    .unwrap();
-
-    // 新しいリクエストのヘッダーを設定。
-    let mut synthesis_headers = reqwest::header::HeaderMap::new();
-    synthesis_headers.insert("Content-Type", "application/json".parse().unwrap());
-
-    // 新しいリクエストのボディを送信。
-    let synthesis_res = client
-        .post(synthesis_url)
-        .headers(synthesis_headers)
-        .json(&audio_query_json)
-        .send()
-        .await
-        .unwrap();
-
-    // レスポンスの状態を確認。
-    println!("status: {:?}", synthesis_res.status());
-
-    let synthesis_body_bytes = synthesis_res.bytes().await.unwrap();
-
-    Ok(synthesis_body_bytes)
-}
-
-/// コンテキストデータからSongbirdクライアントを非同期に取得します。
-///
-/// ## Arguments
-/// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
-///
-/// ## Returns
-/// Songbirdクライアント。
-async fn get_songbird_from_ctx(ctx: &Context) -> Arc<Songbird> {
-    let data = ctx.data.read().await;
-    data.get::<SongbirdKey>()
-        .cloned()
-        .expect("Failed to retrieve Songbird client")
-}
+//                 // 処理が成功したら、アクティブなリクエストを削除
+//                 synthesis_queue.remove_active_request(guild_id).await;
+//             }
+//             Ok(Err(_)) | Err(_) => {
+//                 println!("Synthesis was aborted or failed for guild {}", guild_id);
+//                 synthesis_queue.remove_active_request(guild_id).await;
+//             }
+//         }
+//     }
+// }
 
 /// ボイスチャンネルからの退出処理を行います。
 ///

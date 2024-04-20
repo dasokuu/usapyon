@@ -4,6 +4,7 @@ mod synthesis_queue;
 mod usapyon_event_handler;
 mod voice_channel_tracker;
 mod synthesis_queue_manager;
+mod serenity_utils;
 
 extern crate dotenv;
 extern crate serenity;
