@@ -62,12 +62,6 @@ impl SynthesisQueueManager {
 
             async move {
                 loop {
-                    // 既に処理中の場合。
-                    if synthesis_queue.contains_active_request(guild_id).await {
-                        println!("Already processing a request for guild {}", guild_id);
-                        break;
-                    }
-
                     let request = match synthesis_queue.dequeue_request(guild_id).await {
                         Some(request) => request,
                         None => {
@@ -124,7 +118,11 @@ impl SynthesisQueueManager {
     /// ## Arguments
     /// * `guild_id` - リクエストを追加するギルドID。
     /// * `request` - 追加するリクエスト。
-    pub async fn add_request_to_synthesis_queue(&self, guild_id: GuildId, request: SynthesisRequest) {
+    pub async fn add_request_to_synthesis_queue(
+        &self,
+        guild_id: GuildId,
+        request: SynthesisRequest,
+    ) {
         self.synthesis_queue
             .add_request_to_synthesis_queue(guild_id, request)
             .await;

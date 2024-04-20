@@ -115,17 +115,6 @@ impl SynthesisQueue {
     pub async fn remove_active_request(&self, guild_id: GuildId) {
         self.active_requests.lock().await.remove(&guild_id);
     }
-
-    /// アクティブなリクエストの中に、指定したギルドIDが含まれているかどうかを返します。
-    ///
-    /// ## Arguments
-    /// * `guild_id` - 検索するギルドID。
-    ///
-    /// ## Returns
-    /// * `bool` - 指定したギルドIDが含まれているかどうか。
-    pub async fn contains_active_request(&self, guild_id: GuildId) -> bool {
-        self.active_requests.lock().await.contains_key(&guild_id)
-    }
 }
 
 pub struct SynthesisQueueKey;
