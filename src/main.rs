@@ -28,11 +28,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let intents = GatewayIntents::GUILD_MEMBERS
         | GatewayIntents::GUILD_MESSAGES
-        | GatewayIntents::MESSAGE_CONTENT
+        | GatewayIntents::MESSAGE_CONTENT  // メッセージの内容を取得するため。
         | GatewayIntents::DIRECT_MESSAGES
         | GatewayIntents::GUILD_VOICE_STATES
-        | GatewayIntents::GUILDS
-        | GatewayIntents::GUILD_PRESENCES;
+        | GatewayIntents::GUILDS  // サーバーのリストを取得するため。
+        | GatewayIntents::GUILD_PRESENCES; // ボット起動後にボイスチャンネルに参加したユーザーを取得するため。
+
+    // すべてのインテントを有効にする（開発中のみ）
+    // let intents = GatewayIntents::all();
 
     let mut client = Client::builder(&token, intents)
         .event_handler(UsapyonEventHandler)
