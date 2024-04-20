@@ -130,6 +130,7 @@ impl EventHandler for Handler {
 
         let guild_id = msg.guild_id.expect("Guild ID not found");
 
+        // joinコマンドは非アクティブな場合でも実行できる必要があるため、ここで処理。
         if msg.content == "!join" {
             if let Err(e) = join_voice_channel(&ctx, &msg).await {
                 println!("Error processing !join command: {}", e);
@@ -148,6 +149,7 @@ impl EventHandler for Handler {
         if !is_active_channel {
             return; // アクティブなチャンネルでなければ何もしない
         }
+
         if msg.content.starts_with("!") {
             match msg.content.as_str() {
                 "!leave" => {
@@ -307,7 +309,7 @@ async fn process_queue(ctx: &Context, guild_id: GuildId, synthesis_queue: Arc<Sy
                 .unwrap();
             let (abort_handle, abort_registration) = AbortHandle::new_pair();
             let future = Abortable::new(
-                request_synthesis(&client, audio_query_json),
+                request_synthesis(&client, audio_query_json, true),
                 abort_registration,
             );
             synthesis_queue
@@ -508,16 +510,22 @@ async fn request_audio_query(
 /// ## Arguments
 /// * `client` - reqwestクライアント。
 /// * `audio_query_json` - オーディオクエリのJSON。
+/// * `is_cancellable` - キャンセル可能かどうか。
 ///
 /// ## Returns
 /// * `Bytes` - 合成した音声のバイトデータ。
 async fn request_synthesis(
     client: &reqwest::Client,
     audio_query_json: serde_json::Value,
+    is_cancellable: bool,
 ) -> Result<Bytes, Box<dyn Error + Send + Sync>> {
+    let url = match is_cancellable {
+        true => "http://localhost:50021/cancellable_synthesis",
+        false => "http://localhost:50021/synthesis",
+    };
     // 新しいリクエストのURLを作成。
     let synthesis_url = Url::parse_with_params(
-        "http://localhost:50021/cancellable_synthesis",
+        url,
         &[("speaker", "1"), ("enable_interrogative_upspeak", "true")],
     )
     .unwrap();
@@ -552,21 +560,13 @@ async fn sanitize_message(ctx: &Context, msg: &str, guild_id: GuildId) -> String
     let mut sanitized = msg.to_string();
 
     // 「<@ユーザーID>」をニックネームに置き換えます。
-    // 優先順位はサーバーのニックネーム、ユーザーのニックネーム、ユーザー名です。
+    // 優先順位はサーバー内ニックネーム、ユーザーのニックネーム、ユーザー名です。
     for cap in re_user.captures_iter(msg) {
         if let Ok(id) = cap[1].parse::<u64>() {
             if let Some(member) = get_member_from_ctx(&ctx, guild_id, UserId::new(id)) {
-                // let display_name = member.nick.as_ref().unwrap_or(&member.user.name);
                 let display_name = member.display_name();
-                println!("display_name: {}", display_name);
                 sanitized = sanitized.replace(&cap[0], display_name);
-            } else if let Ok(user) = UserId::new(id).to_user(&ctx.http).await {
-                sanitized = sanitized.replace(&cap[0], &user.name);
             }
-            // if let Ok(user) = UserId::new(id).to_user(&ctx.http).await {
-            //     println!("user: {:?}", user.nick_in(&ctx.http, guild_id).await);
-            //     sanitized = sanitized.replace(&cap[0], &user.name);
-            // }
         }
     }
 
@@ -621,7 +621,7 @@ async fn main() {
                                 | GatewayIntents::GUILD_VOICE_STATES
                                 | GatewayIntents::GUILDS  // サーバーのリストを取得するため。
                                 | GatewayIntents::GUILD_PRESENCES; // ボット起動後にボイスチャンネルに参加したユーザーを取得するため。
-    
+
     // すべてのインテントを有効にする（開発中のみ）
     let intents = GatewayIntents::all();
 
