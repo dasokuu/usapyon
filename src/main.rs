@@ -1,28 +1,22 @@
 // 話者IDを選択できるようにしたい。
 
+mod serenity_utils;
 mod synthesis_queue;
+mod synthesis_queue_manager;
 mod usapyon_event_handler;
 mod voice_channel_tracker;
-mod synthesis_queue_manager;
-mod serenity_utils;
 
 extern crate dotenv;
 extern crate serenity;
 
 use dotenv::dotenv;
-use serenity::{
-    model::prelude::*,
-    prelude::*,
-};
+use serenity::{model::prelude::*, prelude::*};
 use songbird::SerenityInit;
-use std::{
-    env,
-    sync::Arc,
-};
+use std::{env, sync::Arc};
 use synthesis_queue::{SynthesisQueue, SynthesisQueueKey, SynthesisRequest};
+use synthesis_queue_manager::SynthesisQueueManagerKey;
 use usapyon_event_handler::UsapyonEventHandler;
 use voice_channel_tracker::{VoiceChannelTracker, VoiceChannelTrackerKey};
-use synthesis_queue_manager::SynthesisQueueManagerKey;
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
@@ -46,14 +40,12 @@ async fn main() {
         .await
         .expect("Error creating client");
 
-    // SynthesisQueueとVoiceChannelTrackerのインスタンスを作成し、TypeMapに挿入
-    let synthesis_queue = Arc::new(SynthesisQueue::new());
+    // SynthesisQueueManagerとVoiceChannelTrackerのインスタンスを作成し、TypeMapに挿入
     let voice_channel_tracker = Arc::new(VoiceChannelTracker::new());
     let synthesis_queue_manager = Arc::new(synthesis_queue_manager::SynthesisQueueManager::new());
 
     {
         let mut data = serenity_client.data.write().await;
-        data.insert::<SynthesisQueueKey>(synthesis_queue.clone());
         data.insert::<VoiceChannelTrackerKey>(voice_channel_tracker.clone());
         data.insert::<SynthesisQueueManagerKey>(synthesis_queue_manager.clone());
     }

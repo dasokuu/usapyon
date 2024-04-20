@@ -1,16 +1,6 @@
-
-extern crate dotenv;
-extern crate serenity;
-
 use serenity::model::id::ChannelId;
-use serenity::{
-    model::prelude::*,
-    prelude::*,
-};
-use std::{
-    collections::HashMap,
-    sync::Arc,
-};
+use serenity::{model::prelude::*, prelude::*};
+use std::{collections::HashMap, sync::Arc};
 
 /// ギルドごとのアクティブなボイスチャンネルとテキストチャンネルのトラッキングを行う構造体。
 pub struct VoiceChannelTracker {

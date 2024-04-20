@@ -1,6 +1,3 @@
-extern crate dotenv;
-extern crate serenity;
-
 use futures::future::AbortHandle;
 use serenity::{model::prelude::*, prelude::*};
 use std::{
@@ -21,7 +18,7 @@ impl SynthesisRequest {
     }
 
     /// 読み上げるテキストを取得します。
-    /// 
+    ///
     /// ## Returns
     /// * `&str`: 読み上げるテキスト。
     pub fn text(&self) -> &str {
@@ -29,7 +26,7 @@ impl SynthesisRequest {
     }
 
     /// スタイルIDを取得します。
-    /// 
+    ///
     /// ## Returns
     /// * `&str`: スタイルID。
     pub fn speaker_id(&self) -> &str {
@@ -51,14 +48,18 @@ impl SynthesisQueue {
         }
     }
 
-    /// リクエストをキューに追加します。
+    /// 音声合成リクエストをキューに追加します。
+    ///
+    /// ## Arguments
+    /// * `guild_id` - リクエストを追加するギルドID。
+    /// * `request` - 追加するリクエスト。
     pub async fn enqueue_synthesis_request(&self, guild_id: GuildId, request: SynthesisRequest) {
         let mut queues = self.queues.lock().await;
         queues.entry(guild_id).or_default().push_back(request);
     }
 
     /// 現在進行中のリクエストをキャンセルします。
-    /// 
+    ///
     /// ## Arguments
     /// * `guild_id` - キャンセルするリクエストのギルドID。
     pub async fn cancel_current_request(&self, guild_id: GuildId) {
@@ -69,7 +70,7 @@ impl SynthesisQueue {
     }
 
     /// 現在進行中のリクエストをキャンセルし、キューを空にします。
-    /// 
+    ///
     /// ## Arguments
     /// * `guild_id` - キャンセルするリクエストのギルドID。
     pub async fn cancel_current_request_and_clear_queue(&self, guild_id: GuildId) {
@@ -80,10 +81,10 @@ impl SynthesisQueue {
     }
 
     /// 指定したギルドIDのキューから次のリクエストを取得し、キューから削除します。
-    /// 
+    ///
     /// ## Arguments
     /// * `guild_id` - 検索するギルドID。
-    /// 
+    ///
     /// ## Returns
     /// * `Option<SynthesisRequest>` - 次のリクエスト。キューが空の場合は `None`。
     pub async fn dequeue_request(&self, guild_id: GuildId) -> Option<SynthesisRequest> {
@@ -96,16 +97,19 @@ impl SynthesisQueue {
     }
 
     /// ギルドIDと `AbortHandle` を指定し、アクティブなリクエストを追加します。
-    /// 
+    ///
     /// ## Arguments
     /// * `guild_id` - 音声合成要求があったギルドID。
     /// * `abort_handle` - リクエストをキャンセルするための `AbortHandle`。
     pub async fn add_active_request(&self, guild_id: GuildId, abort_handle: AbortHandle) {
-        self.active_requests.lock().await.insert(guild_id, abort_handle);
+        self.active_requests
+            .lock()
+            .await
+            .insert(guild_id, abort_handle);
     }
 
     /// ギルドIDを指定し、アクティブなリクエストを削除します。
-    /// 
+    ///
     /// ## Arguments
     /// * `guild_id` - 削除するリクエストのギルドID。
     pub async fn remove_active_request(&self, guild_id: GuildId) {
@@ -113,7 +117,7 @@ impl SynthesisQueue {
     }
 
     /// アクティブなリクエストの中に、指定したギルドIDが含まれているかどうかを返します。
-    /// 
+    ///
     /// ## Arguments
     /// * `guild_id` - 検索するギルドID。
     ///

@@ -1,6 +1,6 @@
-use std::sync::Arc;
-use songbird::{Songbird, SongbirdKey};
 use serenity::prelude::Context;
+use songbird::{Songbird, SongbirdKey};
+use std::sync::Arc;
 
 /// コンテキストデータからSongbirdクライアントを非同期に取得します。
 ///

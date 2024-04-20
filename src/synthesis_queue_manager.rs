@@ -13,33 +13,30 @@ use std::{
 };
 
 use crate::serenity_utils::get_songbird_from_ctx;
-use crate::synthesis_queue::SynthesisQueue;
+use crate::synthesis_queue::{SynthesisQueue, SynthesisRequest};
 
 /// ギルドごとの音声合成の進行状況を管理する構造体。
 #[derive(Clone)]
 pub struct SynthesisQueueManager {
     guild_states: Arc<Mutex<HashMap<GuildId, Arc<AtomicBool>>>>,
+    synthesis_queue: Arc<SynthesisQueue>,
 }
 
 impl SynthesisQueueManager {
     pub fn new() -> Self {
         SynthesisQueueManager {
             guild_states: Arc::new(Mutex::new(HashMap::new())),
+            synthesis_queue: Arc::new(SynthesisQueue::new()),
         }
     }
 
     /// キューの処理を開始します。既に処理中の場合は何もしません。
-    /// 
+    ///
     /// ## Arguments
     /// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
     /// * `guild_id` - サーバーID。
     /// * `synthesis_queue` - 音声合成リクエストのキュー。
-    pub async fn start_processing(
-        &self,
-        ctx: &Context,
-        guild_id: GuildId,
-        synthesis_queue: Arc<SynthesisQueue>,
-    ) {
+    pub async fn start_processing(&self, ctx: &Context, guild_id: GuildId) {
         let is_running_state = {
             let mut states = self.guild_states.lock().expect("Mutex was poisoned");
             states
@@ -59,9 +56,10 @@ impl SynthesisQueueManager {
         is_running_state.store(true, Ordering::SeqCst);
         println!("Synthesis Queue processing started for guild {}", guild_id);
 
-        let ctx_clone = ctx.clone();
-
         tokio::spawn({
+            let ctx_clone = ctx.clone();
+            let synthesis_queue = self.synthesis_queue.clone();
+
             async move {
                 loop {
                     // 既に処理中の場合。
@@ -118,6 +116,35 @@ impl SynthesisQueueManager {
                 println!("Synthesis Queue processing finished for guild {}", guild_id);
             }
         });
+    }
+
+    /// 音声合成リクエストをキューに追加します。
+    ///
+    /// ## Arguments
+    /// * `guild_id` - リクエストを追加するギルドID。
+    /// * `request` - 追加するリクエスト。
+    pub async fn enqueue_synthesis_request(&self, guild_id: GuildId, request: SynthesisRequest) {
+        self.synthesis_queue
+            .enqueue_synthesis_request(guild_id, request)
+            .await;
+    }
+
+    /// 現在進行中のリクエストをキャンセルします。
+    ///
+    /// ## Arguments
+    /// * `guild_id` - キャンセルするリクエストのギルドID。
+    pub async fn cancel_current_request(&self, guild_id: GuildId) {
+        self.synthesis_queue.cancel_current_request(guild_id).await;
+    }
+
+    /// 現在進行中のリクエストをキャンセルし、キューを空にします。
+    ///
+    /// ## Arguments
+    /// * `guild_id` - キャンセルするリクエストのギルドID。
+    pub async fn cancel_current_request_and_clear_queue(&self, guild_id: GuildId) {
+        self.synthesis_queue
+            .cancel_current_request_and_clear_queue(guild_id)
+            .await;
     }
 }
 
