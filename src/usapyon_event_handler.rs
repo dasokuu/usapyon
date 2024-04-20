@@ -76,11 +76,13 @@ impl EventHandler for UsapyonEventHandler {
 
         // メッセージを読み上げる処理
         // Context から SynthesisQueue を取得
-        let data_read = ctx.data.read().await;
-        let synthesis_queue = data_read
-            .get::<SynthesisQueueKey>()
-            .expect("SynthesisQueue not found in TypeMap")
-            .clone();
+        // let data_read = ctx.data.read().await;
+        // let synthesis_queue = data_read
+        //     .get::<SynthesisQueueKey>()
+        //     .expect("SynthesisQueue not found in TypeMap")
+        //     .clone();
+        let synthesis_queue = get_synthesis_queue(&ctx).await;
+
         let text_to_read = if sanitized_content.chars().count() > 200 {
             sanitized_content.chars().take(200).collect::<String>() + "...以下略"
         } else {
@@ -147,6 +149,7 @@ impl EventHandler for UsapyonEventHandler {
     }
 }
 
+// UsapyonEventHandler独自のメソッドを実装。
 impl UsapyonEventHandler {
     /// "!"から始まるコマンドを処理します。
     ///
@@ -162,35 +165,6 @@ impl UsapyonEventHandler {
                 }
             }
             "!skip" => {
-                // Retrieve the Songbird instance and attempt to skip the current track
-                // let songbird = get_songbird_from_ctx(&ctx).await;
-                // let handler_lock = songbird.get(guild_id).expect("No Songbird handler found");
-                // let handler = handler_lock.lock().await;
-
-                // Check if there is a current track and attempt to skip it
-                // if handler.queue().current().is_some() {
-                //     // Attempt to skip the current track and handle the result
-                //     match handler.queue().skip() {
-                //         Ok(_) => println!("Track skipped successfully for guild {}", guild_id),
-                //         Err(e) => {
-                //             println!("Failed to skip track for guild {}: {:?}", guild_id, e)
-                //         }
-                //     }
-                // } else {
-                //     let data_read = ctx.data.read().await;
-                //     let synthesis_queue = data_read
-                //         .get::<SynthesisQueueKey>()
-                //         .expect("SynthesisQueue not found in TypeMap")
-                //         .clone();
-
-                //     // Cancel the current synthesis request
-                //     synthesis_queue.cancel_current_request(guild_id).await;
-                //     println!(
-                //         "No track was playing. Current synthesis request cancelled for guild {}",
-                //         guild_id
-                //     );
-                // }
-
                 // songbird の音声ハンドラでスキップを試みます。
                 let result = with_songbird_handler(&ctx, guild_id, |handler| {
                     handler
@@ -228,11 +202,12 @@ impl UsapyonEventHandler {
                 }
 
                 // 音声合成キューをクリア。
-                let data_read = ctx.data.read().await;
-                let synthesis_queue = data_read
-                    .get::<SynthesisQueueKey>()
-                    .expect("SynthesisQueue not found in TypeMap")
-                    .clone();
+                // let data_read = ctx.data.read().await;
+                // let synthesis_queue = data_read
+                //     .get::<SynthesisQueueKey>()
+                //     .expect("SynthesisQueue not found in TypeMap")
+                //     .clone();
+                let synthesis_queue = get_synthesis_queue(&ctx).await;
 
                 synthesis_queue
                     .cancel_current_request_and_clear_queue(guild_id)
@@ -564,6 +539,19 @@ async fn join_voice_channel(ctx: &Context, msg: &Message) -> Result<(), String> 
     }
 }
 
+/// songbird の音声ハンドラを取得し、指定された関数を実行します。
+/// 
+/// ## Arguments
+/// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
+/// * `guild_id` - ギルドID。
+/// * `f` - 音声ハンドラを操作する関数。
+/// 
+/// ## Returns
+/// `Result<R, String>` - 指定された関数の実行結果、またはエラー。
+/// 
+/// ## Type Parameters
+/// * `F` - 音声ハンドラを操作する関数の型。
+/// * `R` - 関数の戻り値の型。
 async fn with_songbird_handler<F, R>(ctx: &Context, guild_id: GuildId, f: F) -> Result<R, String>
 where
     F: FnOnce(MutexGuard<'_, Call>) -> R + Send,
@@ -579,12 +567,28 @@ where
 }
 
 async fn cancel_synthesis_request(ctx: &Context, guild_id: GuildId) {
-    let data_read = ctx.data.read().await;
-    let synthesis_queue = data_read
-        .get::<SynthesisQueueKey>()
-        .expect("SynthesisQueue not found in TypeMap")
-        .clone();
+    // let data_read = ctx.data.read().await;
+    // let synthesis_queue = data_read
+    //     .get::<SynthesisQueueKey>()
+    //     .expect("SynthesisQueue not found in TypeMap")
+    //     .clone();
+    let synthesis_queue = get_synthesis_queue(&ctx).await;
 
     // Cancel the current synthesis request
     synthesis_queue.cancel_current_request(guild_id).await;
+}
+
+/// データコンテキストから音声合成キューを取得します。
+/// 
+/// ## Arguments
+/// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
+/// 
+/// ## Returns
+/// `Arc<SynthesisQueue>` - 音声合成キュー。
+async fn get_synthesis_queue(ctx: &Context) -> Arc<SynthesisQueue> {
+    let data_read = ctx.data.read().await;
+    data_read
+        .get::<SynthesisQueueKey>()
+        .expect("SynthesisQueue not found in TypeMap")
+        .clone()
 }
