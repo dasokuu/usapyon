@@ -74,11 +74,55 @@ impl SynthesisQueue {
         queues.remove(&guild_id);
     }
 
+    /// 指定したギルドIDのキューから次のリクエストを取得し、キューから削除します。
+    /// 
+    /// # Arguments
+    /// * `guild_id` - 検索するギルドID。
+    /// 
+    /// # Returns
+    /// * `Option<SynthesisRequest>` - 次のリクエスト。キューが空の場合は `None`。
+    pub async fn dequeue_request(&self, guild_id: GuildId) -> Option<SynthesisRequest> {
+        let mut queues = self.get_queues_lock().await;
+        if let Some(queue) = queues.get_mut(&guild_id) {
+            queue.pop_front()
+        } else {
+            None
+        }
+    }
+
+    /// ギルドIDと `AbortHandle` を指定し、アクティブなリクエストを追加します。
+    /// 
+    /// # Arguments
+    /// * `guild_id` - 音声合成要求があったギルドID。
+    /// * `abort_handle` - リクエストをキャンセルするための `AbortHandle`。
+    pub async fn add_active_request(&self, guild_id: GuildId, abort_handle: AbortHandle) {
+        self.get_active_requests_lock().await.insert(guild_id, abort_handle);
+    }
+
+    /// ギルドIDを指定し、アクティブなリクエストを削除します。
+    /// 
+    /// # Arguments
+    /// * `guild_id` - 削除するリクエストのギルドID。
+    pub async fn remove_active_request(&self, guild_id: GuildId) {
+        self.get_active_requests_lock().await.remove(&guild_id);
+    }
+
+    /// アクティブなリクエストの中に、指定したギルドIDが含まれているかどうかを返します。
+    /// 
+    /// # Arguments
+    /// * `guild_id` - 検索するギルドID。
+    ///
+    /// # Returns
+    /// * `bool` - 指定したギルドIDが含まれているかどうか。
+    pub async fn contains_active_request(&self, guild_id: GuildId) -> bool {
+        self.get_active_requests_lock().await.contains_key(&guild_id)
+    }
+
     pub async fn get_queues_lock(&self) -> MutexGuard<'_, HashMap<GuildId, VecDeque<SynthesisRequest>>> {
         self.queues.lock().await
     }
 
-    pub async fn get_active_requests_lock(&self) -> MutexGuard<'_, HashMap<GuildId, AbortHandle>> {
+    async fn get_active_requests_lock(&self) -> MutexGuard<'_, HashMap<GuildId, AbortHandle>> {
         self.active_requests.lock().await
     }
 }

@@ -230,64 +230,47 @@ impl UsapyonEventHandler {
 /// * `synthesis_queue` - 音声合成キュー。
 async fn process_queue(ctx: &Context, guild_id: GuildId, synthesis_queue: Arc<SynthesisQueue>) {
     loop {
-        let request = {
-            let mut queues = synthesis_queue.get_queues_lock().await;
-            if let Some(queue) = queues.get_mut(&guild_id) {
-                if queue.is_empty()
-                    || synthesis_queue
-                        .get_active_requests_lock()
-                        .await
-                        .contains_key(&guild_id)
-                {
-                    // 既に処理中、またはキューが空の場合は終了
-                    return;
-                } else {
-                    // リクエストを取り出し、同時にキューから削除
-                    queue.pop_front()
-                }
-            } else {
-                // キューが存在しない場合は終了
+        // 既に処理中の場合。
+        if synthesis_queue.contains_active_request(guild_id).await {
+            println!("Already processing a request for guild {}", guild_id);
+            return;
+        }
+
+        let request = match synthesis_queue.dequeue_request(guild_id).await {
+            Some(request) => request,
+            None => {
+                println!("No requests in queue for guild {}", guild_id);
                 return;
             }
         };
 
-        if let Some(request) = request {
-            let client = reqwest::Client::new();
-            let audio_query_json = request_audio_query(&client, &request.text(), &request.speaker_id())
-                .await
-                .unwrap();
-            let (abort_handle, abort_registration) = AbortHandle::new_pair();
-            let future = Abortable::new(
-                request_synthesis(&client, audio_query_json, true),
-                abort_registration,
-            );
-            synthesis_queue
-                .get_active_requests_lock()
-                .await
-                .insert(guild_id, abort_handle);
+        let client = reqwest::Client::new();
+        let audio_query_json = request_audio_query(&client, &request.text(), &request.speaker_id())
+            .await
+            .unwrap();
+        let (abort_handle, abort_registration) = AbortHandle::new_pair();
+        let future = Abortable::new(
+            request_synthesis(&client, audio_query_json, true),
+            abort_registration,
+        );
+        
+        synthesis_queue.add_active_request(guild_id, abort_handle).await;
 
-            match future.await {
-                Ok(Ok(synthesis_body_bytes)) => {
-                    let songbird = get_songbird_from_ctx(&ctx).await;
-                    let handler_lock = songbird.get(guild_id).expect("No Songbird handler found");
-                    let mut handler = handler_lock.lock().await;
-                    let source =
-                        songbird::input::Input::from(Box::from(synthesis_body_bytes.to_vec()));
-                    handler.enqueue_input(source).await;
+        match future.await {
+            Ok(Ok(synthesis_body_bytes)) => {
+                let songbird = get_songbird_from_ctx(&ctx).await;
+                let handler_lock = songbird.get(guild_id).expect("No Songbird handler found");
+                let mut handler = handler_lock.lock().await;
+                let source =
+                    songbird::input::Input::from(Box::from(synthesis_body_bytes.to_vec()));
+                handler.enqueue_input(source).await;
 
-                    // 処理が成功したら、アクティブなリクエストを削除
-                    synthesis_queue
-                        .get_active_requests_lock()
-                        .await
-                        .remove(&guild_id);
-                }
-                Ok(Err(_)) | Err(_) => {
-                    println!("Synthesis was aborted or failed for guild {}", guild_id);
-                    synthesis_queue
-                        .get_active_requests_lock()
-                        .await
-                        .remove(&guild_id);
-                }
+                // 処理が成功したら、アクティブなリクエストを削除
+                synthesis_queue.remove_active_request(guild_id).await;
+            }
+            Ok(Err(_)) | Err(_) => {
+                println!("Synthesis was aborted or failed for guild {}", guild_id);
+                synthesis_queue.remove_active_request(guild_id).await;
             }
         }
     }
