@@ -54,33 +54,9 @@ impl EventHandler for UsapyonEventHandler {
         if msg.content.starts_with("!") {
             UsapyonEventHandler::process_command(&ctx, &msg, guild_id).await;
             return;
-        }
-
-        println!("msg.content: {}", msg.content);
-
-        let sanitized_content: String = sanitize_message(&ctx, &msg.content, guild_id).await;
-        println!("Sanitized message: {}", sanitized_content);
-
-        // メッセージを読み上げる処理
-        // Context から SynthesisQueue を取得
-        // let synthesis_queue = get_synthesis_queue(&ctx).await;
-
-        let text_to_read = if sanitized_content.chars().count() > 200 {
-            sanitized_content.chars().take(200).collect::<String>() + "...以下略"
         } else {
-            sanitized_content.clone()
-        };
-
-        let request = SynthesisRequest::new(text_to_read.to_string(), "1".to_string());
-
-        // 音声合成キューマネージャーを取得し、リクエストを追加して処理を開始します。
-        let synthesis_queue_manager = get_synthesis_queue_manager(&ctx).await;
-        synthesis_queue_manager
-            .add_request_to_synthesis_queue(guild_id, request)
-            .await;
-        synthesis_queue_manager
-            .start_processing(&ctx, guild_id)
-            .await;
+            UsapyonEventHandler::process_speech_request(&ctx, &msg, guild_id).await;
+        }
     }
 
     /// ボイスチャットの状態が変更されたときに呼び出されます。
@@ -198,6 +174,33 @@ impl UsapyonEventHandler {
             }
             _ => {}
         }
+    }
+    async fn process_speech_request(ctx: &Context, msg: &Message, guild_id: GuildId) {
+        println!("msg.content: {}", msg.content);
+
+        let sanitized_content: String = sanitize_message(&ctx, &msg.content, guild_id).await;
+        println!("Sanitized message: {}", sanitized_content);
+
+        // メッセージを読み上げる処理
+        // Context から SynthesisQueue を取得
+        // let synthesis_queue = get_synthesis_queue(&ctx).await;
+
+        let text_to_read = if sanitized_content.chars().count() > 200 {
+            sanitized_content.chars().take(200).collect::<String>() + "...以下略"
+        } else {
+            sanitized_content.clone()
+        };
+
+        let request = SynthesisRequest::new(text_to_read.to_string(), "1".to_string());
+
+        // 音声合成キューマネージャーを取得し、リクエストを追加して処理を開始します。
+        let synthesis_queue_manager = get_synthesis_queue_manager(&ctx).await;
+        synthesis_queue_manager
+            .add_request_to_synthesis_queue(guild_id, request)
+            .await;
+        synthesis_queue_manager
+            .start_processing(&ctx, guild_id)
+            .await;
     }
 }
 

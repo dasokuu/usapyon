@@ -14,43 +14,36 @@ use serenity::{model::prelude::*, prelude::*};
 use songbird::SerenityInit;
 use std::{env, sync::Arc};
 use synthesis_queue::SynthesisRequest;
-use synthesis_queue_manager::SynthesisQueueManagerKey;
+use synthesis_queue_manager::{SynthesisQueueManager, SynthesisQueueManagerKey};
 use usapyon_event_handler::UsapyonEventHandler;
 use voice_channel_tracker::{VoiceChannelTracker, VoiceChannelTrackerKey};
 
 #[tokio::main(flavor = "current_thread")]
-async fn main() {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv().ok();
-    let token = env::var("DISCORD_TOKEN").expect("DISCORD_TOKEN must be set");
+    let token = env::var("DISCORD_TOKEN")?;
 
     let intents = GatewayIntents::GUILD_MEMBERS
-                                | GatewayIntents::GUILD_MESSAGES
-                                | GatewayIntents::MESSAGE_CONTENT // メッセージの内容を取得するため。
-                                | GatewayIntents::DIRECT_MESSAGES
-                                | GatewayIntents::GUILD_VOICE_STATES
-                                | GatewayIntents::GUILDS  // サーバーのリストを取得するため。
-                                | GatewayIntents::GUILD_PRESENCES; // ボット起動後にボイスチャンネルに参加したユーザーを取得するため。
+        | GatewayIntents::GUILD_MESSAGES
+        | GatewayIntents::MESSAGE_CONTENT
+        | GatewayIntents::DIRECT_MESSAGES
+        | GatewayIntents::GUILD_VOICE_STATES
+        | GatewayIntents::GUILDS
+        | GatewayIntents::GUILD_PRESENCES;
 
-    // すべてのインテントを有効にする（開発中のみ）
-    // let intents = GatewayIntents::all();
-
-    let mut serenity_client = Client::builder(&token, intents)
+    let mut client = Client::builder(&token, intents)
         .event_handler(UsapyonEventHandler)
         .register_songbird()
-        .await
-        .expect("Error creating client");
+        .await?;
 
-    // SynthesisQueueManagerとVoiceChannelTrackerのインスタンスを作成し、TypeMapに挿入
-    let voice_channel_tracker = Arc::new(VoiceChannelTracker::new());
-    let synthesis_queue_manager = Arc::new(synthesis_queue_manager::SynthesisQueueManager::new());
+    let voice_tracker = Arc::new(VoiceChannelTracker::new());
+    let queue_manager = Arc::new(SynthesisQueueManager::new());
 
     {
-        let mut client_data = serenity_client.data.write().await;
-        client_data.insert::<VoiceChannelTrackerKey>(voice_channel_tracker.clone());
-        client_data.insert::<SynthesisQueueManagerKey>(synthesis_queue_manager.clone());
+        let mut data = client.data.write().await;
+        data.insert::<VoiceChannelTrackerKey>(voice_tracker.clone());
+        data.insert::<SynthesisQueueManagerKey>(queue_manager.clone());
     }
 
-    if let Err(why) = serenity_client.start().await {
-        println!("Client error: {:?}", why);
-    }
+    client.start().await.map_err(|e| e.into())
 }
