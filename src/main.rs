@@ -1,4 +1,6 @@
-// joinを実行したチャンネルのテキストだけをボットが読み上げるようにしたい。
+// 話者IDを選択できるようにしたい。
+
+mod synthesis_queue;
 
 extern crate dotenv;
 extern crate serenity;
@@ -17,51 +19,12 @@ use serenity::{
 };
 use songbird::{SerenityInit, Songbird, SongbirdKey};
 use std::{
-    collections::{HashMap, VecDeque},
+    collections::HashMap,
     env,
     error::Error,
     sync::Arc,
 };
-
-// 音声合成リクエストを表す構造体
-#[derive(Clone)]
-struct SynthesisRequest {
-    text: String,
-    speaker_id: String,
-}
-
-// ギルドごとにリクエストのキューを管理するための構造体
-struct SynthesisQueue {
-    queues: Mutex<HashMap<GuildId, VecDeque<SynthesisRequest>>>,
-    active_requests: Mutex<HashMap<GuildId, AbortHandle>>,
-}
-
-impl SynthesisQueue {
-    pub fn new() -> Self {
-        SynthesisQueue {
-            queues: Mutex::new(HashMap::new()),
-            active_requests: Mutex::new(HashMap::new()),
-        }
-    }
-    // リクエストをキューに追加する
-    pub async fn enqueue_synthesis_request(&self, guild_id: GuildId, request: SynthesisRequest) {
-        let mut queues = self.queues.lock().await;
-        queues.entry(guild_id).or_default().push_back(request);
-    }
-
-    // 現在進行中のリクエストをキャンセルする
-    pub async fn cancel_current_request(&self, guild_id: GuildId) {
-        let mut active_requests = self.active_requests.lock().await;
-        if let Some(abort_handle) = active_requests.remove(&guild_id) {
-            abort_handle.abort();
-        }
-    }
-}
-
-struct SynthesisQueueKey;
-impl TypeMapKey for SynthesisQueueKey {
-    type Value = Arc<SynthesisQueue>;
-}
+use synthesis_queue::{SynthesisQueue, SynthesisQueueKey, SynthesisRequest};
 
 struct VoiceChannelTracker {
     active_channels: Mutex<HashMap<GuildId, (ChannelId, ChannelId)>>, // (VoiceChannelId, TextChannelId)
@@ -209,10 +172,11 @@ impl EventHandler for Handler {
         } else {
             sanitized_content.clone()
         };
-        let request = SynthesisRequest {
-            text: text_to_read.to_string(),
-            speaker_id: "1".to_string(),
-        };
+        // let request = SynthesisRequest {
+        //     text: text_to_read.to_string(),
+        //     speaker_id: "1".to_string(),
+        // };
+        let request = SynthesisRequest::new(text_to_read.to_string(), "1".to_string());
         synthesis_queue
             .enqueue_synthesis_request(guild_id, request)
             .await;
@@ -281,12 +245,11 @@ impl EventHandler for Handler {
 async fn process_queue(ctx: &Context, guild_id: GuildId, synthesis_queue: Arc<SynthesisQueue>) {
     loop {
         let request = {
-            let mut queues = synthesis_queue.queues.lock().await;
+            let mut queues = synthesis_queue.get_queues_lock().await;
             if let Some(queue) = queues.get_mut(&guild_id) {
                 if queue.is_empty()
                     || synthesis_queue
-                        .active_requests
-                        .lock()
+                        .get_active_requests_lock()
                         .await
                         .contains_key(&guild_id)
                 {
@@ -304,7 +267,7 @@ async fn process_queue(ctx: &Context, guild_id: GuildId, synthesis_queue: Arc<Sy
 
         if let Some(request) = request {
             let client = reqwest::Client::new();
-            let audio_query_json = request_audio_query(&client, &request.text, &request.speaker_id)
+            let audio_query_json = request_audio_query(&client, &request.text(), &request.speaker_id())
                 .await
                 .unwrap();
             let (abort_handle, abort_registration) = AbortHandle::new_pair();
@@ -313,8 +276,7 @@ async fn process_queue(ctx: &Context, guild_id: GuildId, synthesis_queue: Arc<Sy
                 abort_registration,
             );
             synthesis_queue
-                .active_requests
-                .lock()
+                .get_active_requests_lock()
                 .await
                 .insert(guild_id, abort_handle);
 
@@ -329,16 +291,14 @@ async fn process_queue(ctx: &Context, guild_id: GuildId, synthesis_queue: Arc<Sy
 
                     // 処理が成功したら、アクティブなリクエストを削除
                     synthesis_queue
-                        .active_requests
-                        .lock()
+                        .get_active_requests_lock()
                         .await
                         .remove(&guild_id);
                 }
                 Ok(Err(_)) | Err(_) => {
                     println!("Synthesis was aborted or failed for guild {}", guild_id);
                     synthesis_queue
-                        .active_requests
-                        .lock()
+                        .get_active_requests_lock()
                         .await
                         .remove(&guild_id);
                 }
