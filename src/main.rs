@@ -35,6 +35,7 @@ struct SynthesisQueue {
     queues: Mutex<HashMap<GuildId, VecDeque<SynthesisRequest>>>,
     active_requests: Mutex<HashMap<GuildId, AbortHandle>>,
 }
+
 impl SynthesisQueue {
     pub fn new() -> Self {
         SynthesisQueue {
@@ -47,6 +48,7 @@ impl SynthesisQueue {
         let mut queues = self.queues.lock().await;
         queues.entry(guild_id).or_default().push_back(request);
     }
+
     // 現在進行中のリクエストをキャンセルする
     pub async fn cancel_current_request(&self, guild_id: GuildId) {
         let mut active_requests = self.active_requests.lock().await;
@@ -64,6 +66,7 @@ impl TypeMapKey for SynthesisQueueKey {
 struct VoiceChannelTracker {
     active_channels: Mutex<HashMap<GuildId, (ChannelId, ChannelId)>>, // (VoiceChannelId, TextChannelId)
 }
+
 impl VoiceChannelTracker {
     pub fn new() -> Self {
         VoiceChannelTracker {
@@ -539,6 +542,7 @@ async fn request_synthesis(
 
     Ok(synthesis_body_bytes)
 }
+
 async fn sanitize_message(ctx: &Context, msg: &str, guild_id: GuildId) -> String {
     let re_user = Regex::new(r"<@!?(\d+)>").unwrap();
     let re_channel = Regex::new(r"<#(\d+)>").unwrap();
@@ -547,16 +551,23 @@ async fn sanitize_message(ctx: &Context, msg: &str, guild_id: GuildId) -> String
 
     let mut sanitized = msg.to_string();
 
-    // Replace user mentions with their nicknames or usernames
+    // 「<@ユーザーID>」を表示名に置き換えます。
+    // 表示名がなければユーザー名に置き換えます。
     for cap in re_user.captures_iter(msg) {
         if let Ok(id) = cap[1].parse::<u64>() {
-            if let Some(guild) = ctx.cache.guild(guild_id) {
-                if let Some(member) = guild.members.get(&UserId::new(id)) {
-                    let display_name = member.nick.as_ref().unwrap_or(&member.user.name);
-                    sanitized = sanitized.replace(&cap[0], display_name);
-                } else if let Ok(user) = UserId::new(id).to_user(&ctx.http).await {
-                    sanitized = sanitized.replace(&cap[0], &user.name);
-                }
+            // if let Some(guild) = ctx.cache.guild(guild_id) {
+            //     if let Some(member) = guild.members.get(&UserId::new(id)) {
+            //         let display_name = member.nick.as_ref().unwrap_or(&member.user.name);
+            //         sanitized = sanitized.replace(&cap[0], display_name);
+            //     } else if let Ok(user) = UserId::new(id).to_user(&ctx.http).await {
+            //         sanitized = sanitized.replace(&cap[0], &user.name);
+            //     }
+            // }
+            if let Some(member) = get_member_from_ctx(&ctx, guild_id, UserId::new(id)) {
+                let display_name = member.nick.as_ref().unwrap_or(&member.user.name);
+                sanitized = sanitized.replace(&cap[0], display_name);
+            } else if let Ok(user) = UserId::new(id).to_user(&ctx.http).await {
+                sanitized = sanitized.replace(&cap[0], &user.name);
             }
         }
     }
@@ -584,9 +595,20 @@ async fn sanitize_message(ctx: &Context, msg: &str, guild_id: GuildId) -> String
     }
 
     // Replace custom emojis
-    sanitized = re_emoji.replace_all(&sanitized, |caps: &regex::Captures| format!("{}", &caps[1])).to_string();
+    sanitized = re_emoji
+        .replace_all(&sanitized, |caps: &regex::Captures| format!("{}", &caps[1]))
+        .to_string();
 
     sanitized
+}
+
+fn get_member_from_ctx(ctx: &Context, guild_id: GuildId, user_id: UserId) -> Option<Member> {
+    let guild = match ctx.cache.guild(guild_id) {
+        Some(guild) => guild,
+        None => return None,
+    };
+
+    guild.members.get(&user_id).cloned()
 }
 
 #[tokio::main(flavor = "current_thread")]
