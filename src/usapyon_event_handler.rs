@@ -1,10 +1,7 @@
 extern crate dotenv;
 extern crate serenity;
 
-use bytes::Bytes;
-use futures::future::{AbortHandle, Abortable};
 use regex::Regex;
-use reqwest::Url;
 use serenity::model::channel::Channel;
 use serenity::model::id::{ChannelId, RoleId, UserId};
 use serenity::{
@@ -12,8 +9,8 @@ use serenity::{
     model::{gateway::Ready, prelude::*},
     prelude::*,
 };
-use songbird::{Call, Songbird, SongbirdKey};
-use std::{collections::HashMap, error::Error, sync::Arc};
+use songbird::Call;
+use std::sync::Arc;
 use tokio::sync::MutexGuard;
 
 use crate::{SynthesisQueue, SynthesisQueueKey, SynthesisRequest, VoiceChannelTrackerKey, SynthesisQueueManagerKey};
