@@ -13,7 +13,7 @@ use dotenv::dotenv;
 use serenity::{model::prelude::*, prelude::*};
 use songbird::SerenityInit;
 use std::{env, sync::Arc};
-use synthesis_queue::{SynthesisQueue, SynthesisQueueKey, SynthesisRequest};
+use synthesis_queue::SynthesisRequest;
 use synthesis_queue_manager::SynthesisQueueManagerKey;
 use usapyon_event_handler::UsapyonEventHandler;
 use voice_channel_tracker::{VoiceChannelTracker, VoiceChannelTrackerKey};

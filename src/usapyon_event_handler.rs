@@ -11,8 +11,9 @@ use std::sync::Arc;
 use tokio::sync::MutexGuard;
 
 use crate::serenity_utils::get_songbird_from_ctx;
+use crate::synthesis_queue_manager::SynthesisQueueManager;
 use crate::{
-    SynthesisQueue, SynthesisQueueKey, SynthesisQueueManagerKey, SynthesisRequest,
+    SynthesisQueueManagerKey, SynthesisRequest,
     VoiceChannelTrackerKey,
 };
 
@@ -75,18 +76,9 @@ impl EventHandler for UsapyonEventHandler {
         };
 
         let request = SynthesisRequest::new(text_to_read.to_string(), "1".to_string());
-        // synthesis_queue
-        //     .enqueue_synthesis_request(guild_id, request)
-        //     .await;
 
-        // 音声合成キューマネージャを起動
-        let synthesis_queue_manager = ctx
-            .data
-            .read()
-            .await
-            .get::<SynthesisQueueManagerKey>()
-            .expect("SynthesisQueueManager not found")
-            .clone();
+        // 音声合成キューマネージャーを取得し、リクエストを追加して処理を開始します。
+        let synthesis_queue_manager = get_synthesis_queue_manager(&ctx).await;
         synthesis_queue_manager
             .enqueue_synthesis_request(guild_id, request)
             .await;
@@ -174,15 +166,7 @@ impl UsapyonEventHandler {
                     }
                     // トラックが存在しない、またはスキップに失敗した場合、音声合成リクエストをキャンセル。
                     Ok(Some(false)) | Ok(None) => {
-                        // let synthesis_queue = get_synthesis_queue(&ctx).await;
-                        // synthesis_queue.cancel_current_request(guild_id).await;
-                        let synthesis_queue_manager = ctx
-                            .data
-                            .read()
-                            .await
-                            .get::<SynthesisQueueManagerKey>()
-                            .expect("SynthesisQueueManager not found")
-                            .clone();
+                        let synthesis_queue_manager = get_synthesis_queue_manager(&ctx).await;
                         synthesis_queue_manager
                             .cancel_current_request(guild_id)
                             .await;
@@ -207,18 +191,7 @@ impl UsapyonEventHandler {
                 }
 
                 // 音声合成キューをクリア。
-                // let synthesis_queue = get_synthesis_queue(&ctx).await;
-
-                // synthesis_queue
-                //     .cancel_current_request_and_clear_queue(guild_id)
-                //     .await;
-                let synthesis_queue_manager = ctx
-                    .data
-                    .read()
-                    .await
-                    .get::<SynthesisQueueManagerKey>()
-                    .expect("SynthesisQueueManager not found")
-                    .clone();
+                let synthesis_queue_manager = get_synthesis_queue_manager(&ctx).await;
                 synthesis_queue_manager
                     .cancel_current_request_and_clear_queue(guild_id)
                     .await;
@@ -426,18 +399,18 @@ where
     Ok(f(handler))
 }
 
-/// データコンテキストから音声合成キューを取得します。
+/// データコンテキストから音声合成キューのマネージャーを取得します。
 ///
 /// ## Arguments
 /// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
 ///
 /// ## Returns
-/// `Arc<SynthesisQueue>` - 音声合成キュー。
-async fn get_synthesis_queue(ctx: &Context) -> Arc<SynthesisQueue> {
+/// `Arc<SynthesisQueueManager>` - 音声合成キューのマネージャー。
+async fn get_synthesis_queue_manager(ctx: &Context) -> Arc<SynthesisQueueManager> {
     let data_read = ctx.data.read().await;
     data_read
-        .get::<SynthesisQueueKey>()
-        .expect("SynthesisQueue not found in TypeMap")
+        .get::<SynthesisQueueManagerKey>()
+        .expect("SynthesisQueueManager not found")
         .clone()
 }
 
