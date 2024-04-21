@@ -5,6 +5,7 @@ mod synthesis_queue;
 mod synthesis_queue_manager;
 mod usapyon_event_handler;
 mod voice_channel_tracker;
+mod usapyon_config;
 
 extern crate dotenv;
 extern crate serenity;
@@ -16,10 +17,17 @@ use std::{env, sync::Arc};
 use synthesis_queue::SynthesisRequest;
 use synthesis_queue_manager::{SynthesisQueueManager, SynthesisQueueManagerKey};
 use usapyon_event_handler::UsapyonEventHandler;
+use usapyon_config::UsapyonConfig;
 use voice_channel_tracker::{VoiceChannelTracker, VoiceChannelTrackerKey};
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let config = UsapyonConfig::new("http://localhost:50021/speakers").await;
+    match config {
+        Ok(cfg) => cfg.display_speakers(),
+        Err(e) => println!("Error: {}", e),
+    }
+
     if dotenv().is_err() {
         println!("Warning: Failed to read .env file");
     }
