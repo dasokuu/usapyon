@@ -56,63 +56,18 @@ impl SynthesisQueueManager {
         is_running_state.store(true, Ordering::SeqCst);
         println!("Synthesis Queue processing started for guild {}", guild_id);
 
+        let ctx_clone = ctx.clone();
+        let synthesis_queue = self.synthesis_queue.clone();
+
         tokio::spawn({
-            let ctx_clone = ctx.clone();
-            let synthesis_queue = self.synthesis_queue.clone();
-
             async move {
-                loop {
-                    let request = match synthesis_queue.dequeue_request(guild_id).await {
-                        Some(request) => request,
-                        None => {
-                            println!("No requests in queue for guild {}", guild_id);
-                            break;
-                        }
-                    };
-
-                    let client = reqwest::Client::new();
-                    let audio_query_json =
-                        request_audio_query(&client, &request.text(), &request.speaker_id())
-                            .await
-                            .unwrap();
-                    let (abort_handle, abort_registration) = AbortHandle::new_pair();
-                    let future = Abortable::new(
-                        request_synthesis(&client, audio_query_json, true),
-                        abort_registration,
-                    );
-
-                    synthesis_queue
-                        .add_active_request(guild_id, abort_handle)
-                        .await;
-
-                    match future.await {
-                        Ok(Ok(synthesis_body_bytes)) => {
-                            // 正しくSongbirdクライアントを取得し、ハンドラーを使用します。
-                            match get_songbird_from_ctx(&ctx_clone).await {
-                                Ok(songbird) => {
-                                    let handler_lock =
-                                        songbird.get(guild_id).expect("No Songbird handler found");
-                                    let mut handler = handler_lock.lock().await;
-                                    let source = songbird::input::Input::from(Box::from(
-                                        synthesis_body_bytes.to_vec(),
-                                    ));
-                                    handler.enqueue_input(source).await;
-
-                                    // 処理が成功したら、アクティブなリクエストを削除
-                                    synthesis_queue.remove_active_request(guild_id).await;
-                                }
-                                Err(e) => println!("Failed to get Songbird client: {}", e),
-                            }
-                        }
-                        Ok(Err(_)) | Err(_) => {
-                            println!("Synthesis was aborted or failed for guild {}", guild_id);
-                            synthesis_queue.remove_active_request(guild_id).await;
-                        }
-                    }
-                }
-
-                is_running_state.store(false, Ordering::SeqCst);
-                println!("Synthesis Queue processing finished for guild {}", guild_id);
+                SynthesisQueueManager::process_synthesis_queue(
+                    &ctx_clone,
+                    guild_id,
+                    synthesis_queue,
+                    is_running_state,
+                )
+                .await;
             }
         });
     }
@@ -148,6 +103,61 @@ impl SynthesisQueueManager {
         self.synthesis_queue
             .cancel_current_request_and_clear_queue(guild_id)
             .await;
+    }
+
+    async fn process_synthesis_queue(
+        ctx: &Context,
+        guild_id: GuildId,
+        synthesis_queue: Arc<SynthesisQueue>,
+        is_running_state: Arc<AtomicBool>,
+    ) {
+        loop {
+            let request = match synthesis_queue.dequeue_request(guild_id).await {
+                Some(request) => request,
+                None => {
+                    println!("No requests in queue for guild {}", guild_id);
+                    break;
+                }
+            };
+
+            let client = reqwest::Client::new();
+            let audio_query_json =
+                request_audio_query(&client, &request.text(), &request.speaker_id())
+                    .await
+                    .unwrap();
+            let (abort_handle, abort_registration) = AbortHandle::new_pair();
+            let future = Abortable::new(
+                request_synthesis(&client, audio_query_json, true),
+                abort_registration,
+            );
+
+            synthesis_queue
+                .add_active_request(guild_id, abort_handle)
+                .await;
+
+            match future.await {
+                Ok(Ok(synthesis_body_bytes)) => match get_songbird_from_ctx(&ctx).await {
+                    Ok(songbird) => {
+                        let handler_lock =
+                            songbird.get(guild_id).expect("No Songbird handler found");
+                        let mut handler = handler_lock.lock().await;
+                        let source =
+                            songbird::input::Input::from(Box::from(synthesis_body_bytes.to_vec()));
+                        handler.enqueue_input(source).await;
+
+                        synthesis_queue.remove_active_request(guild_id).await;
+                    }
+                    Err(e) => println!("Failed to get Songbird client: {}", e),
+                },
+                Ok(Err(_)) | Err(_) => {
+                    println!("Synthesis was aborted or failed for guild {}", guild_id);
+                    synthesis_queue.remove_active_request(guild_id).await;
+                }
+            }
+        }
+
+        is_running_state.store(false, Ordering::SeqCst);
+        println!("Synthesis Queue processing finished for guild {}", guild_id);
     }
 }
 
