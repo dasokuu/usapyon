@@ -28,7 +28,7 @@ impl RetryHandler {
     /// 
     /// ## Returns
     /// * `Result<T, Box<dyn Error + Send + Sync>>` - リトライ処理の結果。
-    pub async fn execute_with_retry<F, Fut, T>(
+    pub async fn execute_with_exponential_backoff_retry<F, Fut, T>(
         &self,
         mut task: F,
     ) -> Result<T, Box<dyn Error + Send + Sync>>
