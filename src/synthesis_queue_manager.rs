@@ -138,8 +138,6 @@ impl SynthesisQueueManager {
 
             let client = reqwest::Client::new();
 
-            // let audio_query_json =
-            //     request_audio_query(&client, &request.text(), &request.speaker_id()).await?;
             // オーディオクエリのリクエスト。
             // 失敗した場合は何度かリトライする。
             let retry_config = RetryHandler::new(3, 1);
