@@ -105,12 +105,19 @@ impl SynthesisQueueManager {
             .await;
     }
 
+    /// キューからリクエストがなくなるまで音声合成を続けます。
+    ///
+    /// ## Arguments
+    /// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
+    /// * `guild_id` - サーバーID。
+    /// * `synthesis_queue` - 音声合成リクエストのキュー。
+    /// * `is_running_state` - キューの処理状態。
     async fn process_synthesis_queue(
         ctx: &Context,
         guild_id: GuildId,
         synthesis_queue: Arc<SynthesisQueue>,
         is_running_state: Arc<AtomicBool>,
-    ) {
+    ) -> Result<(), Box<dyn Error + Send + Sync>> {
         loop {
             let request = match synthesis_queue.dequeue_request(guild_id).await {
                 Some(request) => request,
@@ -122,9 +129,7 @@ impl SynthesisQueueManager {
 
             let client = reqwest::Client::new();
             let audio_query_json =
-                request_audio_query(&client, &request.text(), &request.speaker_id())
-                    .await
-                    .unwrap();
+                request_audio_query(&client, &request.text(), &request.speaker_id()).await?;
             let (abort_handle, abort_registration) = AbortHandle::new_pair();
             let future = Abortable::new(
                 request_synthesis(&client, audio_query_json, true),
@@ -147,7 +152,10 @@ impl SynthesisQueueManager {
 
                         synthesis_queue.remove_active_request(guild_id).await;
                     }
-                    Err(e) => println!("Failed to get Songbird client: {}", e),
+                    Err(e) => {
+                        println!("Failed to get Songbird client: {}", e);
+                        return Err(Box::new(std::io::Error::new(std::io::ErrorKind::Other, e)));
+                    }
                 },
                 Ok(Err(_)) | Err(_) => {
                     println!("Synthesis was aborted or failed for guild {}", guild_id);
@@ -158,6 +166,7 @@ impl SynthesisQueueManager {
 
         is_running_state.store(false, Ordering::SeqCst);
         println!("Synthesis Queue processing finished for guild {}", guild_id);
+        Ok(())
     }
 }
 
