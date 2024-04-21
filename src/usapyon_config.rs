@@ -3,7 +3,7 @@ extern crate serde;
 extern crate serde_json;
 
 use serde::{Deserialize, Serialize};
-use serenity::model::id::UserId;
+use serenity::model::id::{GuildId, UserId};
 use songbird::typemap::TypeMapKey;
 use std::collections::HashMap;
 use std::error::Error;
@@ -33,6 +33,7 @@ pub struct Speaker {
 pub struct UsapyonConfig {
     pub speakers: Vec<Speaker>,
     pub user_style_settings: HashMap<UserId, i32>, // ユーザーIDとスタイルIDのマッピング
+    pub guild_style_settings: HashMap<GuildId, i32>, // ギルドIDとスタイルIDのマッピング
 }
 impl UsapyonConfig {
     pub async fn new(url: &str) -> Result<Self, Box<dyn Error>> {
@@ -41,6 +42,7 @@ impl UsapyonConfig {
         Ok(UsapyonConfig {
             speakers,
             user_style_settings: HashMap::new(),
+            guild_style_settings: HashMap::new(),
         })
     }
 
@@ -50,6 +52,14 @@ impl UsapyonConfig {
 
     pub fn get_user_style(&self, user_id: &UserId) -> Option<i32> {
         self.user_style_settings.get(user_id).copied()
+    }
+
+    pub fn set_guild_style(&mut self, guild_id: GuildId, style_id: i32) {
+        self.guild_style_settings.insert(guild_id, style_id);
+    }
+
+    pub fn get_guild_style(&self, guild_id: &GuildId) -> Option<i32> {
+        self.guild_style_settings.get(guild_id).copied()
     }
 }
 

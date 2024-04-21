@@ -156,16 +156,26 @@ impl UsapyonEventHandler {
     /// * `msg` - メッセージ。
     /// * `guild_id` - ギルドID。
     async fn process_command(ctx: &Context, msg: &Message, guild_id: GuildId) {
-        let content = msg.content.trim(); // 入力の前後の空白を削除
+        let content = msg.content.trim();
         if content.starts_with("!setstyle") {
             let parts: Vec<&str> = content.split_whitespace().collect();
-            if parts.len() < 2 {
-                msg.reply(ctx, "Usage: !setstyle [style_id]").await.unwrap();
+            if parts.len() < 3 {
+                msg.reply(ctx, "Usage: !setstyle [user|guild] [style_id]")
+                    .await
+                    .unwrap();
                 return;
             }
 
-            match parts[1].parse::<i32>() {
-                Ok(style_id) => {
+            match parts[1] {
+                "user" => {
+                    // ユーザースタイルの設定
+                    let style_id: i32 = parts[2].parse().unwrap_or(-1); // 不正な入力を -1 として扱う
+                    if style_id == -1 {
+                        msg.reply(ctx, "Invalid style ID. Please enter a numeric value.")
+                            .await
+                            .unwrap();
+                        return;
+                    }
                     let user_id = msg.author.id;
                     let mut data = ctx.data.write().await;
                     if let Some(config) = data.get_mut::<UsapyonConfigKey>() {
@@ -180,14 +190,34 @@ impl UsapyonEventHandler {
                         )
                         .await
                         .unwrap();
-                    } else {
-                        msg.reply(ctx, "Failed to access configuration data.")
-                            .await
-                            .unwrap();
                     }
                 }
-                Err(_) => {
-                    msg.reply(ctx, "Invalid style ID. Please enter a numeric value.")
+                "guild" => {
+                    // ギルドスタイルの設定
+                    let style_id: i32 = parts[2].parse().unwrap_or(-1);
+                    if style_id == -1 {
+                        msg.reply(ctx, "Invalid style ID. Please enter a numeric value.")
+                            .await
+                            .unwrap();
+                        return;
+                    }
+                    let mut data = ctx.data.write().await;
+                    if let Some(config) = data.get_mut::<UsapyonConfigKey>() {
+                        let mut config = config.lock().await;
+                        config.set_guild_style(guild_id, style_id);
+                        msg.reply(
+                            ctx,
+                            &format!(
+                                "Style ID {} set successfully for guild {}.",
+                                style_id, guild_id
+                            ),
+                        )
+                        .await
+                        .unwrap();
+                    }
+                }
+                _ => {
+                    msg.reply(ctx, "Usage: !setstyle [user|guild] [style_id]")
                         .await
                         .unwrap();
                 }
