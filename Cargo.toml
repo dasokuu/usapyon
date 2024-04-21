@@ -16,3 +16,4 @@ songbird = { version = "0.4.1", features = ["builtin-queue"] }
 symphonia = "0.5.4"
 futures = "0.3"
 regex = "1.10.4"
+async-trait = "0.1"

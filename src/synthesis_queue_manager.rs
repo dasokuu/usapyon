@@ -12,8 +12,8 @@ use std::{
     },
 };
 
-use crate::serenity_utils::get_songbird_from_ctx;
 use crate::synthesis_queue::{SynthesisQueue, SynthesisRequest};
+use crate::{retry_handler::RetryHandler, serenity_utils::get_songbird_from_ctx};
 
 /// ギルドごとの音声合成の進行状況を管理する構造体。
 #[derive(Clone)]
@@ -54,7 +54,7 @@ impl SynthesisQueueManager {
                 "Synthesis Queue processing is already running for guild {}",
                 guild_id
             );
-            return Ok(())
+            return Ok(());
         }
 
         is_running_state.store(true, Ordering::SeqCst);
@@ -137,8 +137,27 @@ impl SynthesisQueueManager {
             };
 
             let client = reqwest::Client::new();
-            let audio_query_json =
-                request_audio_query(&client, &request.text(), &request.speaker_id()).await?;
+
+            // let audio_query_json =
+            //     request_audio_query(&client, &request.text(), &request.speaker_id()).await?;
+            // オーディオクエリのリクエスト。
+            // 失敗した場合は何度かリトライする。
+            let retry_config = RetryHandler::new(3, 1);
+            let result_audio_query = retry_config
+                .execute_with_retry(|| {
+                    request_audio_query(&client, &request.text(), &request.speaker_id())
+                })
+                .await;
+
+            // 一定回数リトライに失敗したら、次のリクエストに進みます。
+            let audio_query_json = match result_audio_query {
+                Ok(audio_query_json) => audio_query_json,
+                Err(e) => {
+                    println!("Failed to request audio query: {}", e);
+                    continue;
+                }
+            };
+
             let (abort_handle, abort_registration) = AbortHandle::new_pair();
             let future = Abortable::new(
                 request_synthesis(&client, audio_query_json, true),
