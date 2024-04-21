@@ -233,13 +233,13 @@ impl UsapyonEventHandler {
 
         // メッセージを読み上げる処理
         // Context から SynthesisQueue を取得
-        let text_to_read = if sanitized_content.chars().count() > 200 {
+        let speech_text = if sanitized_content.chars().count() > 200 {
             sanitized_content.chars().take(200).collect::<String>() + "...以下略"
         } else {
             sanitized_content.clone()
         };
 
-        let request = SynthesisRequest::new(text_to_read.to_string(), "1".to_string());
+        let request = SynthesisRequest::new(speech_text.to_string(), "1".to_string());
 
         // 音声合成キューマネージャーを取得し、リクエストを追加して処理を開始します。
         let synthesis_queue_manager = get_synthesis_queue_manager(&ctx).await;
