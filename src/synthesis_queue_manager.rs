@@ -264,11 +264,11 @@ async fn request_synthesis(
 }
 
 /// オーディオクエリを要求し、成功した場合は音声合成を要求します。
-/// 
+///
 /// ## Arguments
 /// * `request` - 音声合成リクエスト。
 /// * `is_cancellable` - キャンセル可能かどうか。
-/// 
+///
 /// ## Returns
 /// * `Result<Bytes, Box<dyn Error + Send + Sync>>` - 合成した音声のバイトデータ、またはエラー。
 pub async fn request_synthesis_with_audio_query(
@@ -279,7 +279,7 @@ pub async fn request_synthesis_with_audio_query(
 
     // オーディオクエリのリクエスト。
     // 失敗した場合は何度かリトライする。
-    let retry_config = RetryHandler::new(3, 1);
+    let retry_config = RetryHandler::new(5, 2);
     let result_audio_query = retry_config
         .execute_with_exponential_backoff_retry(|| {
             request_audio_query(&client, &request.text(), &request.speaker_id())
