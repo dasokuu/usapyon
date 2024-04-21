@@ -73,6 +73,12 @@ $ 7z x voicevox_engine-linux-cpu-0.18.1.7z.001 -o$HOME/voicevox_engine
 $ ~/voicevox_engine/linux-cpu/run
 ```
 
+音声合成を途中でキャンセル可能にするためには、以下のオプションを付けます。
+
+```bash
+$ ~/voicevox_engine/linux-cpu/run --enable_cancellable_synthesis
+```
+
 songbirdでwavの再生ができない。
 再生できないと思っていたのはDiscordの出力先を間違えていたから。
 以下のライブラリが必要か？結論、不要だった。
