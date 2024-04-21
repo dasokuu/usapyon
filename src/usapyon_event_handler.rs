@@ -265,6 +265,15 @@ impl UsapyonEventHandler {
         msg: &Message,
         guild_id: GuildId,
     ) -> Result<(), Box<dyn Error + Send + Sync>> {
+        // ユーザーの style_id を取得
+        let user_id = msg.author.id;
+        let data = ctx.data.read().await;
+        let config = data
+            .get::<UsapyonConfigKey>()
+            .expect("Config should be available");
+        let config = config.lock().await;
+        let style_id = config.get_user_style(&user_id).unwrap_or(1); // デフォルトのスタイルIDを 1 とする
+
         println!("msg.content: {}", msg.content);
 
         let sanitized_content: String = sanitize_message(&ctx, &msg.content, guild_id).await;
@@ -278,7 +287,7 @@ impl UsapyonEventHandler {
             sanitized_content.clone()
         };
 
-        let request = SynthesisRequest::new(speech_text.to_string(), "1".to_string());
+        let request = SynthesisRequest::new(speech_text.to_string(), style_id.to_string());
 
         // 音声合成キューマネージャーを取得し、リクエストを追加して処理を開始します。
         let synthesis_queue_manager = get_synthesis_queue_manager(&ctx).await;
