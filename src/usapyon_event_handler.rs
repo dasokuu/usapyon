@@ -1,3 +1,4 @@
+use std::error::Error;
 use std::sync::Arc;
 
 use regex::Regex;
@@ -55,7 +56,10 @@ impl EventHandler for UsapyonEventHandler {
             UsapyonEventHandler::process_command(&ctx, &msg, guild_id).await;
             return;
         } else {
-            UsapyonEventHandler::process_speech_request(&ctx, &msg, guild_id).await;
+            if let Err(e) = UsapyonEventHandler::process_speech_request(&ctx, &msg, guild_id).await
+            {
+                println!("Error processing speech request: {}", e);
+            }
         }
     }
 
@@ -211,7 +215,17 @@ impl UsapyonEventHandler {
         }
     }
 
-    async fn process_speech_request(ctx: &Context, msg: &Message, guild_id: GuildId) {
+    /// メッセージを読み上げるリクエストを処理します。
+    ///
+    /// ## Arguments
+    /// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
+    /// * `msg` - メッセージ。
+    /// * `guild_id` - ギルドID。
+    async fn process_speech_request(
+        ctx: &Context,
+        msg: &Message,
+        guild_id: GuildId,
+    ) -> Result<(), Box<dyn Error + Send + Sync>> {
         println!("msg.content: {}", msg.content);
 
         let sanitized_content: String = sanitize_message(&ctx, &msg.content, guild_id).await;
@@ -234,7 +248,9 @@ impl UsapyonEventHandler {
             .await;
         synthesis_queue_manager
             .start_processing(&ctx, guild_id)
-            .await;
+            .await?;
+
+        Ok(())
     }
 }
 
