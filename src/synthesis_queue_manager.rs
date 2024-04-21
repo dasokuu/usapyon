@@ -8,9 +8,10 @@ use std::{
     error::Error,
     sync::{
         atomic::{AtomicBool, Ordering},
-        Arc, Mutex,
+        Arc,
     },
 };
+use tokio::sync::Mutex;
 
 use crate::synthesis_queue::{SynthesisQueue, SynthesisRequest};
 use crate::{retry_handler::RetryHandler, serenity_utils::get_songbird_from_ctx};
@@ -42,7 +43,7 @@ impl SynthesisQueueManager {
         guild_id: GuildId,
     ) -> Result<(), Box<dyn Error + Send + Sync>> {
         let is_running_state = {
-            let mut states = self.guild_states.lock().expect("Mutex was poisoned");
+            let mut states = self.guild_states.lock().await;
             states
                 .entry(guild_id)
                 .or_insert_with(|| Arc::new(AtomicBool::new(false)))

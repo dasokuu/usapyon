@@ -12,6 +12,7 @@ use serenity::{
 
 use crate::serenity_utils::{get_songbird_from_ctx, with_songbird_handler};
 use crate::synthesis_queue_manager::SynthesisQueueManager;
+use crate::usapyon_config::UsapyonConfigKey;
 use crate::{SynthesisQueueManagerKey, SynthesisRequest, VoiceChannelTrackerKey};
 
 pub struct UsapyonEventHandler;
@@ -155,63 +156,101 @@ impl UsapyonEventHandler {
     /// * `msg` - メッセージ。
     /// * `guild_id` - ギルドID。
     async fn process_command(ctx: &Context, msg: &Message, guild_id: GuildId) {
-        match msg.content.as_str() {
-            "!leave" => {
-                if let Err(e) = leave_voice_channel(&ctx, &msg).await {
-                    println!("Error processing !leave command: {}", e);
+        let content = msg.content.trim(); // 入力の前後の空白を削除
+        if content.starts_with("!setstyle") {
+            let parts: Vec<&str> = content.split_whitespace().collect();
+            if parts.len() < 2 {
+                msg.reply(ctx, "Usage: !setstyle [style_id]").await.unwrap();
+                return;
+            }
+
+            match parts[1].parse::<i32>() {
+                Ok(style_id) => {
+                    let user_id = msg.author.id;
+                    let mut data = ctx.data.write().await;
+                    if let Some(config) = data.get_mut::<UsapyonConfigKey>() {
+                        let mut config = config.lock().await;
+                        config.set_user_style(user_id, style_id);
+                        msg.reply(
+                            ctx,
+                            &format!(
+                                "Style ID {} set successfully for user {}.",
+                                style_id, user_id
+                            ),
+                        )
+                        .await
+                        .unwrap();
+                    } else {
+                        msg.reply(ctx, "Failed to access configuration data.")
+                            .await
+                            .unwrap();
+                    }
+                }
+                Err(_) => {
+                    msg.reply(ctx, "Invalid style ID. Please enter a numeric value.")
+                        .await
+                        .unwrap();
                 }
             }
-            "!skip" => {
-                // songbird の音声ハンドラでスキップを試みます。
-                let result = with_songbird_handler(&ctx, guild_id, |handler| {
-                    handler
-                        .queue()
-                        .current()
-                        .map(|_| handler.queue().skip().is_ok())
-                })
-                .await;
-
-                match result {
-                    Ok(Some(true)) => {
-                        println!("Track skipped successfully for guild {}", guild_id);
-                    }
-                    // トラックが存在しない、またはスキップに失敗した場合、音声合成リクエストをキャンセル。
-                    Ok(Some(false)) | Ok(None) => {
-                        let synthesis_queue_manager = get_synthesis_queue_manager(&ctx).await;
-                        synthesis_queue_manager
-                            .cancel_current_request(guild_id)
-                            .await;
-                        println!("No track was playing, or skip failed. Synthesis request cancelled for guild {}", guild_id);
-                    }
-                    Err(e) => {
-                        println!("Failed to handle track for guild {}: {:?}", guild_id, e);
+        } else {
+            match msg.content.as_str() {
+                "!leave" => {
+                    if let Err(e) = leave_voice_channel(&ctx, &msg).await {
+                        println!("Error processing !leave command: {}", e);
                     }
                 }
-            }
-            "!clear" => {
-                let result = with_songbird_handler(&ctx, guild_id, |handler| {
-                    // 再生を停止してキューをクリア。
-                    handler.queue().stop();
-                    format!("Queue cleared successfully for guild {}", guild_id)
-                })
-                .await;
-
-                match result {
-                    Ok(msg) => println!("{}", msg),
-                    Err(e) => println!("Failed to clear queue for guild {}: {:?}", guild_id, e),
-                }
-
-                // 音声合成キューをクリア。
-                let synthesis_queue_manager = get_synthesis_queue_manager(&ctx).await;
-                synthesis_queue_manager
-                    .cancel_current_request_and_clear_queue(guild_id)
+                "!skip" => {
+                    // songbird の音声ハンドラでスキップを試みます。
+                    let result = with_songbird_handler(&ctx, guild_id, |handler| {
+                        handler
+                            .queue()
+                            .current()
+                            .map(|_| handler.queue().skip().is_ok())
+                    })
                     .await;
-                println!(
-                    "Synthesis queue cleared successfully for guild {}",
-                    guild_id
-                );
+
+                    match result {
+                        Ok(Some(true)) => {
+                            println!("Track skipped successfully for guild {}", guild_id);
+                        }
+                        // トラックが存在しない、またはスキップに失敗した場合、音声合成リクエストをキャンセル。
+                        Ok(Some(false)) | Ok(None) => {
+                            let synthesis_queue_manager = get_synthesis_queue_manager(&ctx).await;
+                            synthesis_queue_manager
+                                .cancel_current_request(guild_id)
+                                .await;
+                            println!("No track was playing, or skip failed. Synthesis request cancelled for guild {}", guild_id);
+                        }
+                        Err(e) => {
+                            println!("Failed to handle track for guild {}: {:?}", guild_id, e);
+                        }
+                    }
+                }
+                "!clear" => {
+                    let result = with_songbird_handler(&ctx, guild_id, |handler| {
+                        // 再生を停止してキューをクリア。
+                        handler.queue().stop();
+                        format!("Queue cleared successfully for guild {}", guild_id)
+                    })
+                    .await;
+
+                    match result {
+                        Ok(msg) => println!("{}", msg),
+                        Err(e) => println!("Failed to clear queue for guild {}: {:?}", guild_id, e),
+                    }
+
+                    // 音声合成キューをクリア。
+                    let synthesis_queue_manager = get_synthesis_queue_manager(&ctx).await;
+                    synthesis_queue_manager
+                        .cancel_current_request_and_clear_queue(guild_id)
+                        .await;
+                    println!(
+                        "Synthesis queue cleared successfully for guild {}",
+                        guild_id
+                    );
+                }
+                _ => {}
             }
-            _ => {}
         }
     }
 
