@@ -210,6 +210,7 @@ impl UsapyonEventHandler {
             _ => {}
         }
     }
+
     async fn process_speech_request(ctx: &Context, msg: &Message, guild_id: GuildId) {
         println!("msg.content: {}", msg.content);
 
@@ -218,8 +219,6 @@ impl UsapyonEventHandler {
 
         // メッセージを読み上げる処理
         // Context から SynthesisQueue を取得
-        // let synthesis_queue = get_synthesis_queue(&ctx).await;
-
         let text_to_read = if sanitized_content.chars().count() > 200 {
             sanitized_content.chars().take(200).collect::<String>() + "...以下略"
         } else {

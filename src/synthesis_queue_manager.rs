@@ -36,7 +36,11 @@ impl SynthesisQueueManager {
     /// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
     /// * `guild_id` - サーバーID。
     /// * `synthesis_queue` - 音声合成リクエストのキュー。
-    pub async fn start_processing(&self, ctx: &Context, guild_id: GuildId) {
+    pub async fn start_processing(
+        &self,
+        ctx: &Context,
+        guild_id: GuildId,
+    ) -> Result<(), Box<dyn Error + Send + Sync>> {
         let is_running_state = {
             let mut states = self.guild_states.lock().expect("Mutex was poisoned");
             states
@@ -50,7 +54,7 @@ impl SynthesisQueueManager {
                 "Synthesis Queue processing is already running for guild {}",
                 guild_id
             );
-            return;
+            return Ok(())
         }
 
         is_running_state.store(true, Ordering::SeqCst);
@@ -59,7 +63,7 @@ impl SynthesisQueueManager {
         let ctx_clone = ctx.clone();
         let synthesis_queue = self.synthesis_queue.clone();
 
-        tokio::spawn({
+        let handle = tokio::spawn({
             async move {
                 SynthesisQueueManager::process_synthesis_queue(
                     &ctx_clone,
@@ -67,9 +71,14 @@ impl SynthesisQueueManager {
                     synthesis_queue,
                     is_running_state,
                 )
-                .await;
+                .await
             }
         });
+
+        handle.await??;
+
+        // println!("start_processing finished for guild {}", guild_id);
+        Ok(())
     }
 
     /// 音声合成リクエストをキューに追加します。
