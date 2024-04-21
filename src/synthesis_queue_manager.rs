@@ -136,29 +136,30 @@ impl SynthesisQueueManager {
                 }
             };
 
-            let client = reqwest::Client::new();
+            // let client = reqwest::Client::new();
 
-            // オーディオクエリのリクエスト。
-            // 失敗した場合は何度かリトライする。
-            let retry_config = RetryHandler::new(3, 1);
-            let result_audio_query = retry_config
-                .execute_with_retry(|| {
-                    request_audio_query(&client, &request.text(), &request.speaker_id())
-                })
-                .await;
+            // // オーディオクエリのリクエスト。
+            // // 失敗した場合は何度かリトライする。
+            // let retry_config = RetryHandler::new(3, 1);
+            // let result_audio_query = retry_config
+            //     .execute_with_retry(|| {
+            //         request_audio_query(&client, &request.text(), &request.speaker_id())
+            //     })
+            //     .await;
 
-            // 一定回数リトライに失敗したら、次のリクエストに進みます。
-            let audio_query_json = match result_audio_query {
-                Ok(audio_query_json) => audio_query_json,
-                Err(e) => {
-                    println!("Failed to request audio query: {}", e);
-                    continue;
-                }
-            };
+            // // 一定回数リトライに失敗したら、次のリクエストに進みます。
+            // let audio_query_json = match result_audio_query {
+            //     Ok(audio_query_json) => audio_query_json,
+            //     Err(e) => {
+            //         println!("Failed to request audio query: {}", e);
+            //         continue;
+            //     }
+            // };
 
+            // オーディオクエリの要求と音声合成の要求をまとめて中断可能にします。
             let (abort_handle, abort_registration) = AbortHandle::new_pair();
             let future = Abortable::new(
-                request_synthesis(&client, audio_query_json, true),
+                request_synthesis_with_audio_query(request, true),
                 abort_registration,
             );
 
@@ -278,6 +279,58 @@ async fn request_synthesis(
     println!("status: {:?}", synthesis_res.status());
 
     let synthesis_body_bytes = synthesis_res.bytes().await.unwrap();
+
+    Ok(synthesis_body_bytes)
+}
+
+/// オーディオクエリを要求し、成功した場合は音声合成を要求します。
+/// 
+/// ## Arguments
+/// * `request` - 音声合成リクエスト。
+/// * `is_cancellable` - キャンセル可能かどうか。
+/// 
+/// ## Returns
+/// * `Result<Bytes, Box<dyn Error + Send + Sync>>` - 合成した音声のバイトデータ、またはエラー。
+pub async fn request_synthesis_with_audio_query(
+    request: SynthesisRequest,
+    is_cancellable: bool,
+) -> Result<Bytes, Box<dyn Error + Send + Sync>> {
+    let client = reqwest::Client::new();
+
+    // オーディオクエリのリクエスト。
+    // 失敗した場合は何度かリトライする。
+    let retry_config = RetryHandler::new(3, 1);
+    let result_audio_query = retry_config
+        .execute_with_retry(|| {
+            request_audio_query(&client, &request.text(), &request.speaker_id())
+        })
+        .await;
+
+    // 一定回数リトライに失敗したら、次のリクエストに進みます。
+    let audio_query_json = match result_audio_query {
+        Ok(audio_query_json) => audio_query_json,
+        Err(e) => {
+            println!("Failed to request audio query: {}", e);
+            return Err(Box::new(std::io::Error::new(std::io::ErrorKind::Other, e)));
+        }
+    };
+
+    // オーディオクエリから音声合成をリクエスト。
+    // 失敗した場合は何度かリトライする。
+    let result_synthesis = retry_config
+        .execute_with_retry(|| {
+            request_synthesis(&client, audio_query_json.clone(), is_cancellable)
+        })
+        .await;
+
+    // 一定回数リトライに失敗したら、次のリクエストに進みます。
+    let synthesis_body_bytes = match result_synthesis {
+        Ok(synthesis_body_bytes) => synthesis_body_bytes,
+        Err(e) => {
+            println!("Failed to request synthesis: {}", e);
+            return Err(Box::new(std::io::Error::new(std::io::ErrorKind::Other, e)));
+        }
+    };
 
     Ok(synthesis_body_bytes)
 }
