@@ -3,7 +3,7 @@ use serenity::all::{Context, GuildId};
 use crate::serenity_utils::with_songbird_handler;
 use crate::usapyon_event_handler::get_synthesis_queue_manager;
 
-pub async fn stop_and_clear_queues(ctx: &Context, guild_id: GuildId) {
+pub async fn clear_command(ctx: &Context, guild_id: GuildId) {
     let result = with_songbird_handler(&ctx, guild_id, |handler| {
         // 再生を停止してキューをクリア。
         handler.queue().stop();

@@ -1,4 +1,4 @@
-use crate::commands::{clear, join, leave, setstyle, skip};
+use crate::commands::{clear, join, leave, liststyles, setstyle, skip};
 use std::error::Error;
 use std::sync::Arc;
 
@@ -43,19 +43,14 @@ impl EventHandler for UsapyonEventHandler {
 
         let guild_id = msg.guild_id.expect("Guild ID not found");
 
-        // joinコマンドは非アクティブな場合でも実行できる必要があるため、ここで処理。
-        if msg.content == "!join" {
-            if let Err(e) = join::join_voice_channel(&ctx, &msg).await {
-                println!("Error processing !join command: {}", e);
-            }
-        }
+        UsapyonEventHandler::process_inactive_command(&ctx, &msg, guild_id).await;
 
         if !is_active_text_channel(&ctx, guild_id, msg.channel_id).await {
             return; // アクティブなチャンネルでなければ何もしません。
         }
 
         if msg.content.starts_with("!") {
-            UsapyonEventHandler::process_command(&ctx, &msg, guild_id).await;
+            UsapyonEventHandler::process_active_command(&ctx, &msg, guild_id).await;
             return;
         } else {
             if let Err(e) = UsapyonEventHandler::process_speech_request(&ctx, &msg, guild_id).await
@@ -156,26 +151,47 @@ impl UsapyonEventHandler {
     /// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
     /// * `msg` - メッセージ。
     /// * `guild_id` - ギルドID。
-    async fn process_command(ctx: &Context, msg: &Message, guild_id: GuildId) {
+    async fn process_inactive_command(ctx: &Context, msg: &Message, guild_id: GuildId) {
+        // joinコマンドは非アクティブな場合でも実行できる必要があるため、ここで処理。
+        if msg.content == "!join" {
+            if let Err(e) = join::join_command(&ctx, &msg).await {
+                println!("Error processing !join command: {}", e);
+            }
+        }
         let content = msg.content.trim();
         if content.starts_with("!setstyle") {
             let args: Vec<&str> = content.split_whitespace().collect();
             setstyle::set_style_command(ctx, msg, args, guild_id).await; // Assume this handles its errors internally
         } else {
             match msg.content.as_str() {
-                "!leave" => {
-                    if let Err(e) = leave::leave_voice_channel(ctx, msg).await {
-                        println!("Error when trying to leave voice channel: {}", e);
-                    }
-                }
-                "!skip" => {
-                    skip::skip_queue(ctx, guild_id).await; // Assume this handles its errors internally
-                }
-                "!clear" => {
-                    clear::stop_and_clear_queues(ctx, guild_id).await; // Assume this handles its errors internally
+                "!liststyles" => {
+                    liststyles::list_styles_command(ctx, msg).await; // Assume this handles its errors internally
                 }
                 _ => {}
             }
+        }
+    }
+
+    /// "!"から始まるコマンドを処理します。
+    ///
+    /// ## Arguments
+    /// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
+    /// * `msg` - メッセージ。
+    /// * `guild_id` - ギルドID。
+    async fn process_active_command(ctx: &Context, msg: &Message, guild_id: GuildId) {
+        match msg.content.as_str() {
+            "!leave" => {
+                if let Err(e) = leave::leave_command(ctx, msg).await {
+                    println!("Error when trying to leave voice channel: {}", e);
+                }
+            }
+            "!skip" => {
+                skip::skip_command(ctx, guild_id).await; // Assume this handles its errors internally
+            }
+            "!clear" => {
+                clear::clear_command(ctx, guild_id).await; // Assume this handles its errors internally
+            }
+            _ => {}
         }
     }
 

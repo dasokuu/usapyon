@@ -9,7 +9,7 @@ use crate::{serenity_utils::get_songbird_from_ctx, voice_channel_tracker::VoiceC
 ///
 /// ## Returns
 /// * `Result<(), String>` - ボイスチャンネルへの参加操作が成功した場合は Ok(()) を、失敗した場合は Err を返します。
-pub async fn join_voice_channel(ctx: &Context, msg: &Message) -> Result<(), String> {
+pub async fn join_command(ctx: &Context, msg: &Message) -> Result<(), String> {
     let guild_id = msg.guild_id.ok_or("Message must be sent in a server")?;
     let text_channel_id = msg.channel_id;
 

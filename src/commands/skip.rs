@@ -3,7 +3,7 @@ use serenity::all::{Context, GuildId};
 use crate::serenity_utils::with_songbird_handler;
 use crate::usapyon_event_handler::get_synthesis_queue_manager;
 
-pub async fn skip_queue(ctx: &Context, guild_id: GuildId) {
+pub async fn skip_command(ctx: &Context, guild_id: GuildId) {
     // songbird の音声ハンドラでスキップを試みます。
     let result = with_songbird_handler(&ctx, guild_id, |handler| {
         handler
