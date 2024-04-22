@@ -305,7 +305,12 @@ pub async fn request_synthesis_with_audio_query(
     // 失敗した場合は何度かリトライする。
     let result_synthesis = retry_config
         .execute_with_exponential_backoff_retry(|| {
-            request_synthesis(&client, audio_query_json.clone(), &request.speaker_id(), is_cancellable)
+            request_synthesis(
+                &client,
+                audio_query_json.clone(),
+                &request.speaker_id(),
+                is_cancellable,
+            )
         })
         .await;
 

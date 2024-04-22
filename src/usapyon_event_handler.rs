@@ -1,3 +1,4 @@
+use crate::commands::{clear, join, leave, setstyle, skip};
 use std::error::Error;
 use std::sync::Arc;
 
@@ -10,7 +11,7 @@ use serenity::{
     prelude::*,
 };
 
-use crate::serenity_utils::{get_songbird_from_ctx, with_songbird_handler};
+use crate::serenity_utils::get_songbird_from_ctx;
 use crate::synthesis_queue_manager::SynthesisQueueManager;
 use crate::usapyon_config::UsapyonConfigKey;
 use crate::{SynthesisQueueManagerKey, SynthesisRequest, VoiceChannelTrackerKey};
@@ -44,7 +45,7 @@ impl EventHandler for UsapyonEventHandler {
 
         // joinコマンドは非アクティブな場合でも実行できる必要があるため、ここで処理。
         if msg.content == "!join" {
-            if let Err(e) = join_voice_channel(&ctx, &msg).await {
+            if let Err(e) = join::join_voice_channel(&ctx, &msg).await {
                 println!("Error processing !join command: {}", e);
             }
         }
@@ -158,126 +159,20 @@ impl UsapyonEventHandler {
     async fn process_command(ctx: &Context, msg: &Message, guild_id: GuildId) {
         let content = msg.content.trim();
         if content.starts_with("!setstyle") {
-            let parts: Vec<&str> = content.split_whitespace().collect();
-            if parts.len() < 3 {
-                msg.reply(ctx, "Usage: !setstyle [user|guild] [style_id]")
-                    .await
-                    .unwrap();
-                return;
-            }
-
-            match parts[1] {
-                "user" => {
-                    // ユーザースタイルの設定
-                    let style_id: i32 = parts[2].parse().unwrap_or(-1); // 不正な入力を -1 として扱う
-                    if style_id == -1 {
-                        msg.reply(ctx, "Invalid style ID. Please enter a numeric value.")
-                            .await
-                            .unwrap();
-                        return;
-                    }
-                    let user_id = msg.author.id;
-                    let mut data = ctx.data.write().await;
-                    if let Some(config) = data.get_mut::<UsapyonConfigKey>() {
-                        let mut config = config.lock().await;
-                        config.set_user_style(user_id, style_id);
-                        msg.reply(
-                            ctx,
-                            &format!(
-                                "Style ID {} set successfully for user {}.",
-                                style_id, user_id
-                            ),
-                        )
-                        .await
-                        .unwrap();
-                    }
-                }
-                "guild" => {
-                    // ギルドスタイルの設定
-                    let style_id: i32 = parts[2].parse().unwrap_or(-1);
-                    if style_id == -1 {
-                        msg.reply(ctx, "Invalid style ID. Please enter a numeric value.")
-                            .await
-                            .unwrap();
-                        return;
-                    }
-                    let mut data = ctx.data.write().await;
-                    if let Some(config) = data.get_mut::<UsapyonConfigKey>() {
-                        let mut config = config.lock().await;
-                        config.set_guild_style(guild_id, style_id);
-                        msg.reply(
-                            ctx,
-                            &format!(
-                                "Style ID {} set successfully for guild {}.",
-                                style_id, guild_id
-                            ),
-                        )
-                        .await
-                        .unwrap();
-                    }
-                }
-                _ => {
-                    msg.reply(ctx, "Usage: !setstyle [user|guild] [style_id]")
-                        .await
-                        .unwrap();
-                }
-            }
+            let args: Vec<&str> = content.split_whitespace().collect();
+            setstyle::set_style_command(ctx, msg, args, guild_id).await; // Assume this handles its errors internally
         } else {
             match msg.content.as_str() {
                 "!leave" => {
-                    if let Err(e) = leave_voice_channel(&ctx, &msg).await {
-                        println!("Error processing !leave command: {}", e);
+                    if let Err(e) = leave::leave_voice_channel(ctx, msg).await {
+                        println!("Error when trying to leave voice channel: {}", e);
                     }
                 }
                 "!skip" => {
-                    // songbird の音声ハンドラでスキップを試みます。
-                    let result = with_songbird_handler(&ctx, guild_id, |handler| {
-                        handler
-                            .queue()
-                            .current()
-                            .map(|_| handler.queue().skip().is_ok())
-                    })
-                    .await;
-
-                    match result {
-                        Ok(Some(true)) => {
-                            println!("Track skipped successfully for guild {}", guild_id);
-                        }
-                        // トラックが存在しない、またはスキップに失敗した場合、音声合成リクエストをキャンセル。
-                        Ok(Some(false)) | Ok(None) => {
-                            let synthesis_queue_manager = get_synthesis_queue_manager(&ctx).await;
-                            synthesis_queue_manager
-                                .cancel_current_request(guild_id)
-                                .await;
-                            println!("No track was playing, or skip failed. Synthesis request cancelled for guild {}", guild_id);
-                        }
-                        Err(e) => {
-                            println!("Failed to handle track for guild {}: {:?}", guild_id, e);
-                        }
-                    }
+                    skip::skip_queue(ctx, guild_id).await; // Assume this handles its errors internally
                 }
                 "!clear" => {
-                    let result = with_songbird_handler(&ctx, guild_id, |handler| {
-                        // 再生を停止してキューをクリア。
-                        handler.queue().stop();
-                        format!("Queue cleared successfully for guild {}", guild_id)
-                    })
-                    .await;
-
-                    match result {
-                        Ok(msg) => println!("{}", msg),
-                        Err(e) => println!("Failed to clear queue for guild {}: {:?}", guild_id, e),
-                    }
-
-                    // 音声合成キューをクリア。
-                    let synthesis_queue_manager = get_synthesis_queue_manager(&ctx).await;
-                    synthesis_queue_manager
-                        .cancel_current_request_and_clear_queue(guild_id)
-                        .await;
-                    println!(
-                        "Synthesis queue cleared successfully for guild {}",
-                        guild_id
-                    );
+                    clear::stop_and_clear_queues(ctx, guild_id).await; // Assume this handles its errors internally
                 }
                 _ => {}
             }
@@ -330,34 +225,6 @@ impl UsapyonEventHandler {
 
         Ok(())
     }
-}
-
-/// ボイスチャンネルからの退出処理を行います。
-///
-/// ## Arguments
-/// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
-/// * `msg` - メッセージ。
-///
-/// ## Returns
-/// 成功した場合は`Ok(())`、エラーが発生した場合は`Err(Box<dyn Error + Send + Sync>)`を返します。
-async fn leave_voice_channel(ctx: &Context, msg: &Message) -> Result<(), String> {
-    let songbird = get_songbird_from_ctx(&ctx).await?;
-    let guild_id = msg.guild_id.ok_or("Message must be sent in a server")?;
-
-    if let Err(why) = songbird.leave(guild_id).await {
-        println!("Error leaving voice channel: {:?}", why);
-        return Err("Failed to leave voice channel.".into());
-    }
-
-    ctx.data
-        .read()
-        .await
-        .get::<VoiceChannelTrackerKey>()
-        .ok_or("VoiceChannelTracker not found")?
-        .remove_active_channel(guild_id)
-        .await;
-
-    Ok(())
 }
 
 async fn sanitize_message(ctx: &Context, msg: &str, guild_id: GuildId) -> String {
@@ -457,57 +324,6 @@ fn count_non_bot_users_in_bot_voice_channel(ctx: &Context, guild_id: GuildId) ->
     Some(non_bot_users_count)
 }
 
-/// ボイスチャンネルへの参加と同時にアクティブなチャンネルの設定を行います。
-/// ## Arguments
-/// * `ctx` - コンテキスト、ボットの状態や設定情報へのアクセスを提供します。
-/// * `msg` - 参加コマンドを送信したメッセージ情報。
-///
-/// ## Returns
-/// * `Result<(), String>` - ボイスチャンネルへの参加操作が成功した場合は Ok(()) を、失敗した場合は Err を返します。
-async fn join_voice_channel(ctx: &Context, msg: &Message) -> Result<(), String> {
-    let guild_id = msg.guild_id.ok_or("Message must be sent in a server")?;
-    let text_channel_id = msg.channel_id;
-
-    let voice_channel_id = ctx
-        .cache
-        .guild(guild_id)
-        .and_then(|guild| guild.voice_states.get(&msg.author.id).cloned())
-        .and_then(|voice_state| voice_state.channel_id)
-        .ok_or("User is not in a voice channel.")?;
-
-    let songbird_result = get_songbird_from_ctx(&ctx).await;
-    match songbird_result {
-        Ok(songbird) => {
-            match songbird.join(guild_id, voice_channel_id).await {
-                Ok(call) => {
-                    // ここでエラーを String に変換
-                    call.lock()
-                        .await
-                        .deafen(true)
-                        .await
-                        .map_err(|e| format!("Failed to deafen: {:?}", e))?;
-                    ctx.data
-                        .read()
-                        .await
-                        .get::<VoiceChannelTrackerKey>()
-                        .ok_or("VoiceChannelTracker not found")?
-                        .set_active_channel(guild_id, voice_channel_id, text_channel_id)
-                        .await;
-                    Ok(())
-                }
-                Err(why) => {
-                    println!("Failed to join voice channel: {:?}", why);
-                    Err("Failed to join voice channel.".into())
-                }
-            }
-        }
-        Err(e) => {
-            println!("Error retrieving Songbird client: {}", e);
-            Err("Failed to retrieve Songbird client.".into())
-        }
-    }
-}
-
 /// データコンテキストから音声合成キューのマネージャーを取得します。
 ///
 /// ## Arguments
@@ -515,7 +331,7 @@ async fn join_voice_channel(ctx: &Context, msg: &Message) -> Result<(), String> 
 ///
 /// ## Returns
 /// `Arc<SynthesisQueueManager>` - 音声合成キューのマネージャー。
-async fn get_synthesis_queue_manager(ctx: &Context) -> Arc<SynthesisQueueManager> {
+pub async fn get_synthesis_queue_manager(ctx: &Context) -> Arc<SynthesisQueueManager> {
     let data_read = ctx.data.read().await;
     data_read
         .get::<SynthesisQueueManagerKey>()
