@@ -37,22 +37,27 @@ impl EventHandler for UsapyonEventHandler {
     /// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
     /// * `msg` - 受信したメッセージ。
     async fn message(&self, ctx: Context, msg: Message) {
+        // メッセージがボットから送られたもの、またはプライベートメッセージであれば処理を中断します。
         if msg.author.bot || msg.is_private() {
             return;
         }
 
+        // メッセージが送信されたギルドのIDを取得します。
         let guild_id = msg.guild_id.expect("Guild ID not found");
 
+        // ギルドIDが取得できた場合、非アクティブコマンドを先に処理します。
         UsapyonEventHandler::process_inactive_command(&ctx, &msg, guild_id).await;
 
+        // メッセージが送信されたテキストチャンネルがアクティブな状態か確認します。
         if !is_active_text_channel(&ctx, guild_id, msg.channel_id).await {
-            return; // アクティブなチャンネルでなければ何もしません。
+            return; // アクティブでなければ以降の処理は行いません。
         }
 
+        // コマンドプレフィックス"!"で始まるメッセージの場合、アクティブコマンドを処理します。
         if msg.content.starts_with("!") {
             UsapyonEventHandler::process_active_command(&ctx, &msg, guild_id).await;
-            return;
         } else {
+            // コマンドでないメッセージの場合、読み上げリクエストとして処理します。
             if let Err(e) = UsapyonEventHandler::process_speech_request(&ctx, &msg, guild_id).await
             {
                 println!("Error processing speech request: {}", e);
