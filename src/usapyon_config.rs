@@ -35,6 +35,7 @@ pub struct UsapyonConfig {
     pub user_style_settings: HashMap<UserId, i32>, // ユーザーIDとスタイルIDのマッピング
     pub guild_style_settings: HashMap<GuildId, i32>, // ギルドIDとスタイルIDのマッピング
 }
+
 impl UsapyonConfig {
     pub async fn new(url: &str) -> Result<Self, Box<dyn Error>> {
         let resp = reqwest::get(url).await?.text().await?;
