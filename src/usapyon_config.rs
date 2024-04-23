@@ -27,8 +27,18 @@ pub struct Speaker {
     pub styles: Vec<Style>,
     pub version: String,
     pub supported_features: HashMap<String, String>,
+    pub credit_name: Option<String>, // オプションとしてクレジット名を追加
 }
 
+impl Speaker {
+    // クレジット名を返すメソッド、特定の条件で異なる名前を返す
+    pub fn get_credit_name(&self) -> String {
+        match self.name.as_str() {
+            "もち子さん" => "もち子(cv 明日葉よもぎ)".to_string(),
+            _ => self.name.clone(),
+        }
+    }
+}
 // UsapyonConfigクラスの定義
 pub struct UsapyonConfig {
     pub speakers: Vec<Speaker>,
@@ -100,6 +110,17 @@ impl UsapyonConfig {
             self.style_cache.set_guild_style(guild_id, style_id).await;
             Ok(style_id)
         }
+    }
+
+    pub async fn get_credit_name_by_style_id(&self, style_id: i32) -> Result<String, String> {
+        for speaker in &self.speakers {
+            for style in &speaker.styles {
+                if style.id == style_id {
+                    return Ok(speaker.get_credit_name()); // スピーカーのget_credit_nameメソッドを呼び出す
+                }
+            }
+        }
+        Err("Style ID not found".to_string())
     }
 }
 

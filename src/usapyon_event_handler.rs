@@ -264,7 +264,19 @@ impl UsapyonEventHandler {
             .get::<UsapyonConfigKey>()
             .expect("Config should be available");
         let config = config.lock().await;
-        let style_id = config.get_user_style(user_id).await?; // デフォルトのスタイルIDを 1 とする
+        let style_id = config.get_user_style(user_id).await?;
+        let credit_name = config.get_credit_name_by_style_id(style_id).await?;
+
+        // VoiceChannelTrackerを使用してスピーカーが新しく使用されるかチェック
+        let tracker = data.get::<VoiceChannelTrackerKey>().unwrap();
+        if tracker
+            .mark_speaker_as_used(guild_id, credit_name.clone())
+            .await
+        {
+            // 新しいスピーカーの場合、クレジットを表示
+            let credit_message = format!("VOICEVOX:{}", credit_name);
+            msg.channel_id.say(&ctx.http, &credit_message).await?;
+        }
 
         println!("msg.content: {}", msg.content);
 
@@ -310,6 +322,29 @@ impl UsapyonEventHandler {
             .expect("UsapyonConfig not found");
         let config = config.lock().await;
         let style_id = config.get_guild_style(guild_id).await?; // デフォルトスタイルIDを 1 とする
+        let credit_name = config.get_credit_name_by_style_id(style_id).await?;
+
+        // VoiceChannelTrackerを使用してスピーカーが新しく使用されるかチェック
+        let tracker = data_read.get::<VoiceChannelTrackerKey>().unwrap();
+        if tracker
+            .mark_speaker_as_used(guild_id, credit_name.clone())
+            .await
+        {
+            // 新しいスピーカーの場合、クレジットを表示
+            let credit_message = format!("VOICEVOX:{}", credit_name);
+
+            // テキストチャンネルIDを取得してメッセージを送信
+            if let Some(text_channel_id) = tracker.get_active_text_channel(guild_id).await {
+                if let Ok(channel) = ChannelId::new(text_channel_id.into())
+                    .to_channel(&ctx.http)
+                    .await
+                {
+                    if let Channel::Guild(channel) = channel {
+                        channel.say(&ctx.http, &credit_message).await?;
+                    }
+                }
+            }
+        }
 
         println!("msg.content: {}", message);
 
