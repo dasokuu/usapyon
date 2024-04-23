@@ -143,43 +143,16 @@ impl EventHandler for UsapyonEventHandler {
                                 println!("Error leaving voice channel: {:?}", why);
                             }
 
-                            ctx.data
-                                .read()
-                                .await
+                            let data = ctx.data.read().await;
+                            let tracker = data
                                 .get::<VoiceChannelTrackerKey>()
-                                .expect("VoiceChannelTracker not found")
-                                .remove_active_channel(guild_id)
-                                .await;
-                        }
-                        Err(e) => {
-                            println!("Failed to get Songbird client: {}", e);
-                        }
-                    }
-                }
-            }
-            None => {
-                println!("Failed to determine the count of non-bot users in the voice channel.");
-            }
-        }
-        match count_non_bot_users_in_bot_voice_channel(&ctx, guild_id) {
-            Some(non_bot_users_count) => {
-                println!("non_bot_users_count: {:?}", non_bot_users_count);
+                                .expect("VoiceChannelTracker should be available");
 
-                // ボット以外のユーザーがボイスチャンネルに存在しなくなった場合、ボットを退出させます。
-                if non_bot_users_count == 0 {
-                    match get_songbird_from_ctx(&ctx).await {
-                        Ok(songbird) => {
-                            if let Err(why) = songbird.leave(guild_id).await {
-                                println!("Error leaving voice channel: {:?}", why);
-                            }
+                            // ボイスチャンネルのアクティブ情報を削除
+                            tracker.remove_active_channel(guild_id).await;
 
-                            ctx.data
-                                .read()
-                                .await
-                                .get::<VoiceChannelTrackerKey>()
-                                .expect("VoiceChannelTracker not found")
-                                .remove_active_channel(guild_id)
-                                .await;
+                            // 使用済みスピーカーの情報をクリア
+                            tracker.clear_used_speakers(guild_id).await;
                         }
                         Err(e) => {
                             println!("Failed to get Songbird client: {}", e);

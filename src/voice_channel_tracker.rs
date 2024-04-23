@@ -61,6 +61,12 @@ impl VoiceChannelTracker {
         let entry = used.entry(guild_id).or_default();
         entry.insert(speaker_name)
     }
+
+    // 特定のギルドに対して使用済みのスピーカーをクリアします。
+    pub async fn clear_used_speakers(&self, guild_id: GuildId) {
+        let mut used = self.used_speakers.lock().await;
+        used.remove(&guild_id);
+    }
 }
 
 pub struct VoiceChannelTrackerKey;

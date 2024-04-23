@@ -15,6 +15,12 @@ use crate::{
 /// * `Result<(), String>` - ボイスチャンネルへの参加操作が成功した場合は Ok(()) を、失敗した場合は Err を返します。
 pub async fn join_command(ctx: &Context, msg: &Message) -> Result<(), String> {
     let guild_id = msg.guild_id.ok_or("Message must be sent in a server")?;
+    let data = ctx.data.read().await;
+    let tracker = data
+        .get::<VoiceChannelTrackerKey>()
+        .expect("VoiceChannelTracker should be available");
+    // 使用済みスピーカーの情報をクリア
+    tracker.clear_used_speakers(guild_id).await;
     let result = with_songbird_handler(&ctx, guild_id, |handler| {
         // 再生を停止してキューをクリア。
         handler.queue().stop();
