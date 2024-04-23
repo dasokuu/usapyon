@@ -264,7 +264,7 @@ impl UsapyonEventHandler {
             .get::<UsapyonConfigKey>()
             .expect("Config should be available");
         let config = config.lock().await;
-        let style_id = config.get_user_style(&user_id).unwrap_or(1); // デフォルトのスタイルIDを 1 とする
+        let style_id = config.get_user_style(user_id).await?; // デフォルトのスタイルIDを 1 とする
 
         println!("msg.content: {}", msg.content);
 
@@ -309,7 +309,7 @@ impl UsapyonEventHandler {
             .get::<UsapyonConfigKey>()
             .expect("UsapyonConfig not found");
         let config = config.lock().await;
-        let style_id = config.get_guild_style(&guild_id).unwrap_or(1); // デフォルトスタイルIDを 1 とする
+        let style_id = config.get_guild_style(guild_id).await?; // デフォルトスタイルIDを 1 とする
 
         println!("msg.content: {}", message);
 

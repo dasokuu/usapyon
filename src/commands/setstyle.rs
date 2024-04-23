@@ -33,7 +33,7 @@ async fn set_user_style(ctx: &Context, msg: &Message, style_id_str: &str, user_i
     let config = data
         .get::<UsapyonConfigKey>()
         .expect("Config should be available");
-    let mut config = config.lock().await;
+    let config = config.lock().await;
 
     // Clone necessary data before the mutable borrow
     let speakers = config.speakers.clone();
@@ -53,7 +53,7 @@ async fn set_user_style(ctx: &Context, msg: &Message, style_id_str: &str, user_i
         });
 
     if let Some((speaker, style)) = style_opt {
-        config.set_user_style(user_id, style_id);
+        config.set_user_style(user_id, style_id).await;
         let reply = format!(
             "Style ID {} set successfully for user {}. Speaker name: {}, Style name: {}, Type: {}",
             style_id, user_id, speaker.name, style.name, style.style_type
@@ -79,7 +79,7 @@ async fn set_guild_style(ctx: &Context, msg: &Message, style_id_str: &str, guild
     let config = data
         .get::<UsapyonConfigKey>()
         .expect("Config should be available");
-    let mut config = config.lock().await;
+    let config = config.lock().await;
 
     let speakers = config.speakers.clone();
 
@@ -98,7 +98,7 @@ async fn set_guild_style(ctx: &Context, msg: &Message, style_id_str: &str, guild
         });
 
     if let Some((speaker, style)) = style_opt {
-        config.set_guild_style(guild_id, style_id);
+        config.set_guild_style(guild_id, style_id).await;
         let reply = format!(
             "Style ID {} set successfully for guild {}. Speaker name: {}, Style name: {}, Type: {}",
             style_id, guild_id, speaker.name, style.name, style.style_type
