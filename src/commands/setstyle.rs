@@ -53,12 +53,19 @@ async fn set_user_style(ctx: &Context, msg: &Message, style_id_str: &str, user_i
         });
 
     if let Some((speaker, style)) = style_opt {
-        config.set_user_style(user_id, style_id).await;
-        let reply = format!(
-            "Style ID {} set successfully for user {}. Speaker name: {}, Style name: {}, Type: {}",
-            style_id, user_id, speaker.name, style.name, style.style_type
-        );
-        msg.reply(ctx, &reply).await.unwrap();
+        match config.set_user_style(user_id, style_id).await {
+            Ok(_) => {
+                let reply = format!(
+                        "Style ID {} set successfully for user {}. Speaker name: {}, Style name: {}, Type: {}",
+                        style_id, user_id, speaker.name, style.name, style.style_type
+                    );
+                msg.reply(ctx, &reply).await.unwrap();
+            }
+            Err(e) => {
+                let reply = format!("Failed to set style: {}", e);
+                msg.reply(ctx, &reply).await.unwrap();
+            }
+        }
     } else {
         msg.reply(ctx, "Style ID not found.").await.unwrap();
     }
@@ -98,12 +105,19 @@ async fn set_guild_style(ctx: &Context, msg: &Message, style_id_str: &str, guild
         });
 
     if let Some((speaker, style)) = style_opt {
-        config.set_guild_style(guild_id, style_id).await;
-        let reply = format!(
-            "Style ID {} set successfully for guild {}. Speaker name: {}, Style name: {}, Type: {}",
-            style_id, guild_id, speaker.name, style.name, style.style_type
-        );
-        msg.reply(ctx, &reply).await.unwrap();
+        match config.set_guild_style(guild_id, style_id).await {
+            Ok(_) => {
+                let reply = format!(
+                        "Style ID {} set successfully for guild {}. Speaker name: {}, Style name: {}, Type: {}",
+                        style_id, guild_id, speaker.name, style.name, style.style_type
+                    );
+                msg.reply(ctx, &reply).await.unwrap();
+            }
+            Err(e) => {
+                let reply = format!("Failed to set style: {}", e);
+                msg.reply(ctx, &reply).await.unwrap();
+            }
+        }
     } else {
         msg.reply(ctx, "Style ID not found.").await.unwrap();
     }
