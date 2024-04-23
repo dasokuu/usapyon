@@ -61,7 +61,8 @@ impl EventHandler for UsapyonEventHandler {
             UsapyonEventHandler::process_active_command(&ctx, &msg, guild_id).await;
         } else {
             // コマンドでないメッセージの場合、読み上げリクエストとして処理します。
-            if let Err(e) = UsapyonEventHandler::process_speech_request(&ctx, &msg, guild_id).await
+            if let Err(e) =
+                UsapyonEventHandler::process_user_speech_request(&ctx, &msg, guild_id).await
             {
                 println!("Error processing speech request: {}", e);
             }
@@ -72,12 +73,12 @@ impl EventHandler for UsapyonEventHandler {
     ///
     /// ## Arguments
     /// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
-    /// * `_old_state` - 変更前のボイスチャットの状態。
+    /// * `old_state` - 変更前のボイスチャットの状態。
     /// * `new_state` - 変更後のボイスチャットの状態。
     async fn voice_state_update(
         &self,
         ctx: Context,
-        _old_state: Option<VoiceState>,
+        old_state: Option<VoiceState>,
         new_state: VoiceState,
     ) {
         let guild_id = match new_state.guild_id {
@@ -87,7 +88,43 @@ impl EventHandler for UsapyonEventHandler {
                 return;
             }
         };
+        // ユーザーがボットかどうかを確認
+        let user_id = new_state.user_id;
+        if ctx.cache.user(user_id).map(|u| u.bot).unwrap_or(false) {
+            // ユーザーがボットの場合は何もしない
+            return;
+        }
+        let data_read = ctx.data.read().await;
+        let tracker = data_read
+            .get::<VoiceChannelTrackerKey>()
+            .expect("Tracker should be available");
+        let is_bot_channel_active = tracker
+            .is_active_voice_channel(guild_id, new_state.channel_id.unwrap_or_default())
+            .await;
+        // ユーザーがボイスチャンネルに参加したか確認
+        if new_state.channel_id.is_some()
+            && old_state.as_ref().map(|s| s.channel_id).is_none()
+            && is_bot_channel_active
+        {
+            let user_id = new_state.user_id;
+            if let Some(member) = get_member_from_ctx(&ctx, guild_id, user_id) {
+                let message = format!("{}さんが参加しました。", member.display_name());
+                if let Err(e) = Self::process_guild_speech_request(&ctx, guild_id, &message).await {
+                    eprintln!("Failed to announce voice channel join: {}", e);
+                }
+            }
+        }
 
+        // ユーザーがボイスチャンネルから退出したか確認
+        if new_state.channel_id.is_none() && old_state.as_ref().map(|s| s.channel_id).is_some() {
+            let user_id = old_state.as_ref().unwrap().user_id;
+            if let Some(member) = get_member_from_ctx(&ctx, guild_id, user_id) {
+                let message = format!("{}さんが退出しました。", member.display_name());
+                if let Err(e) = Self::process_guild_speech_request(&ctx, guild_id, &message).await {
+                    eprintln!("Failed to announce voice channel leave: {}", e);
+                }
+            }
+        }
         match count_non_bot_users_in_bot_voice_channel(&ctx, guild_id) {
             Some(non_bot_users_count) => {
                 println!("non_bot_users_count: {:?}", non_bot_users_count);
@@ -209,7 +246,7 @@ impl UsapyonEventHandler {
     /// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
     /// * `msg` - メッセージ。
     /// * `guild_id` - ギルドID。
-    async fn process_speech_request(
+    async fn process_user_speech_request(
         ctx: &Context,
         msg: &Message,
         guild_id: GuildId,
@@ -226,6 +263,51 @@ impl UsapyonEventHandler {
         println!("msg.content: {}", msg.content);
 
         let sanitized_content: String = sanitize_message(&ctx, &msg.content, guild_id).await;
+        println!("Sanitized message: {}", sanitized_content);
+
+        // メッセージを読み上げる処理
+        // Context から SynthesisQueue を取得
+        let speech_text = if sanitized_content.chars().count() > 200 {
+            sanitized_content.chars().take(200).collect::<String>() + "...以下略"
+        } else {
+            sanitized_content.clone()
+        };
+
+        let request = SynthesisRequest::new(speech_text.to_string(), style_id.to_string());
+
+        // 音声合成キューマネージャーを取得し、リクエストを追加して処理を開始します。
+        let synthesis_queue_manager = get_synthesis_queue_manager(&ctx).await;
+        synthesis_queue_manager
+            .add_request_to_synthesis_queue(guild_id, request)
+            .await;
+        synthesis_queue_manager
+            .start_processing(&ctx, guild_id)
+            .await?;
+
+        Ok(())
+    }
+
+    /// メッセージを読み上げるリクエストを処理します。
+    ///
+    /// ## Arguments
+    /// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
+    /// * `msg` - メッセージ。
+    /// * `guild_id` - ギルドID。
+    async fn process_guild_speech_request(
+        ctx: &Context,
+        guild_id: GuildId,
+        message: &str,
+    ) -> Result<(), Box<dyn Error + Send + Sync>> {
+        let data_read = ctx.data.read().await;
+        let config = data_read
+            .get::<UsapyonConfigKey>()
+            .expect("UsapyonConfig not found");
+        let config = config.lock().await;
+        let style_id = config.get_guild_style(&guild_id).unwrap_or(1); // デフォルトスタイルIDを 1 とする
+
+        println!("msg.content: {}", message);
+
+        let sanitized_content: String = sanitize_message(&ctx, &message, guild_id).await;
         println!("Sanitized message: {}", sanitized_content);
 
         // メッセージを読み上げる処理

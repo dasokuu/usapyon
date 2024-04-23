@@ -37,6 +37,15 @@ impl VoiceChannelTracker {
         let channels = self.active_channels.lock().await;
         matches!(channels.get(&guild_id), Some((_, id)) if *id == text_channel_id)
     }
+
+    pub async fn is_active_voice_channel(
+        &self,
+        guild_id: GuildId,
+        voice_channel_id: ChannelId,
+    ) -> bool {
+        let channels = self.active_channels.lock().await;
+        matches!(channels.get(&guild_id), Some((id, _)) if *id == voice_channel_id)
+    }
 }
 
 pub struct VoiceChannelTrackerKey;
