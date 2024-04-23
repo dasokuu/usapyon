@@ -49,7 +49,9 @@ impl VoiceChannelTracker {
 
     pub async fn get_active_voice_channel(&self, guild_id: GuildId) -> Option<ChannelId> {
         let channels = self.active_channels.lock().await;
-        channels.get(&guild_id).map(|(voice_channel_id, _)| *voice_channel_id)
+        channels
+            .get(&guild_id)
+            .map(|(voice_channel_id, _)| *voice_channel_id)
     }
 }
 
