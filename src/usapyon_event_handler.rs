@@ -1,8 +1,10 @@
 use crate::commands::{clear, join, leave, liststyles, setstyle, skip};
 use std::error::Error;
+use std::fs::File;
 use std::sync::Arc;
 
 use regex::Regex;
+use serde_json::{from_reader, Value};
 use serenity::model::channel::Channel;
 use serenity::model::id::{ChannelId, RoleId, UserId};
 use serenity::{
@@ -10,6 +12,7 @@ use serenity::{
     model::{gateway::Ready, prelude::*},
     prelude::*,
 };
+use std::collections::HashMap;
 
 use crate::serenity_utils::get_songbird_from_ctx;
 use crate::synthesis_queue_manager::SynthesisQueueManager;
@@ -249,10 +252,19 @@ impl UsapyonEventHandler {
 }
 
 async fn sanitize_message(ctx: &Context, msg: &str, guild_id: GuildId) -> String {
+    let data_read = ctx.data.read().await;
+    let emoji_data = data_read
+        .get::<EmojiData>()
+        .expect("Expected emoji data in TypeMap.");
+
     let re_user = Regex::new(r"<@!?(\d+)>").unwrap();
     let re_channel = Regex::new(r"<#(\d+)>").unwrap();
     let re_role = Regex::new(r"<@&(\d+)>").unwrap();
     let re_emoji = Regex::new(r"<:([^:]+):\d+>").unwrap();
+    let re_url = Regex::new(
+        r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+",
+    )
+    .unwrap();
 
     let mut sanitized = msg.to_string();
 
@@ -289,12 +301,49 @@ async fn sanitize_message(ctx: &Context, msg: &str, guild_id: GuildId) -> String
         }
     }
 
+    // 絵文字を short_name に置き換え
+    for (emoji, short_name) in emoji_data {
+        sanitized = sanitized.replace(emoji, short_name);
+    }
+
     // Replace custom emojis
     sanitized = re_emoji
         .replace_all(&sanitized, |caps: &regex::Captures| format!("{}", &caps[1]))
         .to_string();
 
+    // URLを「リンク」という単語に置き換えます。
+    sanitized = re_url.replace_all(&sanitized, "リンク").to_string();
+
+    // 絵文字を short_name に置き換え
+    for (emoji, short_name) in emoji_data {
+        sanitized = sanitized.replace(emoji, short_name);
+    }
+
     sanitized
+}
+pub struct EmojiData;
+
+impl TypeMapKey for EmojiData {
+    type Value = HashMap<String, String>;
+}
+
+// JSON ファイルから絵文字データを読み込む
+pub fn load_emoji_data() -> HashMap<String, String> {
+    let file = File::open("src/emoji_ja.json").expect("file should open read only");
+    let json: HashMap<String, Value> = from_reader(file).expect("file should be proper JSON");
+    json.iter()
+        .filter_map(|(key, val)| {
+            if let Some(short_name) = val["short_name"].as_str() {
+                if !val["group"].as_str().unwrap_or("").is_empty() {
+                    Some((key.clone(), short_name.to_string()))
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        })
+        .collect()
 }
 
 fn get_member_from_ctx(ctx: &Context, guild_id: GuildId, user_id: UserId) -> Option<Member> {

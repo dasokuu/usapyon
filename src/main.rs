@@ -1,7 +1,6 @@
-mod commands;
-
 // 話者IDを選択できるようにしたい。
 
+mod commands;
 mod retry_handler;
 mod serenity_utils;
 mod synthesis_queue;
@@ -20,7 +19,7 @@ use std::{env, sync::Arc};
 use synthesis_queue::SynthesisRequest;
 use synthesis_queue_manager::{SynthesisQueueManager, SynthesisQueueManagerKey};
 use usapyon_config::{UsapyonConfig, UsapyonConfigKey};
-use usapyon_event_handler::UsapyonEventHandler;
+use usapyon_event_handler::{load_emoji_data, EmojiData, UsapyonEventHandler};
 use voice_channel_tracker::{VoiceChannelTracker, VoiceChannelTrackerKey};
 
 #[tokio::main(flavor = "current_thread")]
@@ -57,6 +56,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         data.insert::<VoiceChannelTrackerKey>(voice_tracker);
         data.insert::<SynthesisQueueManagerKey>(queue_manager);
         data.insert::<UsapyonConfigKey>(config);
+        let emoji_data = load_emoji_data();
+        data.insert::<EmojiData>(emoji_data);
     }
 
     client.start().await.map_err(Into::into)
