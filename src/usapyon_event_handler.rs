@@ -88,43 +88,49 @@ impl EventHandler for UsapyonEventHandler {
                 return;
             }
         };
+        // ボットが参加しているボイスチャンネルIDを取得
+        let data_read = ctx.data.read().await;
+        let tracker = data_read.get::<VoiceChannelTrackerKey>().expect("test");
+        let bot_voice_channel_id = tracker.get_active_voice_channel(guild_id).await;
+
         // ユーザーがボットかどうかを確認
         let user_id = new_state.user_id;
         if ctx.cache.user(user_id).map(|u| u.bot).unwrap_or(false) {
             // ユーザーがボットの場合は何もしない
             return;
         }
-        let data_read = ctx.data.read().await;
-        let tracker = data_read
-            .get::<VoiceChannelTrackerKey>()
-            .expect("Tracker should be available");
-        let is_bot_channel_active = tracker
-            .is_active_voice_channel(guild_id, new_state.channel_id.unwrap_or_default())
-            .await;
-        // ユーザーがボイスチャンネルに参加したか確認
-        if new_state.channel_id.is_some()
-            && old_state.as_ref().map(|s| s.channel_id).is_none()
-            && is_bot_channel_active
-        {
-            let user_id = new_state.user_id;
-            if let Some(member) = get_member_from_ctx(&ctx, guild_id, user_id) {
-                let message = format!("{}さんが参加しました。", member.display_name());
-                if let Err(e) = Self::process_guild_speech_request(&ctx, guild_id, &message).await {
-                    eprintln!("Failed to announce voice channel join: {}", e);
+
+        // ボットのいるボイスチャンネルにユーザーが参加または退出したか確認
+        if let Some(bot_channel_id) = bot_voice_channel_id {
+            if new_state.channel_id == Some(bot_channel_id)
+                && old_state.as_ref().map(|s| s.channel_id) != Some(bot_voice_channel_id)
+            {
+                // ユーザーがボットのいるボイスチャンネルに参加
+                if let Some(member) = get_member_from_ctx(&ctx, guild_id, user_id) {
+                    let display_name = member.display_name();
+                    let message = format!("{}さんが参加しました。", display_name);
+                    if let Err(e) =
+                        Self::process_guild_speech_request(&ctx, guild_id, &message).await
+                    {
+                        eprintln!("Failed to announce voice channel join: {}", e);
+                    }
+                }
+            } else if old_state.as_ref().map(|s| s.channel_id) == Some(Some(bot_channel_id))
+                && new_state.channel_id != Some(bot_channel_id)
+            {
+                // ユーザーがボットのいるボイスチャンネルから退出
+                if let Some(member) = get_member_from_ctx(&ctx, guild_id, user_id) {
+                    let display_name = member.display_name();
+                    let message = format!("{}さんが退出しました。", display_name);
+                    if let Err(e) =
+                        Self::process_guild_speech_request(&ctx, guild_id, &message).await
+                    {
+                        eprintln!("Failed to announce voice channel leave: {}", e);
+                    }
                 }
             }
         }
 
-        // ユーザーがボイスチャンネルから退出したか確認
-        if new_state.channel_id.is_none() && old_state.as_ref().map(|s| s.channel_id).is_some() {
-            let user_id = old_state.as_ref().unwrap().user_id;
-            if let Some(member) = get_member_from_ctx(&ctx, guild_id, user_id) {
-                let message = format!("{}さんが退出しました。", member.display_name());
-                if let Err(e) = Self::process_guild_speech_request(&ctx, guild_id, &message).await {
-                    eprintln!("Failed to announce voice channel leave: {}", e);
-                }
-            }
-        }
         match count_non_bot_users_in_bot_voice_channel(&ctx, guild_id) {
             Some(non_bot_users_count) => {
                 println!("non_bot_users_count: {:?}", non_bot_users_count);

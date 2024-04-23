@@ -4,7 +4,7 @@ use std::{collections::HashMap, sync::Arc};
 
 /// ギルドごとのアクティブなボイスチャンネルとテキストチャンネルのトラッキングを行う構造体。
 pub struct VoiceChannelTracker {
-    active_channels: Mutex<HashMap<GuildId, (ChannelId, ChannelId)>>, // (VoiceChannelId, TextChannelId)
+    pub active_channels: Mutex<HashMap<GuildId, (ChannelId, ChannelId)>>, // (VoiceChannelId, TextChannelId)
 }
 
 impl VoiceChannelTracker {
@@ -45,6 +45,11 @@ impl VoiceChannelTracker {
     ) -> bool {
         let channels = self.active_channels.lock().await;
         matches!(channels.get(&guild_id), Some((id, _)) if *id == voice_channel_id)
+    }
+
+    pub async fn get_active_voice_channel(&self, guild_id: GuildId) -> Option<ChannelId> {
+        let channels = self.active_channels.lock().await;
+        channels.get(&guild_id).map(|(voice_channel_id, _)| *voice_channel_id)
     }
 }
 
