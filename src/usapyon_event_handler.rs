@@ -217,6 +217,10 @@ impl UsapyonEventHandler {
         msg: &Message,
         guild_id: GuildId,
     ) -> Result<(), Box<dyn Error + Send + Sync>> {
+        // メッセージ内容が空か、スペースのみであれば読み上げない
+        if msg.content.trim().is_empty() {
+            return Ok(());
+        }
         // ユーザーの style_id を取得
         let user_id = msg.author.id;
         let data = ctx.data.read().await;
