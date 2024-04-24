@@ -44,7 +44,6 @@ pub struct UsapyonConfig {
     pub speakers: Vec<Speaker>,
     pub user_style_settings: HashMap<UserId, i32>, // ユーザーIDとスタイルIDのマッピング
     pub guild_style_settings: HashMap<GuildId, i32>, // ギルドIDとスタイルIDのマッピング
-    pub style_cache: StyleCache,
     conn: Arc<Mutex<rusqlite::Connection>>,
 }
 
@@ -57,7 +56,6 @@ impl UsapyonConfig {
             speakers,
             user_style_settings: HashMap::new(),
             guild_style_settings: HashMap::new(),
-            style_cache: StyleCache::new(),
             conn,
         })
     }
@@ -68,17 +66,10 @@ impl UsapyonConfig {
             "REPLACE INTO user_styles (user_id, style_id) VALUES (?1, ?2)",
             params![i64::from(user_id), style_id],
         )?;
-        self.style_cache.set_user_style(user_id, style_id).await;
         Ok(())
     }
 
     pub async fn get_user_style(&self, user_id: UserId, guild_id: GuildId) -> Result<i32> {
-        // First, try to fetch the user's style from the cache
-        if let Some(style_id) = self.style_cache.get_user_style(user_id).await {
-            return Ok(style_id);
-        }
-
-        // If not found in the cache, check the database for a user-specific style
         let conn = self.conn.lock().await;
         let user_style_result = conn.query_row(
             "SELECT style_id FROM user_styles WHERE user_id = ?1",
@@ -87,11 +78,7 @@ impl UsapyonConfig {
         );
 
         match user_style_result {
-            Ok(style_id) => {
-                // Save the style ID in the cache and return it
-                self.style_cache.set_user_style(user_id, style_id).await;
-                Ok(style_id)
-            }
+            Ok(style_id) => Ok(style_id),
             Err(rusqlite::Error::QueryReturnedNoRows) => {
                 // If no user-specific style is found, check for a guild-specific style in the database
                 let guild_style_result = conn.query_row(
@@ -100,12 +87,7 @@ impl UsapyonConfig {
                     |row| row.get::<_, i32>(0),
                 );
                 match guild_style_result {
-                    Ok(style_id) => {
-                        // Save the guild style ID in the user and guild style cache and return it
-                        self.style_cache.set_user_style(user_id, style_id).await;
-                        self.style_cache.set_guild_style(guild_id, style_id).await;
-                        Ok(style_id)
-                    }
+                    Ok(style_id) => Ok(style_id),
                     Err(rusqlite::Error::QueryReturnedNoRows) => {
                         // If no guild-specific style is found either, return a default style ID
                         Ok(3)
@@ -131,16 +113,10 @@ impl UsapyonConfig {
             "REPLACE INTO guild_styles (guild_id, style_id) VALUES (?1, ?2)",
             params![i64::from(guild_id), style_id],
         )?;
-        self.style_cache.set_guild_style(guild_id, style_id).await;
         Ok(())
     }
 
     pub async fn get_guild_style(&self, guild_id: GuildId) -> Result<i32> {
-        // 最初にキャッシュを確認
-        if let Some(style_id) = self.style_cache.get_guild_style(guild_id).await {
-            return Ok(style_id);
-        }
-
         // キャッシュにない場合はデータベースから取得
         let conn = self.conn.lock().await;
         let guild_style_result = conn.query_row(
@@ -150,11 +126,7 @@ impl UsapyonConfig {
         );
 
         match guild_style_result {
-            Ok(style_id) => {
-                // スタイルIDをキャッシュに保存
-                self.style_cache.set_guild_style(guild_id, style_id).await;
-                Ok(style_id)
-            }
+            Ok(style_id) => Ok(style_id),
             Err(rusqlite::Error::QueryReturnedNoRows) => {
                 // ギルドにスタイルが設定されていない場合はデフォルト値を返す
                 Ok(3)
@@ -204,39 +176,4 @@ fn init_db() -> Result<Connection> {
         [],
     )?;
     Ok(conn)
-}
-
-#[derive(Clone, Debug)]
-pub struct StyleCache {
-    user_styles: Arc<Mutex<HashMap<UserId, i32>>>,
-    guild_styles: Arc<Mutex<HashMap<GuildId, i32>>>,
-}
-
-impl StyleCache {
-    fn new() -> Self {
-        StyleCache {
-            user_styles: Arc::new(Mutex::new(HashMap::new())),
-            guild_styles: Arc::new(Mutex::new(HashMap::new())),
-        }
-    }
-
-    async fn get_user_style(&self, user_id: UserId) -> Option<i32> {
-        let styles = self.user_styles.lock().await;
-        styles.get(&user_id).cloned()
-    }
-
-    async fn set_user_style(&self, user_id: UserId, style_id: i32) {
-        let mut styles = self.user_styles.lock().await;
-        styles.insert(user_id, style_id);
-    }
-
-    async fn get_guild_style(&self, guild_id: GuildId) -> Option<i32> {
-        let styles = self.guild_styles.lock().await;
-        styles.get(&guild_id).cloned()
-    }
-
-    async fn set_guild_style(&self, guild_id: GuildId, style_id: i32) {
-        let mut styles = self.guild_styles.lock().await;
-        styles.insert(guild_id, style_id);
-    }
 }
