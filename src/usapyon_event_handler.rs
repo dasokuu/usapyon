@@ -52,17 +52,22 @@ impl EventHandler for UsapyonEventHandler {
         if is_active_text_channel(&ctx, guild_id, msg.channel_id).await {
             // コマンドプレフィックス"!"で始まるメッセージの場合、アクティブコマンドを処理します。
             if msg.content.starts_with("u!") {
-                UsapyonEventHandler::process_active_command(&ctx, &msg, guild_id).await;
+                Self::process_active_command(&ctx, &msg, guild_id).await;
             } else {
                 // コマンドでないメッセージの場合、読み上げリクエストとして処理します。
                 if let Err(e) =
-                    UsapyonEventHandler::process_user_speech_request(&ctx, &msg, guild_id).await
+                    Self::process_user_speech_request(&ctx, &msg, guild_id).await
                 {
                     println!("Error processing speech request: {}", e);
                 }
+                if !msg.attachments.is_empty() {
+                    if let Err(e) = Self::process_attachments(&ctx, &msg, guild_id).await {
+                        println!("Error processing attachments: {}", e);
+                    }
+                }
             }
         } else {
-            UsapyonEventHandler::process_inactive_command(&ctx, &msg, guild_id).await;
+            Self::process_inactive_command(&ctx, &msg, guild_id).await;
         }
     }
 
@@ -331,6 +336,42 @@ impl UsapyonEventHandler {
         synthesis_queue_manager
             .start_processing(&ctx, guild_id)
             .await?;
+
+        Ok(())
+    }
+
+    async fn process_attachments(
+        ctx: &Context,
+        msg: &Message,
+        guild_id: GuildId,
+    ) -> Result<(), Box<dyn Error + Send + Sync>> {
+        let mut attachment_counts = HashMap::new();
+        for attachment in &msg.attachments {
+            let kind = match attachment.filename.split('.').last().unwrap_or("") {
+                "gif" => "GIF画像",
+                "mp4" | "webm" => "動画",
+                "mp3" | "wav" => "音声ファイル",
+                "png" | "jpg" | "jpeg" => "画像",
+                "txt" => "テキストファイル",
+                _ => "ファイル",
+            };
+            *attachment_counts.entry(kind).or_insert(0) += 1;
+        }
+
+        let mut read_message = String::new();
+        for (kind, count) in attachment_counts {
+            if !read_message.is_empty() {
+                read_message.push_str("、");
+            }
+            read_message.push_str(&format!("{}個の{}が投稿されました", count, kind));
+        }
+
+        if !read_message.is_empty() {
+            if let Err(e) = Self::process_guild_speech_request(&ctx, guild_id, &read_message).await
+            {
+                eprintln!("Failed to announce attachments: {}", e);
+            }
+        }
 
         Ok(())
     }
