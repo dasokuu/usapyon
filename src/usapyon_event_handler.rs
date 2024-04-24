@@ -174,18 +174,6 @@ impl UsapyonEventHandler {
                 println!("Error processing !join command: {}", e);
             }
         }
-        let content = msg.content.trim();
-        if content.starts_with("!setstyle") {
-            let args: Vec<&str> = content.split_whitespace().collect();
-            setstyle::set_style_command(ctx, msg, args, guild_id).await; // Assume this handles its errors internally
-        } else {
-            match msg.content.as_str() {
-                "u!liststyles" => {
-                    liststyles::list_styles_command(ctx, msg).await; // Assume this handles its errors internally
-                }
-                _ => {}
-            }
-        }
     }
 
     /// "!"から始まるコマンドを処理します。
@@ -207,7 +195,14 @@ impl UsapyonEventHandler {
             "u!clear" => {
                 clear::clear_command(ctx, guild_id).await; // Assume this handles its errors internally
             }
+            "u!liststyles" => {
+                liststyles::list_styles_command(ctx, msg).await; // Assume this handles its errors internally
+            }
             _ => {}
+        }
+        if msg.content.starts_with("u!setstyle") {
+            let args: Vec<&str> = msg.content.split_whitespace().collect();
+            setstyle::set_style_command(ctx, msg, args, guild_id).await; // Assume this handles its errors internally
         }
     }
 
