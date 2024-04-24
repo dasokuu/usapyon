@@ -78,16 +78,29 @@ impl UsapyonConfig {
         );
 
         match user_style_result {
-            Ok(style_id) => {
-                // If the user has a specific style set, return it
-                Ok(style_id)
-            }
+            Ok(style_id) => Ok(style_id),
             Err(rusqlite::Error::QueryReturnedNoRows) => {
-                // If no user style is set, fall back to the guild style
-                self.get_guild_style(guild_id).await
+                // If no user-specific style is found, check for a guild-specific style in the database
+                let guild_style_result = conn.query_row(
+                    "SELECT style_id FROM guild_styles WHERE guild_id = ?1",
+                    params![i64::from(guild_id)],
+                    |row| row.get::<_, i32>(0),
+                );
+                match guild_style_result {
+                    Ok(style_id) => Ok(style_id),
+                    Err(rusqlite::Error::QueryReturnedNoRows) => {
+                        // If no guild-specific style is found either, return a default style ID
+                        Ok(3)
+                    }
+                    Err(e) => {
+                        // Handle other database errors
+                        eprintln!("Database error when fetching guild style: {}", e);
+                        Err(*Box::new(e))
+                    }
+                }
             }
             Err(e) => {
-                // Log and handle any database errors
+                // Handle other database errors
                 eprintln!("Database error when fetching user style: {}", e);
                 Err(*Box::new(e))
             }
@@ -104,6 +117,7 @@ impl UsapyonConfig {
     }
 
     pub async fn get_guild_style(&self, guild_id: GuildId) -> Result<i32> {
+        // キャッシュにない場合はデータベースから取得
         let conn = self.conn.lock().await;
         let guild_style_result = conn.query_row(
             "SELECT style_id FROM guild_styles WHERE guild_id = ?1",
@@ -112,16 +126,13 @@ impl UsapyonConfig {
         );
 
         match guild_style_result {
-            Ok(style_id) => {
-                // Return the style ID if found
-                Ok(style_id)
-            }
+            Ok(style_id) => Ok(style_id),
             Err(rusqlite::Error::QueryReturnedNoRows) => {
-                // Return default style ID if no style is set for the guild
+                // ギルドにスタイルが設定されていない場合はデフォルト値を返す
                 Ok(3)
             }
             Err(e) => {
-                // Log and handle any database errors
+                // その他のデータベースエラーを処理
                 eprintln!("Database error when fetching guild style: {}", e);
                 Err(*Box::new(e))
             }
