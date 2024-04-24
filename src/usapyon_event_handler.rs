@@ -332,7 +332,6 @@ impl UsapyonEventHandler {
 
         Ok(())
     }
-
     async fn process_attachments(
         ctx: &Context,
         msg: &Message,
@@ -352,14 +351,21 @@ impl UsapyonEventHandler {
         }
 
         let mut read_message = String::new();
+        let mut current_type = 0;
         for (kind, count) in attachment_counts {
-            if !read_message.is_empty() {
-                read_message.push_str("、");
+            current_type += 1;
+            if current_type > 1 {
+                read_message.push_str("と");
             }
-            read_message.push_str(&format!("{}個の{}が投稿されました", count, kind));
+            if count == 1 {
+                read_message.push_str(kind);
+            } else {
+                read_message.push_str(&format!("{}個の{}", count, kind));
+            }
         }
 
         if !read_message.is_empty() {
+            read_message.push_str("が投稿されました");
             if let Err(e) = Self::process_guild_speech_request(&ctx, guild_id, &read_message).await
             {
                 eprintln!("Failed to announce attachments: {}", e);
