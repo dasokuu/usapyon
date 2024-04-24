@@ -72,18 +72,35 @@ impl UsapyonConfig {
         Ok(())
     }
 
-    pub async fn get_user_style(&self, user_id: UserId) -> Result<i32> {
-        let conn = self.conn.lock().await;
+    pub async fn get_user_style(&self, user_id: UserId, guild_id: GuildId) -> Result<i32> {
+        // 最初にキャッシュを確認
         if let Some(style_id) = self.style_cache.get_user_style(user_id).await {
-            Ok(style_id)
-        } else {
-            let style_id = conn.query_row(
-                "SELECT style_id FROM user_styles WHERE user_id = ?1",
-                params![i64::from(user_id)],
-                |row| row.get(0),
-            )?;
-            self.style_cache.set_user_style(user_id, style_id).await;
-            Ok(style_id)
+            return Ok(style_id);
+        }
+
+        // キャッシュにない場合はデータベースから取得
+        let conn = self.conn.lock().await;
+        let user_style_result = conn.query_row(
+            "SELECT style_id FROM user_styles WHERE user_id = ?1",
+            params![i64::from(user_id)],
+            |row| row.get::<_, i32>(0),
+        );
+
+        match user_style_result {
+            Ok(style_id) => {
+                // スタイルIDをキャッシュに保存
+                self.style_cache.set_user_style(user_id, style_id).await;
+                Ok(style_id)
+            }
+            Err(rusqlite::Error::QueryReturnedNoRows) => {
+                // ユーザースタイルが設定されていない場合、ギルドスタイルを取得
+                self.get_guild_style(guild_id).await
+            }
+            Err(e) => {
+                // その他のデータベースエラーを処理
+                eprintln!("Database error when fetching user style: {}", e);
+                Err(*Box::new(e))
+            }
         }
     }
 
@@ -98,17 +115,34 @@ impl UsapyonConfig {
     }
 
     pub async fn get_guild_style(&self, guild_id: GuildId) -> Result<i32> {
-        let conn = self.conn.lock().await;
+        // 最初にキャッシュを確認
         if let Some(style_id) = self.style_cache.get_guild_style(guild_id).await {
-            Ok(style_id)
-        } else {
-            let style_id = conn.query_row(
-                "SELECT style_id FROM guild_styles WHERE guild_id = ?1",
-                params![i64::from(guild_id)],
-                |row| row.get(0),
-            )?;
-            self.style_cache.set_guild_style(guild_id, style_id).await;
-            Ok(style_id)
+            return Ok(style_id);
+        }
+
+        // キャッシュにない場合はデータベースから取得
+        let conn = self.conn.lock().await;
+        let guild_style_result = conn.query_row(
+            "SELECT style_id FROM guild_styles WHERE guild_id = ?1",
+            params![i64::from(guild_id)],
+            |row| row.get::<_, i32>(0),
+        );
+
+        match guild_style_result {
+            Ok(style_id) => {
+                // スタイルIDをキャッシュに保存
+                self.style_cache.set_guild_style(guild_id, style_id).await;
+                Ok(style_id)
+            }
+            Err(rusqlite::Error::QueryReturnedNoRows) => {
+                // ギルドにスタイルが設定されていない場合はデフォルト値を返す
+                Ok(3)
+            }
+            Err(e) => {
+                // その他のデータベースエラーを処理
+                eprintln!("Database error when fetching guild style: {}", e);
+                Err(*Box::new(e))
+            }
         }
     }
 

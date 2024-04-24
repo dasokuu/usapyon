@@ -65,7 +65,7 @@ impl EventHandler for UsapyonEventHandler {
                 }
             }
         } else {
-            Self::process_inactive_command(&ctx, &msg, guild_id).await;
+            Self::process_inactive_command(&ctx, &msg).await;
         }
     }
 
@@ -167,7 +167,7 @@ impl UsapyonEventHandler {
     /// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
     /// * `msg` - メッセージ。
     /// * `guild_id` - ギルドID。
-    async fn process_inactive_command(ctx: &Context, msg: &Message, guild_id: GuildId) {
+    async fn process_inactive_command(ctx: &Context, msg: &Message) {
         // joinコマンドは非アクティブな場合でも実行できる必要があるため、ここで処理。
         if msg.content == "u!join" {
             if let Err(e) = join::join_command(&ctx, &msg).await {
@@ -224,7 +224,7 @@ impl UsapyonEventHandler {
             .get::<UsapyonConfigKey>()
             .expect("Config should be available");
         let config = config.lock().await;
-        let style_id = config.get_user_style(user_id).await?;
+        let style_id = config.get_user_style(user_id, guild_id).await?;
         let credit_name = config.get_credit_name_by_style_id(style_id).await?;
 
         // VoiceChannelTrackerを使用してスピーカーが新しく使用されるかチェック
