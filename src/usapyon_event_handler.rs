@@ -62,7 +62,6 @@ impl EventHandler for UsapyonEventHandler {
                 }
             }
         } else {
-            // ギルドIDが取得できた場合、非アクティブコマンドを先に処理します。
             UsapyonEventHandler::process_inactive_command(&ctx, &msg, guild_id).await;
         }
     }
@@ -86,22 +85,48 @@ impl EventHandler for UsapyonEventHandler {
                 return;
             }
         };
+
         // ボットが参加しているボイスチャンネルIDを取得
         let data_read = ctx.data.read().await;
-        let tracker = data_read.get::<VoiceChannelTrackerKey>().expect("test");
+        let tracker = data_read
+            .get::<VoiceChannelTrackerKey>()
+            .expect("VoiceChannelTracker not found");
         let bot_voice_channel_id = tracker.get_active_voice_channel(guild_id).await;
 
         // ユーザーがボットかどうかを確認
         let user_id = new_state.user_id;
         if ctx.cache.user(user_id).map(|u| u.bot).unwrap_or(false) {
-            // ユーザーがボットの場合は何もしない
-            return;
+            return; // ユーザーがボットの場合は何もしない
         }
 
-        // ボットのいるボイスチャンネルにユーザーが参加または退出したか確認
+        // ボット以外のユーザーがボイスチャンネルに存在しなくなった場合、ボットを退出させます。
+        if let Some(non_bot_users_count) = count_non_bot_users_in_bot_voice_channel(&ctx, guild_id)
+        {
+            if non_bot_users_count == 0 {
+                if let Ok(songbird) = get_songbird_from_ctx(&ctx).await {
+                    if let Err(why) = songbird.leave(guild_id).await {
+                        println!("Error leaving voice channel: {:?}", why);
+                    }
+
+                    let data = ctx.data.read().await;
+                    let tracker = data
+                        .get::<VoiceChannelTrackerKey>()
+                        .expect("VoiceChannelTracker should be available");
+
+                    // ボイスチャンネルのアクティブ情報を削除
+                    tracker.remove_active_channel(guild_id).await;
+
+                    // 使用済みスピーカーの情報をクリア
+                    tracker.clear_used_speakers(guild_id).await;
+
+                    return; // ボットが退出するときは他の退出メッセージを送信しない
+                }
+            }
+        }
+
         if let Some(bot_channel_id) = bot_voice_channel_id {
             if new_state.channel_id == Some(bot_channel_id)
-                && old_state.as_ref().map(|s| s.channel_id) != Some(bot_voice_channel_id)
+                && old_state.as_ref().map(|s| s.channel_id) != Some(Some(bot_channel_id))
             {
                 // ユーザーがボットのいるボイスチャンネルに参加
                 if let Some(member) = get_member_from_ctx(&ctx, guild_id, user_id) {
@@ -126,40 +151,6 @@ impl EventHandler for UsapyonEventHandler {
                         eprintln!("Failed to announce voice channel leave: {}", e);
                     }
                 }
-            }
-        }
-
-        match count_non_bot_users_in_bot_voice_channel(&ctx, guild_id) {
-            Some(non_bot_users_count) => {
-                println!("non_bot_users_count: {:?}", non_bot_users_count);
-
-                // ボット以外のユーザーがボイスチャンネルに存在しなくなった場合、ボットを退出させます。
-                if non_bot_users_count == 0 {
-                    match get_songbird_from_ctx(&ctx).await {
-                        Ok(songbird) => {
-                            if let Err(why) = songbird.leave(guild_id).await {
-                                println!("Error leaving voice channel: {:?}", why);
-                            }
-
-                            let data = ctx.data.read().await;
-                            let tracker = data
-                                .get::<VoiceChannelTrackerKey>()
-                                .expect("VoiceChannelTracker should be available");
-
-                            // ボイスチャンネルのアクティブ情報を削除
-                            tracker.remove_active_channel(guild_id).await;
-
-                            // 使用済みスピーカーの情報をクリア
-                            tracker.clear_used_speakers(guild_id).await;
-                        }
-                        Err(e) => {
-                            println!("Failed to get Songbird client: {}", e);
-                        }
-                    }
-                }
-            }
-            None => {
-                println!("Failed to determine the count of non-bot users in the voice channel.");
             }
         }
     }
