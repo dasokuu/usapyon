@@ -55,9 +55,7 @@ impl EventHandler for UsapyonEventHandler {
                 Self::process_active_command(&ctx, &msg, guild_id).await;
             } else {
                 // コマンドでないメッセージの場合、読み上げリクエストとして処理します。
-                if let Err(e) =
-                    Self::process_user_speech_request(&ctx, &msg, guild_id).await
-                {
+                if let Err(e) = Self::process_user_speech_request(&ctx, &msg, guild_id).await {
                     println!("Error processing speech request: {}", e);
                 }
                 if !msg.attachments.is_empty() {
