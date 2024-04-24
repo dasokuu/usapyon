@@ -48,24 +48,22 @@ impl EventHandler for UsapyonEventHandler {
         // メッセージが送信されたギルドのIDを取得します。
         let guild_id = msg.guild_id.expect("Guild ID not found");
 
-        // ギルドIDが取得できた場合、非アクティブコマンドを先に処理します。
-        UsapyonEventHandler::process_inactive_command(&ctx, &msg, guild_id).await;
-
         // メッセージが送信されたテキストチャンネルがアクティブな状態か確認します。
-        if !is_active_text_channel(&ctx, guild_id, msg.channel_id).await {
-            return; // アクティブでなければ以降の処理は行いません。
-        }
-
-        // コマンドプレフィックス"!"で始まるメッセージの場合、アクティブコマンドを処理します。
-        if msg.content.starts_with("!") {
-            UsapyonEventHandler::process_active_command(&ctx, &msg, guild_id).await;
-        } else {
-            // コマンドでないメッセージの場合、読み上げリクエストとして処理します。
-            if let Err(e) =
-                UsapyonEventHandler::process_user_speech_request(&ctx, &msg, guild_id).await
-            {
-                println!("Error processing speech request: {}", e);
+        if is_active_text_channel(&ctx, guild_id, msg.channel_id).await {
+            // コマンドプレフィックス"!"で始まるメッセージの場合、アクティブコマンドを処理します。
+            if msg.content.starts_with("u!") {
+                UsapyonEventHandler::process_active_command(&ctx, &msg, guild_id).await;
+            } else {
+                // コマンドでないメッセージの場合、読み上げリクエストとして処理します。
+                if let Err(e) =
+                    UsapyonEventHandler::process_user_speech_request(&ctx, &msg, guild_id).await
+                {
+                    println!("Error processing speech request: {}", e);
+                }
             }
+        } else {
+            // ギルドIDが取得できた場合、非アクティブコマンドを先に処理します。
+            UsapyonEventHandler::process_inactive_command(&ctx, &msg, guild_id).await;
         }
     }
 
@@ -177,7 +175,7 @@ impl UsapyonEventHandler {
     /// * `guild_id` - ギルドID。
     async fn process_inactive_command(ctx: &Context, msg: &Message, guild_id: GuildId) {
         // joinコマンドは非アクティブな場合でも実行できる必要があるため、ここで処理。
-        if msg.content == "!join" {
+        if msg.content == "u!join" {
             if let Err(e) = join::join_command(&ctx, &msg).await {
                 println!("Error processing !join command: {}", e);
             }
@@ -188,7 +186,7 @@ impl UsapyonEventHandler {
             setstyle::set_style_command(ctx, msg, args, guild_id).await; // Assume this handles its errors internally
         } else {
             match msg.content.as_str() {
-                "!liststyles" => {
+                "u!liststyles" => {
                     liststyles::list_styles_command(ctx, msg).await; // Assume this handles its errors internally
                 }
                 _ => {}
@@ -204,15 +202,15 @@ impl UsapyonEventHandler {
     /// * `guild_id` - ギルドID。
     async fn process_active_command(ctx: &Context, msg: &Message, guild_id: GuildId) {
         match msg.content.as_str() {
-            "!leave" => {
+            "u!leave" => {
                 if let Err(e) = leave::leave_command(ctx, msg).await {
                     println!("Error when trying to leave voice channel: {}", e);
                 }
             }
-            "!skip" => {
+            "u!skip" => {
                 skip::skip_command(ctx, guild_id).await; // Assume this handles its errors internally
             }
-            "!clear" => {
+            "u!clear" => {
                 clear::clear_command(ctx, guild_id).await; // Assume this handles its errors internally
             }
             _ => {}
