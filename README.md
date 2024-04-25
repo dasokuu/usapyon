@@ -50,8 +50,16 @@ SCOPES
 
 例えば現時点では以下のようなURLになります。適宜その時点の最新のリリースページを参照してください。
 
+#### CPU版
+
 ```bash
 $ wget https://github.com/VOICEVOX/voicevox_engine/releases/download/0.18.1/voicevox_engine-linux-cpu-0.18.1.7z.001
+```
+
+#### GPU/CUDA版
+
+```bash
+wget https://github.com/VOICEVOX/voicevox_engine/releases/download/0.18.1/voicevox_engine-linux-nvidia-0.18.1.7z.001
 ```
 
 - 7z形式のファイルを解凍するためにp7zipをインストールします。
