@@ -10,7 +10,7 @@ pub struct RetryHandler {
 
 impl RetryHandler {
     /// 新しい `RetryHandler` を作成します。
-    /// 
+    ///
     /// ## Arguments
     /// * `max_attempts` - リトライの最大試行回数。
     /// * `base_delay` - リトライの最初の遅延時間（秒）。
@@ -22,10 +22,10 @@ impl RetryHandler {
     }
 
     /// 指数バックオフを使用してリトライ処理を行います。
-    /// 
+    ///
     /// ## Arguments
     /// * `task` - リトライ処理を行う関数。
-    /// 
+    ///
     /// ## Returns
     /// * `Result<T, Box<dyn Error + Send + Sync>>` - リトライ処理の結果。
     pub async fn execute_with_exponential_backoff_retry<F, Fut, T>(
@@ -41,7 +41,8 @@ impl RetryHandler {
             match task().await {
                 Ok(result) => return Ok(result),
                 Err(e) => {
-                    let delay = Duration::from_secs(self.base_delay_sec * 2_u64.pow(attempts as u32));
+                    let delay =
+                        Duration::from_secs(self.base_delay_sec * 2_u64.pow(attempts as u32));
                     println!(
                         "Attempt {} failed, retrying in {:?} seconds... Error: {}",
                         attempts + 1,

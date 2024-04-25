@@ -8,9 +8,10 @@ use std::{
     error::Error,
     sync::{
         atomic::{AtomicBool, Ordering},
-        Arc, Mutex,
+        Arc,
     },
 };
+use tokio::sync::Mutex;
 
 use crate::synthesis_queue::{SynthesisQueue, SynthesisRequest};
 use crate::{retry_handler::RetryHandler, serenity_utils::get_songbird_from_ctx};
@@ -42,7 +43,7 @@ impl SynthesisQueueManager {
         guild_id: GuildId,
     ) -> Result<(), Box<dyn Error + Send + Sync>> {
         let is_running_state = {
-            let mut states = self.guild_states.lock().expect("Mutex was poisoned");
+            let mut states = self.guild_states.lock().await;
             states
                 .entry(guild_id)
                 .or_insert_with(|| Arc::new(AtomicBool::new(false)))
@@ -194,11 +195,11 @@ impl TypeMapKey for SynthesisQueueManagerKey {
 async fn request_audio_query(
     client: &reqwest::Client,
     text: &str,
-    speaker: &str,
+    style_id: &str,
 ) -> Result<serde_json::Value, Box<dyn Error + Send + Sync>> {
     let audio_query_headers = reqwest::header::HeaderMap::new();
     let base = "http://localhost:50021/audio_query";
-    let params: HashMap<&str, &str> = [("text", text), ("speaker", speaker)]
+    let params: HashMap<&str, &str> = [("text", text), ("speaker", style_id)]
         .iter()
         .cloned()
         .collect();
@@ -222,6 +223,7 @@ async fn request_audio_query(
 /// ## Arguments
 /// * `client` - reqwestクライアント。
 /// * `audio_query_json` - オーディオクエリのJSON。
+/// * `style_id` - スタイルID（ユーザーに基づいた音声スタイルを指定）。
 /// * `is_cancellable` - キャンセル可能かどうか。
 ///
 /// ## Returns
@@ -229,16 +231,21 @@ async fn request_audio_query(
 async fn request_synthesis(
     client: &reqwest::Client,
     audio_query_json: serde_json::Value,
+    style_id: &str,
     is_cancellable: bool,
 ) -> Result<Bytes, Box<dyn Error + Send + Sync>> {
     let url = match is_cancellable {
         true => "http://localhost:50021/cancellable_synthesis",
         false => "http://localhost:50021/synthesis",
     };
+
     // 新しいリクエストのURLを作成。
     let synthesis_url = Url::parse_with_params(
         url,
-        &[("speaker", "1"), ("enable_interrogative_upspeak", "true")],
+        &[
+            ("speaker", style_id),
+            ("enable_interrogative_upspeak", "true"),
+        ],
     )
     .unwrap();
 
@@ -252,13 +259,12 @@ async fn request_synthesis(
         .headers(synthesis_headers)
         .json(&audio_query_json)
         .send()
-        .await
-        .unwrap();
+        .await?;
 
     // レスポンスの状態を確認。
     println!("status: {:?}", synthesis_res.status());
 
-    let synthesis_body_bytes = synthesis_res.bytes().await.unwrap();
+    let synthesis_body_bytes = synthesis_res.bytes().await?;
 
     Ok(synthesis_body_bytes)
 }
@@ -299,7 +305,12 @@ pub async fn request_synthesis_with_audio_query(
     // 失敗した場合は何度かリトライする。
     let result_synthesis = retry_config
         .execute_with_exponential_backoff_retry(|| {
-            request_synthesis(&client, audio_query_json.clone(), is_cancellable)
+            request_synthesis(
+                &client,
+                audio_query_json.clone(),
+                &request.speaker_id(),
+                is_cancellable,
+            )
         })
         .await;
 

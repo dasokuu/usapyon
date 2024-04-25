@@ -42,7 +42,9 @@ where
     R: Send,
 {
     let songbird = get_songbird_from_ctx(ctx).await?;
-    let handler_lock = songbird.get(guild_id).ok_or_else(|| "No Songbird handler found for the guild".to_string())?;
+    let handler_lock = songbird
+        .get(guild_id)
+        .ok_or_else(|| "No Songbird handler found for the guild".to_string())?;
     let handler = handler_lock.lock().await;
     Ok(func(handler))
 }
