@@ -255,6 +255,9 @@ impl UsapyonEventHandler {
             sanitized_content.clone()
         };
 
+        // 制限を取り払う場合。デバッグ用。
+        // let speech_text = sanitized_content.clone();
+
         let request = SynthesisRequest::new(speech_text.to_string(), style_id.to_string());
 
         // 音声合成キューマネージャーを取得し、リクエストを追加して処理を開始します。
