@@ -1,14 +1,14 @@
-# VoiceChatLoid
-python
+## VoiceChatLoid
 
-- `sudo apt-get install mecab mecab-ipadic mecab-ipadic-utf8 libmecab-dev`
-- `pip install -r requirements.txt`
+### Rustのインストール
 
-rust
+[Rustのインストールはこちら](https://www.rust-lang.org/tools/install)
 
-- [Rustのインストールはこちら](https://www.rust-lang.org/tools/install)
-- `sudo apt-get install pkg-config libssl-dev`
-- `sudo apt-get install cmake`
+### 依存関係のインストール
+
+```bash
+$ sudo apt install pkg-config libssl-dev cmake
+```
 
 ### ボットアカウント作成
 
@@ -62,13 +62,13 @@ $ wget https://github.com/VOICEVOX/voicevox_engine/releases/download/0.18.1/voic
 wget https://github.com/VOICEVOX/voicevox_engine/releases/download/0.18.1/voicevox_engine-linux-nvidia-0.18.1.7z.001
 ```
 
-- 7z形式のファイルを解凍するためにp7zipをインストールします。
+7z形式のファイルを解凍するためにp7zipをインストールします。
 
 ```bash
 $ sudo apt install p7zip-full
 ```
 
-- 7z形式のファイルを解凍します。解凍後のファイルはホームディレクトリに配置するように指定します。
+7z形式のファイルを解凍します。解凍後のファイルはホームディレクトリに配置するように指定します。
 ここで、`-o`オプションとパスの間にスペースがないことに注意してください。
 
 ```bash
