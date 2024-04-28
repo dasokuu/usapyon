@@ -21,11 +21,10 @@ use crate::{SynthesisQueueManagerKey, SynthesisRequest, VoiceChannelTrackerKey};
 
 pub struct UsapyonEventHandler;
 
-/// `Handler`は`EventHandler`の実装です。
 /// Discordからのイベントを処理するメソッドを提供します。
 #[async_trait]
 impl EventHandler for UsapyonEventHandler {
-    /// このメソッドは、ボットがDiscordの接続に成功したときに呼び出されます。
+    /// ボットがDiscordの接続に成功したときに実行されます。
     ///
     /// ## Arguments
     /// * `_` - ボットの状態に関する様々なデータのコンテキスト。
@@ -34,7 +33,7 @@ impl EventHandler for UsapyonEventHandler {
         println!("{} is connected!", ready.user.name);
     }
 
-    /// このメソッドは、ボットがメッセージを受信したときに呼び出されます。
+    /// ボットがメッセージを受信したときに実行されます。
     ///
     /// ## Arguments
     /// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
