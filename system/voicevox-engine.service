@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/home/ikeda/linux-cpu/run
+ExecStart=/usr/local/bin/linux-cpu/run
 
 [Install]
 WantedBy=multi-user.target
