@@ -1,12 +1,11 @@
 [Unit]
-Description=VoiceChatLoid
+Description=Usapyon
 After=network.target voicevox-engine.service
 
 [Service]
-Environment=MECABRC=/etc/mecabrc
 Type=simple
 User=ikeda
-ExecStart=/usr/bin/python3 /home/ikeda/VoiceChatLoid/main.py
+ExecStart=/usr/local/bin/usapyon
 Restart=on-failure
 RestartSec=10
 
