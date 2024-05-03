@@ -16,7 +16,7 @@ use std::collections::HashMap;
 
 use crate::serenity_utils::get_songbird_from_ctx;
 use crate::synthesis_queue_manager::SynthesisQueueManager;
-use crate::usapyon_config::{UsapyonConfig, UsapyonConfigKey};
+use crate::usapyon_config::get_usapyon_config;
 use crate::{SynthesisQueueManagerKey, SynthesisRequest, VoiceChannelTrackerKey};
 
 pub struct UsapyonEventHandler;
@@ -282,10 +282,8 @@ impl UsapyonEventHandler {
         message: &str,
     ) -> Result<(), Box<dyn Error + Send + Sync>> {
         let data_read = ctx.data.read().await;
-        let config = data_read
-            .get::<UsapyonConfigKey>()
-            .expect("UsapyonConfig not found");
-        let config = config.lock().await;
+        let config_lock = get_usapyon_config(&ctx).await;
+        let config = config_lock.lock().await;
         let style_id = config.get_guild_style(guild_id).await?;
         let credit_name = config.get_credit_name_by_style_id(style_id).await?;
 
@@ -545,21 +543,6 @@ pub async fn get_synthesis_queue_manager(ctx: &Context) -> Arc<SynthesisQueueMan
     data_read
         .get::<SynthesisQueueManagerKey>()
         .expect("SynthesisQueueManager not found")
-        .clone()
-}
-
-/// データコンテキストからUsapyonConfigインスタンスを取得します。
-///
-/// ## Arguments
-/// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
-///
-/// ## Returns
-/// * `Arc<Mutex<UsapyonConfig>>` - UsapyonConfigインスタンス。
-pub async fn get_usapyon_config(ctx: &Context) -> Arc<Mutex<UsapyonConfig>> {
-    let data_read = ctx.data.read().await;
-    data_read
-        .get::<UsapyonConfigKey>()
-        .expect("UsapyonConfig not found")
         .clone()
 }
 

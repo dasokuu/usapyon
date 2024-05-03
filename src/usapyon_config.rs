@@ -3,7 +3,7 @@ extern crate serde;
 extern crate serde_json;
 
 use serde::{Deserialize, Serialize};
-use serenity::model::id::{GuildId, UserId};
+use serenity::{all::Context, model::id::{GuildId, UserId}};
 use songbird::typemap::TypeMapKey;
 use std::collections::HashMap;
 use std::error::Error;
@@ -19,7 +19,7 @@ pub struct Style {
     pub style_type: String,
 }
 
-// スピーカー情報を格納する構造体
+// スタイル情報を格納する構造体
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Speaker {
     pub name: String,
@@ -39,7 +39,8 @@ impl Speaker {
         }
     }
 }
-// UsapyonConfigクラスの定義
+
+/// ユーザーとギルドのスタイル設定を管理する構造体。
 pub struct UsapyonConfig {
     pub speakers: Vec<Speaker>,
     pub user_style_settings: HashMap<UserId, i32>, // ユーザーIDとスタイルIDのマッピング
@@ -48,9 +49,18 @@ pub struct UsapyonConfig {
 }
 
 impl UsapyonConfig {
+    /// VoiceVoxサーバーのspeakersからスタイル情報を取得し、`UsapyonConfig`を初期化します。
+    /// 
+    /// ## Arguments
+    /// * `url` - VoiceVoxサーバーのspeakersエンドポイントのURL。
+    /// 
+    /// ## Returns
+    /// * `Result<UsapyonConfig, Box<dyn Error>>` - `UsapyonConfig`のインスタンス。
     pub async fn new(url: &str) -> Result<Self, Box<dyn Error>> {
         let resp = reqwest::get(url).await?.text().await?;
         let speakers: Vec<Speaker> = serde_json::from_str(&resp)?;
+
+        // SQLiteデータベースと接続。
         let conn = Arc::new(Mutex::new(init_db()?));
         Ok(UsapyonConfig {
             speakers,
@@ -151,6 +161,7 @@ impl UsapyonConfig {
     }
 }
 
+/// `UsapyonConfig`のインスタンスを格納するための`TypeMapKey`。
 pub struct UsapyonConfigKey;
 
 impl TypeMapKey for UsapyonConfigKey {
@@ -159,8 +170,14 @@ impl TypeMapKey for UsapyonConfigKey {
 
 use rusqlite::{params, Connection, Result};
 
+/// ユーザーごとのスタイル設定とギルドごとのスタイル設定を格納するデータベースを初期化します。
+/// 
+/// ## Returns
+/// * `Result<Connection>` - `rusqlite::Connection`のインスタンス。
 fn init_db() -> Result<Connection> {
     let conn = Connection::open("usapyon_styles.db")?;
+
+    // ユーザーごとのスタイル設定を格納するテーブルが存在しない場合は作成。
     conn.execute(
         "CREATE TABLE IF NOT EXISTS user_styles (
             user_id INTEGER PRIMARY KEY,
@@ -168,6 +185,8 @@ fn init_db() -> Result<Connection> {
         )",
         [],
     )?;
+
+    // ギルドごとのスタイル設定を格納するテーブルが存在しない場合は作成。
     conn.execute(
         "CREATE TABLE IF NOT EXISTS guild_styles (
             guild_id INTEGER PRIMARY KEY,
@@ -176,4 +195,20 @@ fn init_db() -> Result<Connection> {
         [],
     )?;
     Ok(conn)
+}
+
+/// データコンテキストから`UsapyonConfig`を取得します。
+///
+/// ## Arguments
+/// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
+///
+/// ## Returns
+/// * `Arc<Mutex<UsapyonConfig>>` - `UsapyonConfig`のインスタンス。
+pub async fn get_usapyon_config(ctx: &Context) -> Arc<Mutex<UsapyonConfig>> {
+    println!("called get_usapyon_config");
+    let data_read = ctx.data.read().await;
+    data_read
+        .get::<UsapyonConfigKey>()
+        .expect("UsapyonConfig not found")
+        .clone()
 }

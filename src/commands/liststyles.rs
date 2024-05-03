@@ -1,13 +1,10 @@
 use serenity::all::{Context, Message};
 
-use crate::usapyon_config::UsapyonConfigKey;
+use crate::usapyon_config::get_usapyon_config;
 
 pub async fn list_styles_command(ctx: &Context, msg: &Message) {
-    let data_read = ctx.data.read().await;
-    let config = data_read
-        .get::<UsapyonConfigKey>()
-        .expect("Config should be available");
-    let config = config.lock().await;
+    let config_lock = get_usapyon_config(ctx).await;
+    let config = config_lock.lock().await;
 
     let mut response = String::from("Available Styles:\n");
     for speaker in &config.speakers {
