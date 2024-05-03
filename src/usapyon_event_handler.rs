@@ -1,6 +1,8 @@
-use crate::commands::{clear, join, leave, liststyles, setstyle, skip};
-use std::error::Error;
-use std::fs::File;
+use crate::{
+    commands::{clear, join, leave, liststyles, setstyle, skip},
+    env,
+};
+use std::{error::Error, fs::File, path::PathBuf};
 
 use regex::Regex;
 use serde_json::{from_reader, Value};
@@ -447,9 +449,16 @@ impl TypeMapKey for EmojiData {
     type Value = HashMap<String, String>;
 }
 
-// JSON ファイルから絵文字データを読み込む
+/// JSON ファイルから絵文字データを読み込みます。
+///
+/// ## Returns
+/// * `HashMap<String, String>` - 絵文字データ。
 pub fn load_emoji_data() -> HashMap<String, String> {
-    let file = File::open("src/emoji_ja.json").expect("file should open read only");
+    // 環境変数に"EMOJI_DATA_PATH"が設定されていない場合は、相対パス"resources"を使用します。
+    let dir_path = env::var("EMOJI_DATA_DIR").unwrap_or("resources".to_string());
+    let mut file_path = PathBuf::from(dir_path);
+    file_path.push("emoji_ja.json");
+    let file = File::open(file_path).expect("file should open read only");
     let json: HashMap<String, Value> = from_reader(file).expect("file should be proper JSON");
     json.iter()
         .filter_map(|(key, val)| {
