@@ -1,5 +1,5 @@
 use serenity::model::id::GuildId;
-use serenity::prelude::Context;
+use serenity::prelude::{Context, TypeMapKey};
 use songbird::Call;
 use songbird::{Songbird, SongbirdKey};
 use std::sync::Arc;
@@ -47,4 +47,23 @@ where
         .ok_or_else(|| "No Songbird handler found for the guild".to_string())?;
     let handler = handler_lock.lock().await;
     Ok(func(handler))
+}
+
+/// データコンテキストから、指定されたキーに関連付けられたデータを取得します。
+///
+/// ## Arguments
+/// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
+///
+/// ## Returns
+/// * `Arc<T>` - 指定されたキーに関連付けられたデータ。
+pub async fn get_data_from_ctx<T: TypeMapKey>(ctx: &Context) -> T::Value
+where
+    T::Value: Clone,
+{
+    println!("called get_data_from_ctx");
+    let data_read = ctx.data.read().await;
+    data_read
+        .get::<T>()
+        .expect("Failed to retrieve data from context")
+        .clone()
 }

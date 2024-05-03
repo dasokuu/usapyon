@@ -9,6 +9,7 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use crate::serenity_utils::get_data_from_ctx;
 
 // スタイル情報を格納する構造体
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -206,9 +207,5 @@ fn init_db() -> Result<Connection> {
 /// * `Arc<Mutex<UsapyonConfig>>` - `UsapyonConfig`のインスタンス。
 pub async fn get_usapyon_config(ctx: &Context) -> Arc<Mutex<UsapyonConfig>> {
     println!("called get_usapyon_config");
-    let data_read = ctx.data.read().await;
-    data_read
-        .get::<UsapyonConfigKey>()
-        .expect("UsapyonConfig not found")
-        .clone()
+    get_data_from_ctx::<UsapyonConfigKey>(ctx).await
 }
