@@ -89,10 +89,7 @@ impl EventHandler for UsapyonEventHandler {
         };
 
         // ボットが参加しているボイスチャンネルIDを取得
-        let data_read = ctx.data.read().await;
-        let tracker = data_read
-            .get::<VoiceChannelTrackerKey>()
-            .expect("VoiceChannelTracker not found");
+        let tracker = get_data_from_ctx::<VoiceChannelTrackerKey>(&ctx).await;
         let bot_voice_channel_id = tracker.get_active_voice_channel(guild_id).await;
 
         // ユーザーがボットかどうかを確認
@@ -110,10 +107,7 @@ impl EventHandler for UsapyonEventHandler {
                         println!("Error leaving voice channel: {:?}", why);
                     }
 
-                    let data = ctx.data.read().await;
-                    let tracker = data
-                        .get::<VoiceChannelTrackerKey>()
-                        .expect("VoiceChannelTracker should be available");
+                    let tracker = get_data_from_ctx::<VoiceChannelTrackerKey>(&ctx).await;
 
                     // ボイスチャンネルのアクティブ情報を削除
                     tracker.remove_active_channel(guild_id).await;
@@ -229,8 +223,7 @@ impl UsapyonEventHandler {
         let credit_name = config.get_credit_name_by_style_id(style_id).await?;
 
         // VoiceChannelTrackerを使用してスピーカーが新しく使用されるかチェック
-        let data = ctx.data.read().await;
-        let tracker = data.get::<VoiceChannelTrackerKey>().unwrap();
+        let tracker = get_data_from_ctx::<VoiceChannelTrackerKey>(&ctx).await;
         if tracker
             .mark_speaker_as_used(guild_id, credit_name.clone())
             .await
@@ -281,14 +274,13 @@ impl UsapyonEventHandler {
         guild_id: GuildId,
         message: &str,
     ) -> Result<(), Box<dyn Error + Send + Sync>> {
-        let data_read = ctx.data.read().await;
         let config_lock = get_data_from_ctx::<UsapyonConfigKey>(&ctx).await;
         let config = config_lock.lock().await;
         let style_id = config.get_guild_style(guild_id).await?;
         let credit_name = config.get_credit_name_by_style_id(style_id).await?;
 
         // VoiceChannelTrackerを使用してスピーカーが新しく使用されるかチェック
-        let tracker = data_read.get::<VoiceChannelTrackerKey>().unwrap();
+        let tracker = get_data_from_ctx::<VoiceChannelTrackerKey>(&ctx).await;
         if tracker
             .mark_speaker_as_used(guild_id, credit_name.clone())
             .await
@@ -546,10 +538,8 @@ async fn is_active_text_channel(
     guild_id: GuildId,
     text_channel_id: ChannelId,
 ) -> bool {
-    let data_read = ctx.data.read().await;
-    data_read
-        .get::<VoiceChannelTrackerKey>()
-        .expect("VoiceChannelTracker not found")
+    let tracker = get_data_from_ctx::<VoiceChannelTrackerKey>(&ctx).await;
+    tracker
         .is_active_text_channel(guild_id, text_channel_id)
         .await
 }

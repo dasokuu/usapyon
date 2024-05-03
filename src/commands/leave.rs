@@ -42,10 +42,7 @@ pub async fn leave_command(ctx: &Context, msg: &Message) -> Result<(), String> {
         return Err("Failed to leave voice channel.".into());
     }
 
-    let data = ctx.data.read().await;
-    let tracker = data
-        .get::<VoiceChannelTrackerKey>()
-        .expect("VoiceChannelTracker should be available");
+    let tracker = get_data_from_ctx::<VoiceChannelTrackerKey>(&ctx).await;
 
     // ボイスチャンネルのアクティブ情報を削除
     tracker.remove_active_channel(guild_id).await;

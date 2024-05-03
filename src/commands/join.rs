@@ -1,7 +1,7 @@
 use serenity::all::{Context, Message};
 
 use crate::{
-    serenity_utils::{get_songbird_from_ctx, with_songbird_handler, get_data_from_ctx},
+    serenity_utils::{get_data_from_ctx, get_songbird_from_ctx, with_songbird_handler},
     voice_channel_tracker::VoiceChannelTrackerKey,
     SynthesisQueueManagerKey,
 };
@@ -15,10 +15,7 @@ use crate::{
 /// * `Result<(), String>` - ボイスチャンネルへの参加操作が成功した場合は Ok(()) を、失敗した場合は Err を返します。
 pub async fn join_command(ctx: &Context, msg: &Message) -> Result<(), String> {
     let guild_id = msg.guild_id.ok_or("Message must be sent in a server")?;
-    let data = ctx.data.read().await;
-    let tracker = data
-        .get::<VoiceChannelTrackerKey>()
-        .expect("VoiceChannelTracker should be available");
+    let tracker = get_data_from_ctx::<VoiceChannelTrackerKey>(&ctx).await;
     // 使用済みスピーカーの情報をクリア
     tracker.clear_used_speakers(guild_id).await;
     let result = with_songbird_handler(&ctx, guild_id, |handler| {
@@ -62,11 +59,8 @@ pub async fn join_command(ctx: &Context, msg: &Message) -> Result<(), String> {
                         .deafen(true)
                         .await
                         .map_err(|e| format!("Failed to deafen: {:?}", e))?;
-                    ctx.data
-                        .read()
-                        .await
-                        .get::<VoiceChannelTrackerKey>()
-                        .ok_or("VoiceChannelTracker not found")?
+                    let tracker = get_data_from_ctx::<VoiceChannelTrackerKey>(&ctx).await;
+                    tracker
                         .set_active_channel(guild_id, voice_channel_id, text_channel_id)
                         .await;
                     Ok(())
