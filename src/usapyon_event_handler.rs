@@ -16,7 +16,7 @@ use std::collections::HashMap;
 
 use crate::serenity_utils::get_songbird_from_ctx;
 use crate::synthesis_queue_manager::SynthesisQueueManager;
-use crate::usapyon_config::UsapyonConfigKey;
+use crate::usapyon_config::{UsapyonConfig, UsapyonConfigKey};
 use crate::{SynthesisQueueManagerKey, SynthesisRequest, VoiceChannelTrackerKey};
 
 pub struct UsapyonEventHandler;
@@ -222,15 +222,14 @@ impl UsapyonEventHandler {
         }
         // ユーザーの style_id を取得
         let user_id = msg.author.id;
-        let data = ctx.data.read().await;
-        let config = data
-            .get::<UsapyonConfigKey>()
-            .expect("Config should be available");
-        let config = config.lock().await;
+        
+        let config_lock = get_usapyon_config(&ctx).await;
+        let config = config_lock.lock().await;
         let style_id = config.get_user_style(user_id, guild_id).await?;
         let credit_name = config.get_credit_name_by_style_id(style_id).await?;
 
         // VoiceChannelTrackerを使用してスピーカーが新しく使用されるかチェック
+        let data = ctx.data.read().await;
         let tracker = data.get::<VoiceChannelTrackerKey>().unwrap();
         if tracker
             .mark_speaker_as_used(guild_id, credit_name.clone())
@@ -477,6 +476,15 @@ pub fn load_emoji_data() -> HashMap<String, String> {
         .collect()
 }
 
+/// データコンテキスト、ギルドID、ユーザーIDを指定して、メンバーを取得します。
+/// 
+/// ## Arguments
+/// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
+/// * `guild_id` - ギルドID。
+/// * `user_id` - ユーザーID。
+/// 
+/// ## Returns
+/// * `Option<Member>` - メンバー、またはNone。
 fn get_member_from_ctx(ctx: &Context, guild_id: GuildId, user_id: UserId) -> Option<Member> {
     let guild = match ctx.cache.guild(guild_id) {
         Some(guild) => guild,
@@ -531,12 +539,27 @@ fn count_non_bot_users_in_bot_voice_channel(ctx: &Context, guild_id: GuildId) ->
 /// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
 ///
 /// ## Returns
-/// `Arc<SynthesisQueueManager>` - 音声合成キューのマネージャー。
+/// * `Arc<SynthesisQueueManager>` - 音声合成キューのマネージャー。
 pub async fn get_synthesis_queue_manager(ctx: &Context) -> Arc<SynthesisQueueManager> {
     let data_read = ctx.data.read().await;
     data_read
         .get::<SynthesisQueueManagerKey>()
         .expect("SynthesisQueueManager not found")
+        .clone()
+}
+
+/// データコンテキストからUsapyonConfigインスタンスを取得します。
+///
+/// ## Arguments
+/// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
+///
+/// ## Returns
+/// * `Arc<Mutex<UsapyonConfig>>` - UsapyonConfigインスタンス。
+pub async fn get_usapyon_config(ctx: &Context) -> Arc<Mutex<UsapyonConfig>> {
+    let data_read = ctx.data.read().await;
+    data_read
+        .get::<UsapyonConfigKey>()
+        .expect("UsapyonConfig not found")
         .clone()
 }
 
@@ -549,7 +572,7 @@ pub async fn get_synthesis_queue_manager(ctx: &Context) -> Arc<SynthesisQueueMan
 /// * `text_channel_id` - テキストチャンネルID。
 ///
 /// ## Returns
-/// `bool` - 指定したテキストチャンネルがアクティブなチャンネルであるかどうか。
+/// * `bool` - 指定したテキストチャンネルがアクティブなチャンネルであるかどうか。
 async fn is_active_text_channel(
     ctx: &Context,
     guild_id: GuildId,
