@@ -1,9 +1,9 @@
 use serenity::all::{Context, Message};
 
 use crate::{
-    serenity_utils::{get_songbird_from_ctx, with_songbird_handler},
-    usapyon_event_handler::get_synthesis_queue_manager,
+    serenity_utils::{get_songbird_from_ctx, with_songbird_handler, get_data_from_ctx},
     voice_channel_tracker::VoiceChannelTrackerKey,
+    SynthesisQueueManagerKey,
 };
 
 /// ボイスチャンネルへの参加と同時にアクティブなチャンネルの設定を行います。
@@ -34,7 +34,7 @@ pub async fn join_command(ctx: &Context, msg: &Message) -> Result<(), String> {
     }
 
     // 音声合成キューをクリア。
-    let synthesis_queue_manager = get_synthesis_queue_manager(&ctx).await;
+    let synthesis_queue_manager = get_data_from_ctx::<SynthesisQueueManagerKey>(&ctx).await;
     synthesis_queue_manager
         .cancel_current_request_and_clear_queue(guild_id)
         .await;

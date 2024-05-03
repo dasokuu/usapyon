@@ -1,4 +1,4 @@
-use crate::usapyon_config::get_usapyon_config;
+use crate::{serenity_utils::get_data_from_ctx, usapyon_config::UsapyonConfigKey};
 use serenity::all::{Context, GuildId, Message, UserId};
 
 pub async fn set_style_command(ctx: &Context, msg: &Message, args: Vec<&str>, guild_id: GuildId) {
@@ -29,7 +29,7 @@ async fn set_user_style(ctx: &Context, msg: &Message, style_id_str: &str, user_i
         }
     };
 
-    let config_lock = get_usapyon_config(ctx).await;
+    let config_lock = get_data_from_ctx::<UsapyonConfigKey>(ctx).await;
     let config = config_lock.lock().await;
 
     // Clone necessary data before the mutable borrow
@@ -79,7 +79,7 @@ async fn set_guild_style(ctx: &Context, msg: &Message, style_id_str: &str, guild
         }
     };
 
-    let config_lock = get_usapyon_config(ctx).await;
+    let config_lock = get_data_from_ctx::<UsapyonConfigKey>(ctx).await;
     let config = config_lock.lock().await;
 
     let speakers = config.speakers.clone();

@@ -1,9 +1,9 @@
 use serenity::all::{Context, Message};
 
-use crate::usapyon_config::get_usapyon_config;
+use crate::{serenity_utils::get_data_from_ctx, usapyon_config::UsapyonConfigKey};
 
 pub async fn list_styles_command(ctx: &Context, msg: &Message) {
-    let config_lock = get_usapyon_config(ctx).await;
+    let config_lock = get_data_from_ctx::<UsapyonConfigKey>(ctx).await;
     let config = config_lock.lock().await;
 
     let mut response = String::from("Available Styles:\n");

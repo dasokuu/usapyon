@@ -1,9 +1,8 @@
 use serenity::all::{Context, Message};
 
 use crate::{
-    serenity_utils::{get_songbird_from_ctx, with_songbird_handler},
-    usapyon_event_handler::get_synthesis_queue_manager,
-    voice_channel_tracker::VoiceChannelTrackerKey,
+    serenity_utils::{get_data_from_ctx, get_songbird_from_ctx, with_songbird_handler},
+    SynthesisQueueManagerKey, VoiceChannelTrackerKey,
 };
 
 /// ボイスチャンネルからの退出処理を行います。
@@ -29,7 +28,7 @@ pub async fn leave_command(ctx: &Context, msg: &Message) -> Result<(), String> {
     }
 
     // 音声合成キューをクリア。
-    let synthesis_queue_manager = get_synthesis_queue_manager(&ctx).await;
+    let synthesis_queue_manager = get_data_from_ctx::<SynthesisQueueManagerKey>(&ctx).await;
     synthesis_queue_manager
         .cancel_current_request_and_clear_queue(guild_id)
         .await;

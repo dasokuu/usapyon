@@ -3,13 +3,12 @@ extern crate serde;
 extern crate serde_json;
 
 use serde::{Deserialize, Serialize};
-use serenity::{all::Context, model::id::{GuildId, UserId}};
+use serenity::model::id::{GuildId, UserId};
 use songbird::typemap::TypeMapKey;
 use std::collections::HashMap;
 use std::error::Error;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use crate::serenity_utils::get_data_from_ctx;
 
 // スタイル情報を格納する構造体
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -51,10 +50,10 @@ pub struct UsapyonConfig {
 
 impl UsapyonConfig {
     /// VoiceVoxサーバーのspeakersからスタイル情報を取得し、`UsapyonConfig`を初期化します。
-    /// 
+    ///
     /// ## Arguments
     /// * `url` - VoiceVoxサーバーのspeakersエンドポイントのURL。
-    /// 
+    ///
     /// ## Returns
     /// * `Result<UsapyonConfig, Box<dyn Error>>` - `UsapyonConfig`のインスタンス。
     pub async fn new(url: &str) -> Result<Self, Box<dyn Error>> {
@@ -172,7 +171,7 @@ impl TypeMapKey for UsapyonConfigKey {
 use rusqlite::{params, Connection, Result};
 
 /// ユーザーごとのスタイル設定とギルドごとのスタイル設定を格納するデータベースを初期化します。
-/// 
+///
 /// ## Returns
 /// * `Result<Connection>` - `rusqlite::Connection`のインスタンス。
 fn init_db() -> Result<Connection> {
@@ -196,16 +195,4 @@ fn init_db() -> Result<Connection> {
         [],
     )?;
     Ok(conn)
-}
-
-/// データコンテキストから`UsapyonConfig`を取得します。
-///
-/// ## Arguments
-/// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
-///
-/// ## Returns
-/// * `Arc<Mutex<UsapyonConfig>>` - `UsapyonConfig`のインスタンス。
-pub async fn get_usapyon_config(ctx: &Context) -> Arc<Mutex<UsapyonConfig>> {
-    println!("called get_usapyon_config");
-    get_data_from_ctx::<UsapyonConfigKey>(ctx).await
 }

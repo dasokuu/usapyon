@@ -1,7 +1,6 @@
 use crate::commands::{clear, join, leave, liststyles, setstyle, skip};
 use std::error::Error;
 use std::fs::File;
-use std::sync::Arc;
 
 use regex::Regex;
 use serde_json::{from_reader, Value};
@@ -14,10 +13,11 @@ use serenity::{
 };
 use std::collections::HashMap;
 
-use crate::serenity_utils::get_songbird_from_ctx;
-use crate::synthesis_queue_manager::SynthesisQueueManager;
-use crate::usapyon_config::get_usapyon_config;
-use crate::{SynthesisQueueManagerKey, SynthesisRequest, VoiceChannelTrackerKey};
+use crate::{
+    serenity_utils::{get_data_from_ctx, get_songbird_from_ctx},
+    usapyon_config::UsapyonConfigKey,
+    SynthesisQueueManagerKey, SynthesisRequest, VoiceChannelTrackerKey,
+};
 
 pub struct UsapyonEventHandler;
 
@@ -222,8 +222,8 @@ impl UsapyonEventHandler {
         }
         // ユーザーの style_id を取得
         let user_id = msg.author.id;
-        
-        let config_lock = get_usapyon_config(&ctx).await;
+
+        let config_lock = get_data_from_ctx::<UsapyonConfigKey>(&ctx).await;
         let config = config_lock.lock().await;
         let style_id = config.get_user_style(user_id, guild_id).await?;
         let credit_name = config.get_credit_name_by_style_id(style_id).await?;
@@ -259,7 +259,7 @@ impl UsapyonEventHandler {
         let request = SynthesisRequest::new(speech_text.to_string(), style_id.to_string());
 
         // 音声合成キューマネージャーを取得し、リクエストを追加して処理を開始します。
-        let synthesis_queue_manager = get_synthesis_queue_manager(&ctx).await;
+        let synthesis_queue_manager = get_data_from_ctx::<SynthesisQueueManagerKey>(&ctx).await;
         synthesis_queue_manager
             .add_request_to_synthesis_queue(guild_id, request)
             .await;
@@ -282,7 +282,7 @@ impl UsapyonEventHandler {
         message: &str,
     ) -> Result<(), Box<dyn Error + Send + Sync>> {
         let data_read = ctx.data.read().await;
-        let config_lock = get_usapyon_config(&ctx).await;
+        let config_lock = get_data_from_ctx::<UsapyonConfigKey>(&ctx).await;
         let config = config_lock.lock().await;
         let style_id = config.get_guild_style(guild_id).await?;
         let credit_name = config.get_credit_name_by_style_id(style_id).await?;
@@ -325,7 +325,7 @@ impl UsapyonEventHandler {
         let request = SynthesisRequest::new(speech_text.to_string(), style_id.to_string());
 
         // 音声合成キューマネージャーを取得し、リクエストを追加して処理を開始します。
-        let synthesis_queue_manager = get_synthesis_queue_manager(&ctx).await;
+        let synthesis_queue_manager = get_data_from_ctx::<SynthesisQueueManagerKey>(&ctx).await;
         synthesis_queue_manager
             .add_request_to_synthesis_queue(guild_id, request)
             .await;
@@ -475,12 +475,12 @@ pub fn load_emoji_data() -> HashMap<String, String> {
 }
 
 /// データコンテキスト、ギルドID、ユーザーIDを指定して、メンバーを取得します。
-/// 
+///
 /// ## Arguments
 /// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
 /// * `guild_id` - ギルドID。
 /// * `user_id` - ユーザーID。
-/// 
+///
 /// ## Returns
 /// * `Option<Member>` - メンバー、またはNone。
 fn get_member_from_ctx(ctx: &Context, guild_id: GuildId, user_id: UserId) -> Option<Member> {
@@ -529,21 +529,6 @@ fn count_non_bot_users_in_bot_voice_channel(ctx: &Context, guild_id: GuildId) ->
         .count();
 
     Some(non_bot_users_count)
-}
-
-/// データコンテキストから音声合成キューのマネージャーを取得します。
-///
-/// ## Arguments
-/// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
-///
-/// ## Returns
-/// * `Arc<SynthesisQueueManager>` - 音声合成キューのマネージャー。
-pub async fn get_synthesis_queue_manager(ctx: &Context) -> Arc<SynthesisQueueManager> {
-    let data_read = ctx.data.read().await;
-    data_read
-        .get::<SynthesisQueueManagerKey>()
-        .expect("SynthesisQueueManager not found")
-        .clone()
 }
 
 /// 指定したテキストチャンネルがアクティブなチャンネルであるかどうかを返します。
