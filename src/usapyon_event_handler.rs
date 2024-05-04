@@ -329,6 +329,7 @@ impl UsapyonEventHandler {
 
         Ok(())
     }
+    
     async fn process_attachments(
         ctx: &Context,
         msg: &Message,

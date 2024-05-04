@@ -60,7 +60,9 @@ pub async fn get_data_from_ctx<T: TypeMapKey>(ctx: &Context) -> T::Value
 where
     T::Value: Clone,
 {
-    println!("called get_data_from_ctx");
+    // どの型で呼び出されたか表示。
+    println!("Called with type: {:?}", std::any::type_name::<T>());
+    
     let data_read = ctx.data.read().await;
     data_read
         .get::<T>()

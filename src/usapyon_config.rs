@@ -2,6 +2,7 @@ extern crate reqwest;
 extern crate serde;
 extern crate serde_json;
 
+use rusqlite::{params, Connection, Result};
 use serde::{Deserialize, Serialize};
 use serenity::model::id::{GuildId, UserId};
 use songbird::typemap::TypeMapKey;
@@ -10,28 +11,47 @@ use std::error::Error;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-// スタイル情報を格納する構造体
+/// スタイル情報を格納する構造体。
+/// VoiceVoxサーバーのspeakersエンドポイントから取得したデータのstyleを格納します。
+/// 各フィールドは、jsonのキーに対応しています。
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Style {
+    /// スタイル名。
     pub name: String,
+
+    /// スタイルID。
     pub id: i32,
+
+    /// スタイルの種類。（talkだけ？）
     #[serde(rename = "type")]
     pub style_type: String,
 }
 
-// スタイル情報を格納する構造体
+/// スピーカー情報を格納する構造体。
+/// VoiceVoxサーバーのspeakersエンドポイントから取得したデータを格納します。
+/// 各フィールドは、jsonのキーに対応しています。
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Speaker {
+    /// スピーカー名。
     pub name: String,
+
+    /// スピーカーのUUID。
     pub speaker_uuid: String,
+
+    /// スピーカーのスタイル情報。
     pub styles: Vec<Style>,
+
+    /// スピーカーのバージョン？？？
     pub version: String,
+
     pub supported_features: HashMap<String, String>,
-    pub credit_name: Option<String>, // オプションとしてクレジット名を追加
 }
 
 impl Speaker {
-    // クレジット名を返すメソッド、特定の条件で異なる名前を返す
+    /// クレジット名を返します。特定のスピーカーは、名前とクレジット名が異なる場合があります。
+    ///
+    /// ## Returns
+    /// * `String` - クレジット名。
     pub fn get_credit_name(&self) -> String {
         match self.name.as_str() {
             "もち子さん" => "もち子(cv 明日葉よもぎ)".to_string(),
@@ -42,9 +62,16 @@ impl Speaker {
 
 /// ユーザーとギルドのスタイル設定を管理する構造体。
 pub struct UsapyonConfig {
+    /// スピーカー情報のリスト。
     pub speakers: Vec<Speaker>,
-    pub user_style_settings: HashMap<UserId, i32>, // ユーザーIDとスタイルIDのマッピング
-    pub guild_style_settings: HashMap<GuildId, i32>, // ギルドIDとスタイルIDのマッピング
+
+    /// ユーザーIDとスタイルIDのマッピング。
+    pub user_style_settings: HashMap<UserId, i32>,
+
+    /// ギルドIDとスタイルIDのマッピング。
+    pub guild_style_settings: HashMap<GuildId, i32>,
+
+    /// SQLiteデータベースの接続。
     conn: Arc<Mutex<rusqlite::Connection>>,
 }
 
@@ -167,8 +194,6 @@ pub struct UsapyonConfigKey;
 impl TypeMapKey for UsapyonConfigKey {
     type Value = Arc<Mutex<UsapyonConfig>>;
 }
-
-use rusqlite::{params, Connection, Result};
 
 /// ユーザーごとのスタイル設定とギルドごとのスタイル設定を格納するデータベースを初期化します。
 ///
