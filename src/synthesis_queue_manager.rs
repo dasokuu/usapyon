@@ -13,8 +13,14 @@ use std::{
 };
 use tokio::sync::Mutex;
 
-use crate::synthesis_queue::{SynthesisQueue, SynthesisRequest};
-use crate::{retry_handler::RetryHandler, serenity_utils::get_songbird_from_ctx};
+use crate::{
+    synthesis_queue::{SynthesisContext, SynthesisQueue},
+    UsapyonConfigKey, VoiceChannelTrackerKey,
+    {
+        retry_handler::RetryHandler,
+        serenity_utils::{get_data_from_ctx, get_songbird_from_ctx},
+    },
+};
 
 /// ギルドごとの音声合成の進行状況を管理する構造体。
 #[derive(Clone)]
@@ -66,7 +72,7 @@ impl SynthesisQueueManager {
 
         let handle = tokio::spawn({
             async move {
-                SynthesisQueueManager::process_synthesis_queue(
+                Self::process_synthesis_queue(
                     &ctx_clone,
                     guild_id,
                     synthesis_queue,
@@ -90,7 +96,7 @@ impl SynthesisQueueManager {
     pub async fn add_request_to_synthesis_queue(
         &self,
         guild_id: GuildId,
-        request: SynthesisRequest,
+        request: SynthesisContext,
     ) {
         self.synthesis_queue
             .add_request_to_synthesis_queue(guild_id, request)
@@ -140,7 +146,7 @@ impl SynthesisQueueManager {
             // オーディオクエリの要求と音声合成の要求をまとめて中断可能にします。
             let (abort_handle, abort_registration) = AbortHandle::new_pair();
             let future = Abortable::new(
-                request_synthesis_with_audio_query(request, true),
+                request_synthesis_with_audio_query(request.clone(), true),
                 abort_registration,
             );
 
@@ -151,11 +157,45 @@ impl SynthesisQueueManager {
             match future.await {
                 Ok(Ok(synthesis_body_bytes)) => match get_songbird_from_ctx(&ctx).await {
                     Ok(songbird) => {
+                        println!("Synthesis completed for guild {}", guild_id);
+
+                        let config_lock = get_data_from_ctx::<UsapyonConfigKey>(&ctx).await;
+                        let config = config_lock.lock().await;
+
+                        println!("success to get UsapyonConfig");
+
+                        // request.speaker_id()は文字列なので、i32に変換。
+                        let credit_name = config
+                            .get_credit_name_by_style_id(request.speaker_id().parse().unwrap())
+                            .await?;
+
+                        println!("Credit name: {}", credit_name);
+
+                        // VoiceChannelTrackerを使用してスピーカーが新しく使用されるかチェック
+                        let tracker = get_data_from_ctx::<VoiceChannelTrackerKey>(&ctx).await;
+                        if tracker
+                            .mark_speaker_as_used(guild_id, credit_name.clone())
+                            .await
+                        {
+                            // 新しいスピーカーの場合、クレジットを表示
+                            let credit_message = format!("VOICEVOX:{}", credit_name);
+                            // msg.channel_id.say(&ctx.http, &credit_message).await?;
+                            // アクティブなテキストチャンネルを取得。
+                            if let Some(text_channel_id) =
+                                tracker.get_active_text_channel(guild_id).await
+                            {
+                                println!("Credit message: {}", credit_message);
+                                text_channel_id.say(&ctx.http, &credit_message).await.ok();
+                            }
+                        }
+
+                        let source =
+                            songbird::input::Input::from(Box::from(synthesis_body_bytes.to_vec()));
+
                         let handler_lock =
                             songbird.get(guild_id).expect("No Songbird handler found");
                         let mut handler = handler_lock.lock().await;
-                        let source =
-                            songbird::input::Input::from(Box::from(synthesis_body_bytes.to_vec()));
+
                         handler.enqueue_input(source).await;
 
                         synthesis_queue.remove_active_request(guild_id).await;
@@ -278,7 +318,7 @@ async fn request_synthesis(
 /// ## Returns
 /// * `Result<Bytes, Box<dyn Error + Send + Sync>>` - 合成した音声のバイトデータ、またはエラー。
 pub async fn request_synthesis_with_audio_query(
-    request: SynthesisRequest,
+    request: SynthesisContext,
     is_cancellable: bool,
 ) -> Result<Bytes, Box<dyn Error + Send + Sync>> {
     let client = reqwest::Client::new();

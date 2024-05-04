@@ -18,7 +18,7 @@ use std::collections::HashMap;
 use crate::{
     serenity_utils::{get_data_from_ctx, get_songbird_from_ctx},
     usapyon_config::UsapyonConfigKey,
-    SynthesisQueueManagerKey, SynthesisRequest, VoiceChannelTrackerKey,
+    SynthesisContext, SynthesisQueueManagerKey, VoiceChannelTrackerKey,
 };
 
 pub struct UsapyonEventHandler;
@@ -219,22 +219,6 @@ impl UsapyonEventHandler {
         // ユーザーの style_id を取得
         let user_id = msg.author.id;
 
-        let config_lock = get_data_from_ctx::<UsapyonConfigKey>(&ctx).await;
-        let config = config_lock.lock().await;
-        let style_id = config.get_user_style(user_id, guild_id).await?;
-        let credit_name = config.get_credit_name_by_style_id(style_id).await?;
-
-        // VoiceChannelTrackerを使用してスピーカーが新しく使用されるかチェック
-        let tracker = get_data_from_ctx::<VoiceChannelTrackerKey>(&ctx).await;
-        if tracker
-            .mark_speaker_as_used(guild_id, credit_name.clone())
-            .await
-        {
-            // 新しいスピーカーの場合、クレジットを表示
-            let credit_message = format!("VOICEVOX:{}", credit_name);
-            msg.channel_id.say(&ctx.http, &credit_message).await?;
-        }
-
         println!("msg.content: {}", msg.content);
 
         let sanitized_content: String = sanitize_message(&ctx, &msg.content, guild_id).await;
@@ -251,7 +235,12 @@ impl UsapyonEventHandler {
         // 制限を取り払う場合。デバッグ用。
         // let speech_text = sanitized_content.clone();
 
-        let request = SynthesisRequest::new(speech_text.to_string(), style_id.to_string());
+        // let config_lock = get_data_from_ctx::<UsapyonConfigKey>(&ctx).await;
+        // let config = config_lock.lock().await;
+        // let style_id = config.get_user_style(user_id, guild_id).await?;
+        let style_id = get_style_id(&ctx, guild_id, user_id).await?;
+
+        let request = SynthesisContext::new(speech_text.to_string(), style_id.to_string());
 
         // 音声合成キューマネージャーを取得し、リクエストを追加して処理を開始します。
         let synthesis_queue_manager = get_data_from_ctx::<SynthesisQueueManagerKey>(&ctx).await;
@@ -276,32 +265,33 @@ impl UsapyonEventHandler {
         guild_id: GuildId,
         message: &str,
     ) -> Result<(), Box<dyn Error + Send + Sync>> {
-        let config_lock = get_data_from_ctx::<UsapyonConfigKey>(&ctx).await;
-        let config = config_lock.lock().await;
-        let style_id = config.get_guild_style(guild_id).await?;
-        let credit_name = config.get_credit_name_by_style_id(style_id).await?;
+        // let config_lock = get_data_from_ctx::<UsapyonConfigKey>(&ctx).await;
+        // let config = config_lock.lock().await;
+        // let style_id = config.get_guild_style(guild_id).await?;
+        // let credit_name = config.get_credit_name_by_style_id(style_id).await?;
 
-        // VoiceChannelTrackerを使用してスピーカーが新しく使用されるかチェック
-        let tracker = get_data_from_ctx::<VoiceChannelTrackerKey>(&ctx).await;
-        if tracker
-            .mark_speaker_as_used(guild_id, credit_name.clone())
-            .await
-        {
-            // 新しいスピーカーの場合、クレジットを表示
-            let credit_message = format!("VOICEVOX:{}", credit_name);
+        // // VoiceChannelTrackerを使用してスピーカーが新しく使用されるかチェック
+        // let tracker = get_data_from_ctx::<VoiceChannelTrackerKey>(&ctx).await;
+        // if tracker
+        //     .mark_speaker_as_used(guild_id, credit_name.clone())
+        //     .await
+        // {
+        //     // 新しいスピーカーの場合、クレジットを表示
+        //     let credit_message = format!("VOICEVOX:{}", credit_name);
 
-            // テキストチャンネルIDを取得してメッセージを送信
-            if let Some(text_channel_id) = tracker.get_active_text_channel(guild_id).await {
-                if let Ok(channel) = ChannelId::new(text_channel_id.into())
-                    .to_channel(&ctx.http)
-                    .await
-                {
-                    if let Channel::Guild(channel) = channel {
-                        channel.say(&ctx.http, &credit_message).await?;
-                    }
-                }
-            }
-        }
+        //     // テキストチャンネルIDを取得してメッセージを送信
+        //     if let Some(text_channel_id) = tracker.get_active_text_channel(guild_id).await {
+        //         if let Ok(channel) = ChannelId::new(text_channel_id.into())
+        //             .to_channel(&ctx.http)
+        //             .await
+        //         {
+        //             if let Channel::Guild(channel) = channel {
+        //                 channel.say(&ctx.http, &credit_message).await?;
+        //             }
+        //         }
+        //     }
+        // }
+        let style_id = get_style_id(&ctx, guild_id, UserId::default()).await?;
 
         println!("msg.content: {}", message);
 
@@ -316,7 +306,7 @@ impl UsapyonEventHandler {
             sanitized_content.clone()
         };
 
-        let request = SynthesisRequest::new(speech_text.to_string(), style_id.to_string());
+        let request = SynthesisContext::new(speech_text.to_string(), style_id.to_string());
 
         // 音声合成キューマネージャーを取得し、リクエストを追加して処理を開始します。
         let synthesis_queue_manager = get_data_from_ctx::<SynthesisQueueManagerKey>(&ctx).await;
@@ -329,7 +319,7 @@ impl UsapyonEventHandler {
 
         Ok(())
     }
-    
+
     async fn process_attachments(
         ctx: &Context,
         msg: &Message,
@@ -552,4 +542,26 @@ async fn is_active_text_channel(
     tracker
         .is_active_text_channel(guild_id, text_channel_id)
         .await
+}
+
+/// データコンテキスト、ギルドID、ユーザーIDを指定し、スタイルIDを取得します。
+///
+/// ## Arguments
+/// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
+/// * `guild_id` - ギルドID。
+/// * `user_id` - ユーザーID。
+///
+/// ## Returns
+/// * `Result<String, Box<dyn Error + Send + Sync>>` - スタイルID、またはエラー。
+async fn get_style_id(
+    ctx: &Context,
+    guild_id: GuildId,
+    user_id: UserId,
+) -> Result<i32, Box<dyn Error + Send + Sync>> {
+    let config_lock = get_data_from_ctx::<UsapyonConfigKey>(&ctx).await;
+    let config = config_lock.lock().await;
+    match config.get_user_style(user_id, guild_id).await {
+        Ok(style_id) => Ok(style_id),
+        Err(e) => Err(Box::new(e) as Box<dyn Error + Send + Sync>),
+    }
 }

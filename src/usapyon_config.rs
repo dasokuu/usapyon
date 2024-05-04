@@ -52,6 +52,7 @@ impl Speaker {
     ///
     /// ## Returns
     /// * `String` - クレジット名。
+    // TODO: "VOICEVOX:"というプレフィックスを付けたい。
     pub fn get_credit_name(&self) -> String {
         match self.name.as_str() {
             "もち子さん" => "もち子(cv 明日葉よもぎ)".to_string(),
@@ -106,6 +107,13 @@ impl UsapyonConfig {
         Ok(())
     }
 
+    /// ユーザーIDとギルドIDを指定して、ユーザーに設定されたスタイルIDを取得します。
+    /// 
+    /// ## Arguments
+    /// * `user_id` - ユーザーID。
+    /// 
+    /// ## Returns
+    /// * `Result<i32>` - スタイルID。
     pub async fn get_user_style(&self, user_id: UserId, guild_id: GuildId) -> Result<i32> {
         let conn = self.conn.lock().await;
         let user_style_result = conn.query_row(

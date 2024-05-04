@@ -16,7 +16,7 @@ use dotenv::dotenv;
 use serenity::{model::prelude::*, prelude::*};
 use songbird::SerenityInit;
 use std::{env, sync::Arc};
-use synthesis_queue::SynthesisRequest;
+use synthesis_queue::SynthesisContext;
 use synthesis_queue_manager::{SynthesisQueueManager, SynthesisQueueManagerKey};
 use usapyon_config::{UsapyonConfig, UsapyonConfigKey};
 use usapyon_event_handler::{load_emoji_data, EmojiData, UsapyonEventHandler};

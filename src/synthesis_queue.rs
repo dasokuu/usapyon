@@ -5,16 +5,19 @@ use std::{
     sync::Arc,
 };
 
-/// 音声合成リクエストを表す構造体
+/// 音声合成リクエストに必要な情報を格納する構造体。
 #[derive(Clone)]
-pub struct SynthesisRequest {
+pub struct SynthesisContext {
+    /// 読み上げるテキスト。
     text: String,
+
+    /// スタイルID。
     speaker_id: String,
 }
 
-impl SynthesisRequest {
+impl SynthesisContext {
     pub fn new(text: String, speaker_id: String) -> Self {
-        SynthesisRequest { text, speaker_id }
+        SynthesisContext { text, speaker_id }
     }
 
     /// 読み上げるテキストを取得します。
@@ -36,7 +39,7 @@ impl SynthesisRequest {
 
 /// ギルドごとにリクエストのキューを管理するための構造体。
 pub struct SynthesisQueue {
-    queues: Mutex<HashMap<GuildId, VecDeque<SynthesisRequest>>>,
+    queues: Mutex<HashMap<GuildId, VecDeque<SynthesisContext>>>,
     active_requests: Mutex<HashMap<GuildId, AbortHandle>>,
 }
 
@@ -59,7 +62,7 @@ impl SynthesisQueue {
     pub async fn add_request_to_synthesis_queue(
         &self,
         guild_id: GuildId,
-        request: SynthesisRequest,
+        request: SynthesisContext,
     ) {
         let mut queues = self.queues.lock().await;
         queues.entry(guild_id).or_default().push_back(request);
@@ -94,7 +97,7 @@ impl SynthesisQueue {
     ///
     /// ## Returns
     /// * `Option<SynthesisRequest>` - 次のリクエスト。キューが空の場合は `None`。
-    pub async fn dequeue_request(&self, guild_id: GuildId) -> Option<SynthesisRequest> {
+    pub async fn dequeue_request(&self, guild_id: GuildId) -> Option<SynthesisContext> {
         let mut queues = self.queues.lock().await;
         if let Some(queue) = queues.get_mut(&guild_id) {
             queue.pop_front()
