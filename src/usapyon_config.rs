@@ -67,9 +67,12 @@ pub struct UsapyonConfig {
     pub speakers: Vec<Speaker>,
 
     /// ユーザーIDとスタイルIDのマッピング。
+    /// ユーザーのスタイルは、ギルドをまたいで共有されます。
+    /// ユーザーのスタイルが存在しない場合は、ギルドのスタイルが使用されます。
     pub user_style_settings: HashMap<UserId, i32>,
 
     /// ギルドIDとスタイルIDのマッピング。
+    /// ギルドのスタイルは、アナウンスを再生する際に使用されます。
     pub guild_style_settings: HashMap<GuildId, i32>,
 
     /// SQLiteデータベースの接続。
@@ -107,7 +110,17 @@ impl UsapyonConfig {
         Ok(())
     }
 
+    pub async fn set_guild_style(&self, guild_id: GuildId, style_id: i32) -> Result<()> {
+        let conn = self.conn.lock().await;
+        conn.execute(
+            "REPLACE INTO guild_styles (guild_id, style_id) VALUES (?1, ?2)",
+            params![i64::from(guild_id), style_id],
+        )?;
+        Ok(())
+    }
+
     /// ユーザーIDとギルドIDを指定して、ユーザーに設定されたスタイルIDを取得します。
+    /// ユーザーに設定されたスタイルが見つからない場合は、ギルドに設定されたスタイルIDを取得します。
     /// 
     /// ## Arguments
     /// * `user_id` - ユーザーID。
@@ -150,15 +163,6 @@ impl UsapyonConfig {
                 Err(*Box::new(e))
             }
         }
-    }
-
-    pub async fn set_guild_style(&self, guild_id: GuildId, style_id: i32) -> Result<()> {
-        let conn = self.conn.lock().await;
-        conn.execute(
-            "REPLACE INTO guild_styles (guild_id, style_id) VALUES (?1, ?2)",
-            params![i64::from(guild_id), style_id],
-        )?;
-        Ok(())
     }
 
     pub async fn get_guild_style(&self, guild_id: GuildId) -> Result<i32> {

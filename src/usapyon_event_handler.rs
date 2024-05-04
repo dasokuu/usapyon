@@ -235,10 +235,7 @@ impl UsapyonEventHandler {
         // 制限を取り払う場合。デバッグ用。
         // let speech_text = sanitized_content.clone();
 
-        // let config_lock = get_data_from_ctx::<UsapyonConfigKey>(&ctx).await;
-        // let config = config_lock.lock().await;
-        // let style_id = config.get_user_style(user_id, guild_id).await?;
-        let style_id = get_style_id(&ctx, guild_id, user_id).await?;
+        let style_id = get_user_style(&ctx, user_id, guild_id).await?;
 
         let request = SynthesisContext::new(speech_text.to_string(), style_id.to_string());
 
@@ -265,33 +262,7 @@ impl UsapyonEventHandler {
         guild_id: GuildId,
         message: &str,
     ) -> Result<(), Box<dyn Error + Send + Sync>> {
-        // let config_lock = get_data_from_ctx::<UsapyonConfigKey>(&ctx).await;
-        // let config = config_lock.lock().await;
-        // let style_id = config.get_guild_style(guild_id).await?;
-        // let credit_name = config.get_credit_name_by_style_id(style_id).await?;
-
-        // // VoiceChannelTrackerを使用してスピーカーが新しく使用されるかチェック
-        // let tracker = get_data_from_ctx::<VoiceChannelTrackerKey>(&ctx).await;
-        // if tracker
-        //     .mark_speaker_as_used(guild_id, credit_name.clone())
-        //     .await
-        // {
-        //     // 新しいスピーカーの場合、クレジットを表示
-        //     let credit_message = format!("VOICEVOX:{}", credit_name);
-
-        //     // テキストチャンネルIDを取得してメッセージを送信
-        //     if let Some(text_channel_id) = tracker.get_active_text_channel(guild_id).await {
-        //         if let Ok(channel) = ChannelId::new(text_channel_id.into())
-        //             .to_channel(&ctx.http)
-        //             .await
-        //         {
-        //             if let Channel::Guild(channel) = channel {
-        //                 channel.say(&ctx.http, &credit_message).await?;
-        //             }
-        //         }
-        //     }
-        // }
-        let style_id = get_style_id(&ctx, guild_id, UserId::default()).await?;
+        let style_id = get_guild_style(&ctx, guild_id).await?;
 
         println!("msg.content: {}", message);
 
@@ -548,19 +519,39 @@ async fn is_active_text_channel(
 ///
 /// ## Arguments
 /// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
-/// * `guild_id` - ギルドID。
 /// * `user_id` - ユーザーID。
+/// * `guild_id` - ギルドID。
 ///
 /// ## Returns
 /// * `Result<String, Box<dyn Error + Send + Sync>>` - スタイルID、またはエラー。
-async fn get_style_id(
+async fn get_user_style(
     ctx: &Context,
-    guild_id: GuildId,
     user_id: UserId,
+    guild_id: GuildId,
 ) -> Result<i32, Box<dyn Error + Send + Sync>> {
     let config_lock = get_data_from_ctx::<UsapyonConfigKey>(&ctx).await;
     let config = config_lock.lock().await;
     match config.get_user_style(user_id, guild_id).await {
+        Ok(style_id) => Ok(style_id),
+        Err(e) => Err(Box::new(e) as Box<dyn Error + Send + Sync>),
+    }
+}
+
+/// データコンテキストとギルドIDを指定し、スタイルIDを取得します。
+/// 
+/// ## Arguments
+/// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
+/// * `guild_id` - ギルドID。
+/// 
+/// ## Returns
+/// * `Result<String, Box<dyn Error + Send + Sync>>` - スタイルID、またはエラー。
+async fn get_guild_style(
+    ctx: &Context,
+    guild_id: GuildId,
+) -> Result<i32, Box<dyn Error + Send + Sync>> {
+    let config_lock = get_data_from_ctx::<UsapyonConfigKey>(&ctx).await;
+    let config = config_lock.lock().await;
+    match config.get_guild_style(guild_id).await {
         Ok(style_id) => Ok(style_id),
         Err(e) => Err(Box::new(e) as Box<dyn Error + Send + Sync>),
     }
