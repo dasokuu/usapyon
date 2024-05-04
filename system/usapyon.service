@@ -4,7 +4,6 @@ After=network.target voicevox-engine.service
 
 [Service]
 Type=simple
-User=ikeda
 ExecStart=/usr/local/bin/usapyon
 Restart=on-failure
 RestartSec=10
