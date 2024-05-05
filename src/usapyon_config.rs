@@ -11,6 +11,8 @@ use std::error::Error;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
+const DEFAULT_STYLE_ID: i32 = 3;
+
 /// スタイル情報を格納する構造体。
 /// VoiceVoxサーバーのspeakersエンドポイントから取得したデータのstyleを格納します。
 /// 各フィールドは、jsonのキーに対応しています。
@@ -121,71 +123,90 @@ impl UsapyonConfig {
 
     /// ユーザーIDとギルドIDを指定して、ユーザーに設定されたスタイルIDを取得します。
     /// ユーザーに設定されたスタイルが見つからない場合は、ギルドに設定されたスタイルIDを取得します。
-    /// 
+    ///
     /// ## Arguments
     /// * `user_id` - ユーザーID。
-    /// 
+    ///
     /// ## Returns
     /// * `Result<i32>` - スタイルID。
     pub async fn get_user_style(&self, user_id: UserId, guild_id: GuildId) -> Result<i32> {
-        let conn = self.conn.lock().await;
-        let user_style_result = conn.query_row(
-            "SELECT style_id FROM user_styles WHERE user_id = ?1",
-            params![i64::from(user_id)],
-            |row| row.get::<_, i32>(0),
-        );
+        // let conn = self.conn.lock().await;
+        // let user_style_result = conn.query_row(
+        //     "SELECT style_id FROM user_styles WHERE user_id = ?1",
+        //     params![i64::from(user_id)],
+        //     |row| row.get::<_, i32>(0),
+        // );
 
-        match user_style_result {
-            Ok(style_id) => Ok(style_id),
-            Err(rusqlite::Error::QueryReturnedNoRows) => {
-                // If no user-specific style is found, check for a guild-specific style in the database
-                let guild_style_result = conn.query_row(
-                    "SELECT style_id FROM guild_styles WHERE guild_id = ?1",
-                    params![i64::from(guild_id)],
-                    |row| row.get::<_, i32>(0),
-                );
-                match guild_style_result {
-                    Ok(style_id) => Ok(style_id),
-                    Err(rusqlite::Error::QueryReturnedNoRows) => {
-                        // If no guild-specific style is found either, return a default style ID
-                        Ok(3)
-                    }
-                    Err(e) => {
-                        // Handle other database errors
-                        eprintln!("Database error when fetching guild style: {}", e);
-                        Err(*Box::new(e))
-                    }
-                }
-            }
-            Err(e) => {
-                // Handle other database errors
-                eprintln!("Database error when fetching user style: {}", e);
-                Err(*Box::new(e))
-            }
+        // match user_style_result {
+        //     Ok(style_id) => Ok(style_id),
+        //     Err(rusqlite::Error::QueryReturnedNoRows) => {
+        //         // If no user-specific style is found, check for a guild-specific style in the database
+        //         let guild_style_result = conn.query_row(
+        //             "SELECT style_id FROM guild_styles WHERE guild_id = ?1",
+        //             params![i64::from(guild_id)],
+        //             |row| row.get::<_, i32>(0),
+        //         );
+        //         match guild_style_result {
+        //             Ok(style_id) => Ok(style_id),
+        //             Err(rusqlite::Error::QueryReturnedNoRows) => {
+        //                 // If no guild-specific style is found either, return a default style ID
+        //                 Ok(3)
+        //             }
+        //             Err(e) => {
+        //                 // Handle other database errors
+        //                 eprintln!("Database error when fetching guild style: {}", e);
+        //                 Err(*Box::new(e))
+        //             }
+        //         }
+        //     }
+        //     Err(e) => {
+        //         // Handle other database errors
+        //         eprintln!("Database error when fetching user style: {}", e);
+        //         Err(*Box::new(e))
+        //     }
+        // }
+        let user_style_query = "SELECT style_id FROM user_styles WHERE user_id = ?1";
+        let user_style_result = self
+            .get_style_id(user_style_query, i64::from(user_id))
+            .await?;
+
+        if let Some(style_id) = user_style_result {
+            Ok(style_id)
+        }
+        // ユーザースタイルが見つからなかった場合、ギルドスタイルを取得。
+        else {
+            println!("User style not found. Fetching guild style.");
+            self.get_guild_style(guild_id).await
         }
     }
 
     pub async fn get_guild_style(&self, guild_id: GuildId) -> Result<i32> {
         // キャッシュにない場合はデータベースから取得
-        let conn = self.conn.lock().await;
-        let guild_style_result = conn.query_row(
-            "SELECT style_id FROM guild_styles WHERE guild_id = ?1",
-            params![i64::from(guild_id)],
-            |row| row.get::<_, i32>(0),
-        );
+        // let conn = self.conn.lock().await;
+        // let guild_style_result = conn.query_row(
+        //     "SELECT style_id FROM guild_styles WHERE guild_id = ?1",
+        //     params![i64::from(guild_id)],
+        //     |row| row.get::<_, i32>(0),
+        // );
 
-        match guild_style_result {
-            Ok(style_id) => Ok(style_id),
-            Err(rusqlite::Error::QueryReturnedNoRows) => {
-                // ギルドにスタイルが設定されていない場合はデフォルト値を返す
-                Ok(3)
-            }
-            Err(e) => {
-                // その他のデータベースエラーを処理
-                eprintln!("Database error when fetching guild style: {}", e);
-                Err(*Box::new(e))
-            }
-        }
+        // match guild_style_result {
+        //     Ok(style_id) => Ok(style_id),
+        //     Err(rusqlite::Error::QueryReturnedNoRows) => {
+        //         // ギルドにスタイルが設定されていない場合はデフォルト値を返す
+        //         Ok(3)
+        //     }
+        //     Err(e) => {
+        //         // その他のデータベースエラーを処理
+        //         eprintln!("Database error when fetching guild style: {}", e);
+        //         Err(*Box::new(e))
+        //     }
+        // }
+
+        let guild_style_query = "SELECT style_id FROM guild_styles WHERE guild_id = ?1";
+        let guild_style_result = self
+            .get_style_id(guild_style_query, i64::from(guild_id))
+            .await?;
+        Ok(guild_style_result.unwrap_or(DEFAULT_STYLE_ID))
     }
 
     pub async fn get_credit_name_by_style_id(&self, style_id: i32) -> Result<String, String> {
@@ -197,6 +218,25 @@ impl UsapyonConfig {
             }
         }
         Err("Style ID not found".to_string())
+    }
+
+    /// スタイルIDを取得します。データベースに行が存在しない場合は`Ok(None)`を返します。
+    /// それ以外のエラーが発生した場合は、エラーをそのまま返します。
+    ///
+    /// ## Arguments
+    /// * `query` - スタイルIDを取得するためのクエリ。
+    /// * `param` - クエリに渡すパラメータ。
+    ///
+    /// ## Returns
+    /// * `Result<i32>` - スタイルID。
+    async fn get_style_id(&self, query: &str, param: i64) -> Result<Option<i32>> {
+        let conn = self.conn.lock().await;
+        let mut stmt = conn.prepare(query)?;
+        let mut rows = stmt.query(params![param])?;
+        match rows.next()? {
+            Some(row) => Ok(Some(row.get(0)?)),
+            None => Ok(None),
+        }
     }
 }
 
