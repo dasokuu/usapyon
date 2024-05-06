@@ -18,7 +18,8 @@ use crate::{
     retry_handler::RetryHandler,
     serenity_utils::{get_data_from_ctx, get_songbird_from_ctx},
     synthesis_queue::{SynthesisContext, SynthesisQueue},
-    CreditDisplayHandlerKey, UsapyonConfigKey, VoiceChannelTrackerKey,
+    usapyon_config::get_credit_name_by_style_id,
+    CreditDisplayHandlerKey, VoiceChannelTrackerKey,
 };
 
 /// ギルドごとの音声合成の進行状況を管理する構造体。
@@ -156,32 +157,8 @@ impl SynthesisQueueManager {
             match future.await {
                 Ok(Ok(synthesis_body_bytes)) => match get_songbird_from_ctx(&ctx).await {
                     Ok(songbird) => {
-                        // クレジット表示関連。ここから。
-                        let config_lock = get_data_from_ctx::<UsapyonConfigKey>(&ctx).await;
-                        let config = config_lock.lock().await;
-
-                        // request.speaker_id()は文字列なので、i32に変換。
-                        let credit_name = config
-                            .get_credit_name_by_style_id(request.speaker_id().parse().unwrap())
-                            .await?;
-
                         // VoiceChannelTrackerを使用してスピーカーが新しく使用されるかチェック
                         let tracker = get_data_from_ctx::<VoiceChannelTrackerKey>(&ctx).await;
-                        if tracker
-                            .mark_speaker_as_used(guild_id, credit_name.clone())
-                            .await
-                        {
-                            // 新しいスピーカーの場合、クレジットを表示
-                            let credit_message = format!("VOICEVOX:{}", credit_name);
-                            // msg.channel_id.say(&ctx.http, &credit_message).await?;
-                            // アクティブなテキストチャンネルを取得。
-                            if let Some(text_channel_id) =
-                                tracker.get_active_text_channel(guild_id).await
-                            {
-                                text_channel_id.say(&ctx.http, &credit_message).await.ok();
-                            }
-                        }
-                        // ここまで。
 
                         let source =
                             songbird::input::Input::from(Box::from(synthesis_body_bytes.to_vec()));
@@ -192,8 +169,12 @@ impl SynthesisQueueManager {
 
                         let track_handle = handler.enqueue_input(source).await;
 
-                        // TrackHandleのUUIDを表示。
-                        println!("TrackHandle UUID: {:?}", track_handle.uuid());
+                        // request.speaker_id()は文字列なので、i32に変換。
+                        let credit_name: String = get_credit_name_by_style_id(
+                            &ctx,
+                            request.speaker_id().parse().unwrap(),
+                        )
+                        .await?;
 
                         let credit_handler_map_lock =
                             get_data_from_ctx::<CreditDisplayHandlerKey>(&ctx).await;

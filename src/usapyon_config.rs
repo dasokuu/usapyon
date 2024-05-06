@@ -4,12 +4,17 @@ extern crate serde_json;
 
 use rusqlite::{params, Connection, Result};
 use serde::{Deserialize, Serialize};
-use serenity::model::id::{GuildId, UserId};
+use serenity::{
+    model::id::{GuildId, UserId},
+    prelude::Context,
+};
 use songbird::typemap::TypeMapKey;
 use std::collections::HashMap;
 use std::error::Error;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+
+use crate::serenity_utils::get_data_from_ctx;
 
 /// デフォルトのスタイルID。
 /// "3"はずんだもんノーマル。
@@ -161,7 +166,7 @@ impl UsapyonConfig {
         Ok(guild_style_result.unwrap_or(DEFAULT_STYLE_ID))
     }
 
-    pub async fn get_credit_name_by_style_id(&self, style_id: i32) -> Result<String, String> {
+    async fn get_credit_name_by_style_id(&self, style_id: i32) -> Result<String, String> {
         for speaker in &self.speakers {
             for style in &speaker.styles {
                 if style.id == style_id {
@@ -224,4 +229,18 @@ fn init_db() -> Result<Connection> {
         [],
     )?;
     Ok(conn)
+}
+
+/// スタイルIDに対応するクレジット名を取得します。
+///
+/// ## Arguments
+/// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
+/// * `style_id` - スタイルID。
+///
+/// ## Returns
+/// * `Result<String, String>` - クレジット名。
+pub async fn get_credit_name_by_style_id(ctx: &Context, style_id: i32) -> Result<String, String> {
+    let config_lock = get_data_from_ctx::<UsapyonConfigKey>(ctx).await;
+    let config = config_lock.lock().await;
+    config.get_credit_name_by_style_id(style_id).await
 }

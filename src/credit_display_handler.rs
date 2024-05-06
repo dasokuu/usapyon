@@ -75,8 +75,6 @@ impl SongbirdEventHandler for CreditDisplayHandler {
                             let track_id = track_handle.uuid();
                             let credits = self.credits.lock().await;
                             if let Some(credit_info) = credits.get(&track_id) {
-                                println!("VOICEVOX:{}", credit_info.credit_text);
-
                                 let credit_message =
                                     format!("VOICEVOX:{}", credit_info.credit_text);
 
