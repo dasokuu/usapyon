@@ -67,10 +67,12 @@ pub async fn join_command(ctx: &Context, msg: &Message) -> Result<(), String> {
                         .deafen(true)
                         .await
                         .map_err(|e| format!("Failed to deafen: {:?}", e))?;
+
+                    // トラック再生時のイベントハンドラを登録。
                     let mut handler = call.lock().await;
                     handler.add_global_event(
                         Event::Track(TrackEvent::Play),
-                        CreditDisplayHandler
+                        CreditDisplayHandler::new(),
                     );
 
                     let tracker = get_data_from_ctx::<VoiceChannelTrackerKey>(&ctx).await;

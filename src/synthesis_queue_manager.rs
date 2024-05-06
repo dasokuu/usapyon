@@ -192,7 +192,10 @@ impl SynthesisQueueManager {
                             songbird.get(guild_id).expect("No Songbird handler found");
                         let mut handler = handler_lock.lock().await;
 
-                        handler.enqueue_input(source).await;
+                        let track_handle = handler.enqueue_input(source).await;
+                        
+                        // TrackHandleのUUIDを表示。
+                        println!("TrackHandle UUID: {:?}", track_handle.uuid());
 
                         synthesis_queue.remove_active_request(guild_id).await;
                     }
