@@ -193,7 +193,7 @@ impl SynthesisQueueManager {
                         let mut handler = handler_lock.lock().await;
 
                         let track_handle = handler.enqueue_input(source).await;
-                        
+
                         // TrackHandleのUUIDを表示。
                         println!("TrackHandle UUID: {:?}", track_handle.uuid());
 

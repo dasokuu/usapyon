@@ -62,7 +62,7 @@ where
 {
     // どの型で呼び出されたか表示。
     // println!("Called with type: {:?}", std::any::type_name::<T>());
-    
+
     let data_read = ctx.data.read().await;
     data_read
         .get::<T>()

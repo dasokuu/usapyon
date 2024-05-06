@@ -2,9 +2,10 @@ use serenity::all::{Context, Message};
 use songbird::{Event, TrackEvent};
 
 use crate::{
+    credit_display_handler::CreditDisplayHandler,
     serenity_utils::{get_data_from_ctx, get_songbird_from_ctx, with_songbird_handler},
     voice_channel_tracker::VoiceChannelTrackerKey,
-    SynthesisQueueManagerKey, credit_display_handler::CreditDisplayHandler,
+    SynthesisQueueManagerKey,
 };
 
 /// ボイスチャンネルへの参加と同時にアクティブなチャンネルの設定を行います。

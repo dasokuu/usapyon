@@ -6,7 +6,7 @@ use std::{collections::HashMap, sync::Arc};
 /// ギルドごとのアクティブなボイスチャンネルとテキストチャンネルのトラッキングを行う構造体。
 pub struct VoiceChannelTracker {
     /// 各ギルドでアクティブなボイスチャンネルとテキストチャンネルのマップ。
-    /// 
+    ///
     /// キーはギルドID、値はボイスチャンネルIDとテキストチャンネルIDのタプルです。
     pub active_channels: Mutex<HashMap<GuildId, (ChannelId, ChannelId)>>, // (VoiceChannelId, TextChannelId)
 
@@ -61,11 +61,11 @@ impl VoiceChannelTracker {
     }
 
     /// 指定したスピーカーを、使用済みとして登録します。
-    /// 
+    ///
     /// ## Arguments
     /// * `guild_id` - ギルドID。
     /// * `speaker_name` - スピーカー名。
-    /// 
+    ///
     /// ## Returns
     /// * `bool` - スピーカーが既に使用されている場合は `true`、そうでない場合は `false`。
     pub async fn mark_speaker_as_used(&self, guild_id: GuildId, speaker_name: String) -> bool {
@@ -75,7 +75,7 @@ impl VoiceChannelTracker {
     }
 
     /// 指定したギルドに対して使用済みのスピーカーをクリアします。
-    /// 
+    ///
     /// ## Arguments
     /// * `guild_id` - ギルドID。
     pub async fn clear_used_speakers(&self, guild_id: GuildId) {

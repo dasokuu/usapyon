@@ -1,6 +1,7 @@
 // 話者IDを選択できるようにしたい。
 
 mod commands;
+mod credit_display_handler;
 mod retry_handler;
 mod serenity_utils;
 mod synthesis_queue;
@@ -8,7 +9,6 @@ mod synthesis_queue_manager;
 mod usapyon_config;
 mod usapyon_event_handler;
 mod voice_channel_tracker;
-mod credit_display_handler;
 
 extern crate dotenv;
 extern crate serenity;

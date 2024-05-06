@@ -538,11 +538,11 @@ async fn get_user_style(
 }
 
 /// データコンテキストとギルドIDを指定し、スタイルIDを取得します。
-/// 
+///
 /// ## Arguments
 /// * `ctx` - ボットの状態に関する様々なデータのコンテキスト。
 /// * `guild_id` - ギルドID。
-/// 
+///
 /// ## Returns
 /// * `Result<String, Box<dyn Error + Send + Sync>>` - スタイルID、またはエラー。
 async fn get_guild_style(
