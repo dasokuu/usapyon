@@ -1,12 +1,11 @@
-use serenity::all::{Context, Message};
-use songbird::{Event, TrackEvent};
-
 use crate::{
     credit_display_handler::CreditDisplayHandler,
     serenity_utils::{get_data_from_ctx, get_songbird_from_ctx, with_songbird_handler},
     voice_channel_tracker::VoiceChannelTrackerKey,
-    SynthesisQueueManagerKey,
+    CreditDisplayHandlerKey, SynthesisQueueManagerKey,
 };
+use serenity::all::{Context, Message};
+use songbird::{Event, TrackEvent};
 
 /// ボイスチャンネルへの参加と同時にアクティブなチャンネルの設定を行います。
 /// ## Arguments
@@ -69,12 +68,19 @@ pub async fn join_command(ctx: &Context, msg: &Message) -> Result<(), String> {
                         .await
                         .map_err(|e| format!("Failed to deafen: {:?}", e))?;
 
+                    let credit_handler = CreditDisplayHandler::new();
+
+                    // ギルドIDとCreditDisplayHandlerのマップに登録。
+                    let credit_handler_map =
+                        get_data_from_ctx::<CreditDisplayHandlerKey>(&ctx).await;
+                    credit_handler_map
+                        .lock()
+                        .await
+                        .insert(guild_id, credit_handler.clone());
+
                     // トラック再生時のイベントハンドラを登録。
                     let mut handler = call.lock().await;
-                    handler.add_global_event(
-                        Event::Track(TrackEvent::Play),
-                        CreditDisplayHandler::new(),
-                    );
+                    handler.add_global_event(Event::Track(TrackEvent::Play), credit_handler);
 
                     let tracker = get_data_from_ctx::<VoiceChannelTrackerKey>(&ctx).await;
                     tracker

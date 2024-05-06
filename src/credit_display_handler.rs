@@ -1,3 +1,4 @@
+use serenity::{model::id::GuildId, prelude::TypeMapKey};
 use songbird::{
     events::{Event, EventContext, EventHandler as SongbirdEventHandler},
     tracks::PlayMode,
@@ -7,6 +8,7 @@ use tokio::sync::Mutex;
 use uuid::Uuid;
 
 /// クレジット情報を表示するためのイベントハンドラ。
+#[derive(Clone)]
 pub struct CreditDisplayHandler {
     /// トラックIDとクレジット情報のマップ。
     credits: Arc<Mutex<HashMap<Uuid, String>>>,
@@ -33,12 +35,15 @@ impl SongbirdEventHandler for CreditDisplayHandler {
         Box::pin(async move {
             if let EventContext::Track(track_events) = ctx {
                 for (track_state, track_handle) in (*track_events).iter() {
+                    // playingを表示
+                    println!("{:?}", track_state.playing);
+                    
                     match track_state.playing {
                         PlayMode::Play => {
                             let track_id = track_handle.uuid();
                             let credits = self.credits.lock().await;
                             if let Some(credit) = credits.get(&track_id) {
-                                println!("Credit: {}", credit);
+                                println!("VOICEVOX:{}", credit);
                             } else {
                                 println!("Credit not found for track ID: {}", track_id);
                             }
@@ -62,4 +67,21 @@ impl CreditDisplayHandler {
             credits: Arc::new(Mutex::new(HashMap::new())),
         }
     }
+
+    /// トラックIDに対応するクレジット情報を登録します。
+    ///
+    /// ## Arguments
+    /// * `track_id` - トラックID。
+    /// * `credit` - クレジット情報。
+    pub async fn set_credit_for_track(&mut self, track_id: Uuid, credit: String) {
+        let mut credits = self.credits.lock().await;
+        credits.insert(track_id, credit);
+    }
+}
+
+/// ギルドIDと`CreditDisplayHandler`のマップを格納するためのキー。
+pub struct CreditDisplayHandlerKey;
+
+impl TypeMapKey for CreditDisplayHandlerKey {
+    type Value = Arc<Mutex<HashMap<GuildId, CreditDisplayHandler>>>;
 }

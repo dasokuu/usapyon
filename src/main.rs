@@ -13,10 +13,11 @@ mod voice_channel_tracker;
 extern crate dotenv;
 extern crate serenity;
 
+use credit_display_handler::CreditDisplayHandlerKey;
 use dotenv::dotenv;
 use serenity::{model::prelude::*, prelude::*};
 use songbird::SerenityInit;
-use std::{env, sync::Arc};
+use std::{collections::HashMap, env, sync::Arc};
 use synthesis_queue::SynthesisContext;
 use synthesis_queue_manager::{SynthesisQueueManager, SynthesisQueueManagerKey};
 use usapyon_config::{UsapyonConfig, UsapyonConfigKey};
@@ -46,10 +47,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .register_songbird()
         .await?;
 
-    let config = UsapyonConfig::new("http://localhost:50021/speakers").await?;
-    let config = Arc::new(Mutex::new(config));
     let voice_tracker = Arc::new(VoiceChannelTracker::new());
     let queue_manager = Arc::new(SynthesisQueueManager::new());
+    let config = UsapyonConfig::new("http://localhost:50021/speakers").await?;
+    let config = Arc::new(Mutex::new(config));
 
     {
         // クライアントデータへの登録
@@ -59,6 +60,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         data.insert::<UsapyonConfigKey>(config);
         let emoji_data = load_emoji_data();
         data.insert::<EmojiData>(emoji_data);
+        data.insert::<CreditDisplayHandlerKey>(Arc::new(Mutex::new(HashMap::new())));
     }
 
     client.start().await.map_err(Into::into)

@@ -15,7 +15,7 @@ use tokio::sync::Mutex;
 
 use crate::{
     synthesis_queue::{SynthesisContext, SynthesisQueue},
-    UsapyonConfigKey, VoiceChannelTrackerKey,
+    CreditDisplayHandlerKey, UsapyonConfigKey, VoiceChannelTrackerKey,
     {
         retry_handler::RetryHandler,
         serenity_utils::{get_data_from_ctx, get_songbird_from_ctx},
@@ -196,6 +196,15 @@ impl SynthesisQueueManager {
 
                         // TrackHandleのUUIDを表示。
                         println!("TrackHandle UUID: {:?}", track_handle.uuid());
+
+                        let credit_handler_map_lock =
+                            get_data_from_ctx::<CreditDisplayHandlerKey>(&ctx).await;
+                        let mut credit_handler_map = credit_handler_map_lock.lock().await;
+                        credit_handler_map
+                            .get_mut(&guild_id)
+                            .expect("No CreditDisplayHandler found")
+                            .set_credit_for_track(track_handle.uuid(), credit_name)
+                            .await;
 
                         synthesis_queue.remove_active_request(guild_id).await;
                     }
