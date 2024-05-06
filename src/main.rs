@@ -8,6 +8,7 @@ mod synthesis_queue_manager;
 mod usapyon_config;
 mod usapyon_event_handler;
 mod voice_channel_tracker;
+mod credit_display_handler;
 
 extern crate dotenv;
 extern crate serenity;

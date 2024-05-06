@@ -1,9 +1,10 @@
 use serenity::all::{Context, Message};
+use songbird::{Event, TrackEvent};
 
 use crate::{
     serenity_utils::{get_data_from_ctx, get_songbird_from_ctx, with_songbird_handler},
     voice_channel_tracker::VoiceChannelTrackerKey,
-    SynthesisQueueManagerKey,
+    SynthesisQueueManagerKey, credit_display_handler::CreditDisplayHandler,
 };
 
 /// ボイスチャンネルへの参加と同時にアクティブなチャンネルの設定を行います。
@@ -15,6 +16,7 @@ use crate::{
 /// * `Result<(), String>` - ボイスチャンネルへの参加操作が成功した場合は Ok(()) を、失敗した場合は Err を返します。
 pub async fn join_command(ctx: &Context, msg: &Message) -> Result<(), String> {
     let guild_id = msg.guild_id.ok_or("Message must be sent in a server")?;
+
     let tracker = get_data_from_ctx::<VoiceChannelTrackerKey>(&ctx).await;
     // 使用済みスピーカーの情報をクリア
     tracker.clear_used_speakers(guild_id).await;
@@ -49,8 +51,14 @@ pub async fn join_command(ctx: &Context, msg: &Message) -> Result<(), String> {
         .ok_or("User is not in a voice channel.")?;
 
     let songbird_result = get_songbird_from_ctx(&ctx).await;
+
     match songbird_result {
         Ok(songbird) => {
+            // 既に参加している場合は、先にイベントハンドラを解除。
+            if let Some(call) = songbird.get(guild_id) {
+                call.lock().await.remove_all_global_events();
+            }
+
             match songbird.join(guild_id, voice_channel_id).await {
                 Ok(call) => {
                     // ここでエラーを String に変換
@@ -59,6 +67,12 @@ pub async fn join_command(ctx: &Context, msg: &Message) -> Result<(), String> {
                         .deafen(true)
                         .await
                         .map_err(|e| format!("Failed to deafen: {:?}", e))?;
+                    let mut handler = call.lock().await;
+                    handler.add_global_event(
+                        Event::Track(TrackEvent::Play),
+                        CreditDisplayHandler
+                    );
+
                     let tracker = get_data_from_ctx::<VoiceChannelTrackerKey>(&ctx).await;
                     tracker
                         .set_active_channel(guild_id, voice_channel_id, text_channel_id)

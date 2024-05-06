@@ -157,19 +157,14 @@ impl SynthesisQueueManager {
             match future.await {
                 Ok(Ok(synthesis_body_bytes)) => match get_songbird_from_ctx(&ctx).await {
                     Ok(songbird) => {
-                        println!("Synthesis completed for guild {}", guild_id);
-
+                        // クレジット表示関連。ここから。
                         let config_lock = get_data_from_ctx::<UsapyonConfigKey>(&ctx).await;
                         let config = config_lock.lock().await;
-
-                        println!("success to get UsapyonConfig");
 
                         // request.speaker_id()は文字列なので、i32に変換。
                         let credit_name = config
                             .get_credit_name_by_style_id(request.speaker_id().parse().unwrap())
                             .await?;
-
-                        println!("Credit name: {}", credit_name);
 
                         // VoiceChannelTrackerを使用してスピーカーが新しく使用されるかチェック
                         let tracker = get_data_from_ctx::<VoiceChannelTrackerKey>(&ctx).await;
@@ -188,6 +183,7 @@ impl SynthesisQueueManager {
                                 text_channel_id.say(&ctx.http, &credit_message).await.ok();
                             }
                         }
+                        // ここまで。
 
                         let source =
                             songbird::input::Input::from(Box::from(synthesis_body_bytes.to_vec()));
