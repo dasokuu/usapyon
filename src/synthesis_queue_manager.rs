@@ -14,12 +14,11 @@ use std::{
 use tokio::sync::Mutex;
 
 use crate::{
+    credit_display_handler::CreditInfo,
+    retry_handler::RetryHandler,
+    serenity_utils::{get_data_from_ctx, get_songbird_from_ctx},
     synthesis_queue::{SynthesisContext, SynthesisQueue},
     CreditDisplayHandlerKey, UsapyonConfigKey, VoiceChannelTrackerKey,
-    {
-        retry_handler::RetryHandler,
-        serenity_utils::{get_data_from_ctx, get_songbird_from_ctx},
-    },
 };
 
 /// ギルドごとの音声合成の進行状況を管理する構造体。
@@ -179,7 +178,6 @@ impl SynthesisQueueManager {
                             if let Some(text_channel_id) =
                                 tracker.get_active_text_channel(guild_id).await
                             {
-                                println!("Credit message: {}", credit_message);
                                 text_channel_id.say(&ctx.http, &credit_message).await.ok();
                             }
                         }
@@ -200,10 +198,16 @@ impl SynthesisQueueManager {
                         let credit_handler_map_lock =
                             get_data_from_ctx::<CreditDisplayHandlerKey>(&ctx).await;
                         let mut credit_handler_map = credit_handler_map_lock.lock().await;
+                        let credit_info = CreditInfo::new(
+                            credit_name,
+                            tracker.get_active_text_channel(guild_id).await.unwrap(),
+                            ctx.http.clone(),
+                        );
+
                         credit_handler_map
                             .get_mut(&guild_id)
                             .expect("No CreditDisplayHandler found")
-                            .set_credit_for_track(track_handle.uuid(), credit_name)
+                            .set_credit_for_track(track_handle.uuid(), credit_info)
                             .await;
 
                         synthesis_queue.remove_active_request(guild_id).await;

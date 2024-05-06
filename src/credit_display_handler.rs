@@ -1,4 +1,8 @@
-use serenity::{model::id::GuildId, prelude::TypeMapKey};
+use serenity::{
+    http::Http,
+    model::id::{ChannelId, GuildId},
+    prelude::TypeMapKey,
+};
 use songbird::{
     events::{Event, EventContext, EventHandler as SongbirdEventHandler},
     tracks::PlayMode,
@@ -7,11 +11,42 @@ use std::{collections::HashMap, future::Future, pin::Pin, sync::Arc};
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
+/// クレジット表示するために必要な情報。
+pub struct CreditInfo {
+    /// クレジット情報。
+    credit_text: String,
+
+    /// クレジット情報を送信するチャンネルID。
+    channel_id: ChannelId,
+
+    /// HTTPクライアント。
+    http: Arc<Http>,
+}
+
+impl CreditInfo {
+    /// 新しい `CreditInfo` を作成します。
+    ///
+    /// ## Arguments
+    /// * `credit_text` - クレジット情報。
+    /// * `channel_id` - クレジット情報を送信するチャンネルID。
+    /// * `http` - HTTPクライアント。
+    ///
+    /// ## Returns
+    /// * `CreditInfo` - 新しい `CreditInfo` インスタンス。
+    pub fn new(credit_text: String, channel_id: ChannelId, http: Arc<Http>) -> Self {
+        Self {
+            credit_text,
+            channel_id,
+            http,
+        }
+    }
+}
+
 /// クレジット情報を表示するためのイベントハンドラ。
 #[derive(Clone)]
 pub struct CreditDisplayHandler {
     /// トラックIDとクレジット情報のマップ。
-    credits: Arc<Mutex<HashMap<Uuid, String>>>,
+    credits: Arc<Mutex<HashMap<Uuid, CreditInfo>>>,
 }
 
 impl SongbirdEventHandler for CreditDisplayHandler {
@@ -35,15 +70,21 @@ impl SongbirdEventHandler for CreditDisplayHandler {
         Box::pin(async move {
             if let EventContext::Track(track_events) = ctx {
                 for (track_state, track_handle) in (*track_events).iter() {
-                    // playingを表示
-                    println!("{:?}", track_state.playing);
-                    
                     match track_state.playing {
                         PlayMode::Play => {
                             let track_id = track_handle.uuid();
                             let credits = self.credits.lock().await;
-                            if let Some(credit) = credits.get(&track_id) {
-                                println!("VOICEVOX:{}", credit);
+                            if let Some(credit_info) = credits.get(&track_id) {
+                                println!("VOICEVOX:{}", credit_info.credit_text);
+
+                                let credit_message =
+                                    format!("VOICEVOX:{}", credit_info.credit_text);
+
+                                credit_info
+                                    .channel_id
+                                    .say(&credit_info.http, credit_message)
+                                    .await
+                                    .unwrap();
                             } else {
                                 println!("Credit not found for track ID: {}", track_id);
                             }
@@ -73,7 +114,7 @@ impl CreditDisplayHandler {
     /// ## Arguments
     /// * `track_id` - トラックID。
     /// * `credit` - クレジット情報。
-    pub async fn set_credit_for_track(&mut self, track_id: Uuid, credit: String) {
+    pub async fn set_credit_for_track(&mut self, track_id: Uuid, credit: CreditInfo) {
         let mut credits = self.credits.lock().await;
         credits.insert(track_id, credit);
     }
