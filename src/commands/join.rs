@@ -2,10 +2,11 @@ use crate::{
     credit_display_handler::CreditDisplayHandler,
     serenity_utils::{get_data_from_ctx, get_songbird_from_ctx, with_songbird_handler},
     voice_channel_tracker::VoiceChannelTrackerKey,
-    CreditDisplayHandlerKey, SynthesisQueueManagerKey,
+    CreditDisplayHandlerKey, SynthesisQueueManagerKey, UsapyonConfigKey,
 };
 use serenity::all::{Context, Message};
 use songbird::{Event, TrackEvent};
+use std::sync::Arc;
 
 /// ボイスチャンネルへの参加と同時にアクティブなチャンネルの設定を行います。
 /// ## Arguments
@@ -68,7 +69,10 @@ pub async fn join_command(ctx: &Context, msg: &Message) -> Result<(), String> {
                         .await
                         .map_err(|e| format!("Failed to deafen: {:?}", e))?;
 
-                    let credit_handler = CreditDisplayHandler::new();
+                    let config_lock = get_data_from_ctx::<UsapyonConfigKey>(&ctx).await;
+                    let config = config_lock.lock().await;
+                    let credit_handler =
+                        CreditDisplayHandler::new(Arc::clone(&config.style_id_to_credit_text));
 
                     // ギルドIDとCreditDisplayHandlerのマップに登録。
                     let credit_handler_map =

@@ -7,14 +7,19 @@ use songbird::{
     events::{Event, EventContext, EventHandler as SongbirdEventHandler},
     tracks::PlayMode,
 };
-use std::{collections::HashMap, future::Future, pin::Pin, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    future::Future,
+    pin::Pin,
+    sync::Arc,
+};
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
 /// クレジット表示するために必要な情報。
 pub struct CreditInfo {
-    /// クレジット情報。
-    credit_text: String,
+    /// スタイルID。
+    style_id: i32,
 
     /// クレジット情報を送信するチャンネルID。
     channel_id: ChannelId,
@@ -27,15 +32,15 @@ impl CreditInfo {
     /// 新しい `CreditInfo` を作成します。
     ///
     /// ## Arguments
-    /// * `credit_text` - クレジット情報。
+    /// * `style_id` - スタイルID。
     /// * `channel_id` - クレジット情報を送信するチャンネルID。
     /// * `http` - HTTPクライアント。
     ///
     /// ## Returns
     /// * `CreditInfo` - 新しい `CreditInfo` インスタンス。
-    pub fn new(credit_text: String, channel_id: ChannelId, http: Arc<Http>) -> Self {
+    pub fn new(style_id: i32, channel_id: ChannelId, http: Arc<Http>) -> Self {
         Self {
-            credit_text,
+            style_id,
             channel_id,
             http,
         }
@@ -47,6 +52,12 @@ impl CreditInfo {
 pub struct CreditDisplayHandler {
     /// トラックIDとクレジット情報のマップ。
     credits: Arc<Mutex<HashMap<Uuid, CreditInfo>>>,
+
+    /// 既にクレジットを表示したスピーカーのセット。
+    used_speakers: Arc<Mutex<HashSet<String>>>,
+
+    /// スタイルIDとクレジットテキストのマップ。
+    style_id_to_credit_text: Arc<Mutex<HashMap<i32, String>>>,
 }
 
 impl SongbirdEventHandler for CreditDisplayHandler {
@@ -75,8 +86,15 @@ impl SongbirdEventHandler for CreditDisplayHandler {
                             let track_id = track_handle.uuid();
                             let credits = self.credits.lock().await;
                             if let Some(credit_info) = credits.get(&track_id) {
-                                let credit_message =
-                                    format!("VOICEVOX:{}", credit_info.credit_text);
+                                let style_id_to_credit_text =
+                                    self.style_id_to_credit_text.lock().await;
+
+                                let credit_message = format!(
+                                    "VOICEVOX:{}",
+                                    style_id_to_credit_text
+                                        .get(&credit_info.style_id)
+                                        .expect("Speaker UUID not found.")
+                                );
 
                                 credit_info
                                     .channel_id
@@ -99,11 +117,16 @@ impl SongbirdEventHandler for CreditDisplayHandler {
 impl CreditDisplayHandler {
     /// 新しい `CreditDisplayHandler` を作成します。
     ///
+    /// ## Arguments
+    /// * `style_id_to_credit_text` - スタイルIDとクレジットテキストのマップ。
+    ///
     /// ## Returns
     /// * `CreditDisplayHandler` - 新しい `CreditDisplayHandler` インスタンス。
-    pub fn new() -> Self {
+    pub fn new(style_id_to_credit_text: Arc<Mutex<HashMap<i32, String>>>) -> Self {
         Self {
             credits: Arc::new(Mutex::new(HashMap::new())),
+            used_speakers: Arc::new(Mutex::new(HashSet::new())),
+            style_id_to_credit_text,
         }
     }
 

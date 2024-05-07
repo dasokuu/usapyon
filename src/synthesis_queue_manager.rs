@@ -18,7 +18,6 @@ use crate::{
     retry_handler::RetryHandler,
     serenity_utils::{get_data_from_ctx, get_songbird_from_ctx},
     synthesis_queue::{SynthesisContext, SynthesisQueue},
-    usapyon_config::get_credit_name_by_style_id,
     CreditDisplayHandlerKey, VoiceChannelTrackerKey,
 };
 
@@ -169,18 +168,11 @@ impl SynthesisQueueManager {
 
                         let track_handle = handler.enqueue_input(source).await;
 
-                        // request.speaker_id()は文字列なので、i32に変換。
-                        let credit_name: String = get_credit_name_by_style_id(
-                            &ctx,
-                            request.speaker_id().parse().unwrap(),
-                        )
-                        .await?;
-
                         let credit_handler_map_lock =
                             get_data_from_ctx::<CreditDisplayHandlerKey>(&ctx).await;
                         let mut credit_handler_map = credit_handler_map_lock.lock().await;
                         let credit_info = CreditInfo::new(
-                            credit_name,
+                            request.speaker_id().parse().unwrap(),
                             tracker.get_active_text_channel(guild_id).await.unwrap(),
                             ctx.http.clone(),
                         );

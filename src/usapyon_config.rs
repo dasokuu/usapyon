@@ -84,6 +84,9 @@ pub struct UsapyonConfig {
     /// ギルドのスタイルは、アナウンスを再生する際に使用されます。
     pub guild_style_settings: HashMap<GuildId, i32>,
 
+    /// スタイルIDとクレジットテキストのマップ。
+    pub style_id_to_credit_text: Arc<Mutex<HashMap<i32, String>>>,
+
     /// SQLiteデータベースの接続。
     conn: Arc<Mutex<rusqlite::Connection>>,
 }
@@ -102,11 +105,24 @@ impl UsapyonConfig {
 
         // SQLiteデータベースと接続。
         let conn = Arc::new(Mutex::new(init_db()?));
-        Ok(UsapyonConfig {
+
+        // スタイルIDとクレジットテキストのマップを作成。
+        let style_id_to_credit_text = speakers
+            .iter()
+            .flat_map(|speaker| {
+                speaker
+                    .styles
+                    .iter()
+                    .map(move |style| (style.id, speaker.get_credit_name()))
+            })
+            .collect();
+
+        Ok(Self {
             speakers,
             user_style_settings: HashMap::new(),
             guild_style_settings: HashMap::new(),
             conn,
+            style_id_to_credit_text: Arc::new(Mutex::new(style_id_to_credit_text)),
         })
     }
 
