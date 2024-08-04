@@ -1,5 +1,5 @@
 use crate::{
-    commands::{clear, join, leave, liststyles, setstyle, skip},
+    commands::{clear, help, join, leave, liststyles, setstyle, skip},
     env,
 };
 use std::{error::Error, fs::File, path::PathBuf};
@@ -192,6 +192,9 @@ impl UsapyonEventHandler {
             }
             "u!liststyles" => {
                 liststyles::list_styles_command(ctx, msg).await; // Assume this handles its errors internally
+            }
+            "u!help" => {
+                help::help_command(ctx, msg).await;
             }
             _ => {}
         }
